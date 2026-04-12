@@ -1,767 +1,616 @@
-// ======================== SUPABASE BACKEND CONNECTION ========================
-const SUPABASE_URL = 'https://slkereqjtknbvtywncph.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsa2VyZXFqdGtuYnZ0eXduY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDU1MTksImV4cCI6MjA5MTIyMTUxOX0.Yz9IpZWGDB5hKpLHZJIJseNCTe9YacpVzeuDOybj9ws';
+(function() {
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://slkereqjtknbvtywncph.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsa2VyZXFqdGtuYnZ0eXduY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDU1MTksImV4cCI6MjA5MTIyMTUxOX0.Yz9IpZWGDB5hKpLHZJIJseNCTe9YacpVzeuDOybj9ws';
+    
+    let supabase = null;
+    let currentUser = null;
+    let activeDashboardPage = "overview";
+    let sidebarCollapsed = false;
 
-// Initialize Supabase client
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// ======================== API ENDPOINTS ========================
-const API = {
-    profiles: `${SUPABASE_URL}/rest/v1/profiles`,
-    vendors: `${SUPABASE_URL}/rest/v1/vendors`,
-    menuItems: `${SUPABASE_URL}/rest/v1/menu_items`,
-    orders: `${SUPABASE_URL}/rest/v1/orders`,
-    orderItems: `${SUPABASE_URL}/rest/v1/order_items`
-};
-
-// ======================== GLOBAL STATE ========================
-let currentUser = null;
-let activeDashboardPage = "overview";
-let sidebarCollapsed = false;
-let selectedRoleForLogin = "student";
-
-// ======================== HELPER FUNCTIONS ========================
-function escapeHtml(str) {
-    if (!str) return '';
-    return str.replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
-}
-
-function showMessage(container, message, isError = false) {
-    if (container) {
-        container.innerHTML = `<div class="${isError ? 'error-message' : 'success-message'}" style="padding: 10px; border-radius: 10px; margin-bottom: 10px; background: ${isError ? '#fee2e2' : '#d1fae5'}; color: ${isError ? '#dc2626' : '#059669'};">${message}</div>`;
-        setTimeout(() => {
-            if (container.innerHTML === `<div class="${isError ? 'error-message' : 'success-message'}" style="padding: 10px; border-radius: 10px; margin-bottom: 10px; background: ${isError ? '#fee2e2' : '#d1fae5'}; color: ${isError ? '#dc2626' : '#059669'};">${message}</div>`) {
-                container.innerHTML = '';
+    // Initialize Supabase
+    function initSupabase() {
+        try {
+            if (typeof window.supabase !== 'undefined') {
+                const { createClient } = window.supabase;
+                supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log("✅ Supabase initialized");
+                return true;
+            } else {
+                console.warn("⚠️ Supabase SDK not loaded");
+                return false;
             }
-        }, 3000);
+        } catch (error) {
+            console.error("❌ Supabase init error:", error);
+            return false;
+        }
     }
-}
 
-// ======================== LOGIN WITH SUPABASE (Name + Role from profiles table) ========================
-async function loginUser(name, role) {
-    try {
-        // Query profiles table for matching name and role
-        const response = await fetch(`${API.profiles}?name=eq.${encodeURIComponent(name)}&role=eq.${role}`, {
-            headers: { 
-                'apikey': SUPABASE_ANON_KEY,
-                'Content-Type': 'application/json'
-            }
-        });
+    // Database functions for user management (using localStorage for persistence)
+    function createUserInDatabase(userData) {
+        const users = JSON.parse(localStorage.getItem('unieats_registered_users') || '{}');
+        users[userData.email] = {
+            email: userData.email,
+            role: userData.role,
+            fullName: userData.fullName,
+            createdAt: new Date().toISOString(),
+            ...userData
+        };
+        localStorage.setItem('unieats_registered_users', JSON.stringify(users));
+        return users[userData.email];
+    }
+
+    function getUserFromDatabase(email) {
+        const users = JSON.parse(localStorage.getItem('unieats_registered_users') || '{}');
+        return users[email] || null;
+    }
+
+    // Get or create user from Google Sign In
+    async function getOrCreateUserFromGoogle(supabaseUser) {
+        if (!supabaseUser) return null;
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        const email = supabaseUser.email;
+        const metadata = supabaseUser.user_metadata || {};
+        const fullName = metadata.full_name || metadata.name || email.split('@')[0];
+        
+        // Check if user exists in our database
+        let existingUser = getUserFromDatabase(email);
+        
+        if (existingUser) {
+            console.log("✅ Existing user found:", existingUser);
+            return {
+                ...existingUser,
+                supabaseId: supabaseUser.id,
+                avatarInitial: fullName.substring(0, 2).toUpperCase()
+            };
         }
         
-        const profiles = await response.json();
-        const profile = profiles[0];
-        
-        if (!profile) {
-            throw new Error(`No ${role} found with name "${name}". Please check your name and role.`);
-        }
-        
-        // If vendor, fetch vendor details
-        let vendorData = null;
-        if (role === 'vendor') {
-            const vendorResponse = await fetch(`${API.vendors}?profile_id=eq.${profile.id}`, {
-                headers: { 'apikey': SUPABASE_ANON_KEY }
-            });
-            const vendors = await vendorResponse.json();
-            vendorData = vendors[0];
-        }
-        
+        // New user - they need to select their role
+        console.log("🆕 New user detected, needs role selection");
         return {
-            success: true,
-            user: {
-                ...profile,
-                profile_id: profile.id,
-                vendor: vendorData,
-                id: profile.id,
-                fullName: profile.name,
-                avatarInitial: (profile.name || 'U').substring(0, 2).toUpperCase()
-            }
+            email: email,
+            fullName: fullName,
+            avatarInitial: fullName.substring(0, 2).toUpperCase(),
+            supabaseId: supabaseUser.id,
+            isNewUser: true,
+            needsRoleSelection: true
+        };
+    }
+
+    // Complete registration for new user
+    async function completeUserRegistration(selectedRole) {
+        if (!currentUser || !currentUser.isNewUser) return false;
+        
+        const userData = {
+            email: currentUser.email,
+            role: selectedRole,
+            fullName: currentUser.fullName,
+            avatarInitial: currentUser.avatarInitial,
+            age: 20,
+            supabaseId: currentUser.supabaseId
         };
         
-    } catch (error) {
-        console.error('Login error:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-// ======================== FETCH FUNCTIONS ========================
-async function getVendors() {
-    try {
-        const response = await fetch(`${API.vendors}?status=eq.active`, {
-            headers: { 'apikey': SUPABASE_ANON_KEY }
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Get vendors error:', error);
-        return [];
-    }
-}
-
-async function getAllVendors() {
-    try {
-        const response = await fetch(API.vendors, {
-            headers: { 'apikey': SUPABASE_ANON_KEY }
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Get all vendors error:', error);
-        return [];
-    }
-}
-
-async function getMenuItems() {
-    try {
-        const response = await fetch(`${API.menuItems}?available=eq.true`, {
-            headers: { 'apikey': SUPABASE_ANON_KEY }
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Get menu items error:', error);
-        return [];
-    }
-}
-
-async function getVendorMenu(vendorId) {
-    try {
-        const response = await fetch(`${API.menuItems}?vendor_id=eq.${vendorId}`, {
-            headers: { 'apikey': SUPABASE_ANON_KEY }
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Get vendor menu error:', error);
-        return [];
-    }
-}
-
-async function getStudentOrders(studentId) {
-    try {
-        const response = await fetch(`${API.orders}?student_id=eq.${studentId}&order=created_at.desc`, {
-            headers: { 'apikey': SUPABASE_ANON_KEY }
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Get student orders error:', error);
-        return [];
-    }
-}
-
-async function getVendorOrders(vendorId) {
-    try {
-        const response = await fetch(`${API.orders}?vendor_id=eq.${vendorId}&order=created_at.desc`, {
-            headers: { 'apikey': SUPABASE_ANON_KEY }
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Get vendor orders error:', error);
-        return [];
-    }
-}
-
-async function updateVendorStatus(vendorId, status) {
-    try {
-        const response = await fetch(`${API.vendors}?id=eq.${vendorId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify({ status: status })
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Update vendor status error:', error);
-        return null;
-    }
-}
-
-async function updateOrderStatus(orderId, status) {
-    try {
-        const response = await fetch(`${API.orders}?id=eq.${orderId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify({ status: status })
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Update order status error:', error);
-        return null;
-    }
-}
-
-async function createMenuItem(menuItem) {
-    try {
-        const response = await fetch(API.menuItems, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY,
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(menuItem)
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Create menu item error:', error);
-        return null;
-    }
-}
-
-async function updateMenuItem(itemId, updates) {
-    try {
-        const response = await fetch(`${API.menuItems}?id=eq.${itemId}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify(updates)
-        });
-        return await response.json();
-    } catch (error) {
-        console.error('Update menu item error:', error);
-        return null;
-    }
-}
-
-async function deleteMenuItem(itemId) {
-    try {
-        await fetch(`${API.menuItems}?id=eq.${itemId}`, {
-            method: 'DELETE',
-            headers: { 'apikey': SUPABASE_ANON_KEY }
-        });
-        return true;
-    } catch (error) {
-        console.error('Delete menu item error:', error);
-        return false;
-    }
-}
-
-async function placeOrder(orderData, orderItems) {
-    try {
-        const orderResponse = await fetch(API.orders, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY,
-                'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(orderData)
-        });
-        
-        const newOrder = await orderResponse.json();
-        if (!newOrder || newOrder.length === 0) throw new Error('Failed to create order');
-        
-        const orderId = newOrder[0].id;
-        
-        for (const item of orderItems) {
-            await fetch(API.orderItems, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': SUPABASE_ANON_KEY
-                },
-                body: JSON.stringify({ ...item, order_id: orderId })
-            });
+        // Add role-specific fields
+        if (selectedRole === 'vendor') {
+            userData.companyName = currentUser.fullName;
+            userData.regNumber = 'VEN-' + Math.floor(Math.random() * 1000);
+        } else if (selectedRole === 'admin') {
+            userData.employeeId = 'ADM-' + Math.floor(Math.random() * 1000);
+        } else {
+            userData.studentId = 'STU-' + Math.floor(Math.random() * 1000);
         }
         
-        return { success: true, order: newOrder[0] };
-    } catch (error) {
-        console.error('Place order error:', error);
-        return { success: false, error: error.message };
+        createUserInDatabase(userData);
+        currentUser = { ...userData, isNewUser: false, needsRoleSelection: false };
+        return true;
     }
-}
 
-// ======================== RENDER FUNCTIONS ========================
-function renderApp() {
-    if (!currentUser) renderLanding();
-    else renderDashboard();
-}
-
-function renderLanding() {
-    const appDiv = document.getElementById("app");
-    appDiv.innerHTML = `
-        <div class="landing-container">
-            <div class="hero">
-                <div class="hero-icon"><i class="fas fa-bowl-food"></i></div>
-                <h1>Uni-Eats</h1>
-                <p>Craving? Order from campus vendors — skip the queue, enjoy the taste</p>
-                <div class="food-tags">
-                    <span class="food-tag"><i class="fas fa-pepper-hot"></i> SA Flavours</span>
-                    <span class="food-tag"><i class="fas fa-leaf"></i> Allergen Smart</span>
-                    <span class="food-tag"><i class="fas fa-clock"></i> Real-time Tracking</span>
-                </div>
-            </div>
-            <div class="role-cards" id="roleCardsContainer">
-                <div class="role-card" data-role="student">
-                    <div class="role-emoji">🎓</div>
-                    <h3>Student</h3>
-                    <p>Order & track meals, collect fast</p>
-                    <button class="role-login-btn" data-role="student">Login as Student</button>
-                </div>
-                <div class="role-card" data-role="vendor">
-                    <div class="role-emoji">🍔</div>
-                    <h3>Vendor</h3>
-                    <p>Manage kitchen & live orders</p>
-                    <button class="role-login-btn" data-role="vendor">Login as Vendor</button>
-                </div>
-                <div class="role-card" data-role="admin">
-                    <div class="role-emoji">📊</div>
-                    <h3>Admin</h3>
-                    <p>Campus analytics & vendor control</p>
-                    <button class="role-login-btn" data-role="admin">Login as Admin</button>
-                </div>
-            </div>
-            <div id="loginPanel" class="login-panel" style="display: none;">
-                <h3 id="loginRoleTitle">🔐 Student Login</h3>
-                <div id="loginMessage"></div>
-                <div class="form-group">
-                    <label>Your Name</label>
-                    <input type="text" id="loginName" placeholder="Enter your name exactly as in database">
-                </div>
-                <button class="btn-primary" id="performLoginBtn">Sign In →</button>
-                <div class="switch-signup" style="text-align:center; margin-top:12px; font-size:0.8rem;">
-                    💡 Connected to Supabase backend! Use names from your profiles table.
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.querySelectorAll('.role-login-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            selectedRoleForLogin = btn.getAttribute('data-role');
-            const panel = document.getElementById('loginPanel');
-            const titleElem = document.getElementById('loginRoleTitle');
-            titleElem.innerText = `🔐 ${selectedRoleForLogin.charAt(0).toUpperCase() + selectedRoleForLogin.slice(1)} Login`;
-            document.getElementById('loginName').value = "";
-            document.getElementById('loginMessage').innerHTML = '';
-            panel.style.display = "block";
-            panel.scrollIntoView({ behavior: 'smooth' });
-        });
-    });
-
-    document.getElementById('performLoginBtn').addEventListener('click', async () => {
-        const name = document.getElementById('loginName').value.trim();
-        const messageDiv = document.getElementById('loginMessage');
-        
-        if (!name) {
-            showMessage(messageDiv, 'Please enter your name', true);
+    // Google Sign In
+    async function signInWithGoogle() {
+        if (!supabase) {
+            showError("Supabase not initialized. Please refresh the page.");
             return;
         }
         
-        const btn = document.getElementById('performLoginBtn');
-        btn.disabled = true;
-        btn.textContent = 'Signing in...';
+        showLoading(true);
         
-        const result = await loginUser(name, selectedRoleForLogin);
-        
-        if (result.success) {
-            currentUser = result.user;
-            renderApp();
-        } else {
-            showMessage(messageDiv, result.error, true);
-            btn.disabled = false;
-            btn.textContent = 'Sign In →';
+        try {
+            // Get the current URL for redirect
+            const redirectUrl = window.location.origin + window.location.pathname;
+            console.log("Redirect URL:", redirectUrl);
+            
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: redirectUrl,
+                }
+            });
+            if (error) throw error;
+        } catch (error) {
+            console.error('Google sign-in error:', error);
+            showError('Google login failed: ' + error.message);
+            showLoading(false);
         }
-    });
-}
-
-function renderDashboard() {
-    const appDiv = document.getElementById("app");
-    const role = currentUser.role;
-    const displayName = currentUser.name || currentUser.fullName;
-    const secondaryInfo = role === 'vendor' ? `🆔 Vendor` : `🎂 ${currentUser.age || 'N/A'} yrs`;
-    const avatarInitial = currentUser.avatarInitial || (displayName ? displayName.substring(0,2).toUpperCase() : "U");
-
-    let navItems = [];
-    if (role === 'student') {
-        navItems = [
-            { id: "overview", label: "Dashboard", icon: "fas fa-home" },
-            { id: "orders", label: "My Orders", icon: "fas fa-shopping-bag" },
-            { id: "vendors", label: "Campus Vendors", icon: "fas fa-store" },
-            { id: "cart", label: "My Cart", icon: "fas fa-shopping-cart" }
-        ];
-    } else if (role === 'vendor') {
-        navItems = [
-            { id: "overview", label: "Vendor Home", icon: "fas fa-chalkboard-user" },
-            { id: "orders", label: "Incoming Orders", icon: "fas fa-clipboard-list" },
-            { id: "menu", label: "Menu Manager", icon: "fas fa-utensil-spoon" },
-            { id: "analytics", label: "Sales Pulse", icon: "fas fa-chart-simple" }
-        ];
-    } else if (role === 'admin') {
-        navItems = [
-            { id: "overview", label: "Admin Console", icon: "fas fa-gauge-high" },
-            { id: "vendors", label: "Vendor Ecosystem", icon: "fas fa-building" },
-            { id: "orders", label: "All Orders", icon: "fas fa-receipt" }
-        ];
     }
 
-    appDiv.innerHTML = `
-        <div class="dashboard-wrapper">
-            <div class="sidebar ${sidebarCollapsed ? 'collapsed' : ''}" id="mainSidebar">
-                <div class="sidebar-header">
-                    <div class="logo-small"><i class="fas fa-bowl-food"></i> <span>Uni-Eats</span></div>
-                    <button class="menu-toggle" id="toggleSidebarBtn"><i class="fas fa-bars"></i></button>
+    // Sign Out
+    async function signOut() {
+        if (supabase) {
+            try {
+                await supabase.auth.signOut();
+            } catch(error) {
+                console.error('Sign out error:', error);
+            }
+        }
+        currentUser = null;
+        // Clear any stored session data
+        localStorage.removeItem('supabase.auth.token');
+        renderApp();
+    }
+
+    // Helper functions
+    function showError(message) {
+        const errorDiv = document.getElementById('errorMessage');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => {
+                if (errorDiv) errorDiv.style.display = 'none';
+            }, 5000);
+        } else {
+            alert(message);
+        }
+    }
+
+    function showLoading(show) {
+        const loadingDiv = document.getElementById('loadingIndicator');
+        if (loadingDiv) {
+            loadingDiv.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    // Render functions
+    function renderApp() {
+        const appDiv = document.getElementById("app");
+        if (!appDiv) return;
+        
+        if (!currentUser) {
+            renderLanding(appDiv);
+        } else if (currentUser.needsRoleSelection) {
+            renderRoleSelection(appDiv);
+        } else {
+            renderDashboard(appDiv);
+        }
+    }
+
+    function renderLanding(appDiv) {
+        appDiv.innerHTML = `
+            <div class="landing-container">
+                <div class="hero">
+                    <div class="hero-icon"><i class="fas fa-bowl-food"></i></div>
+                    <h1>Uni-Eats</h1>
+                    <p>Smart Campus Food Ordering System</p>
+                    <div class="food-tags">
+                        <span class="food-tag"><i class="fas fa-pepper-hot"></i> SA Flavours</span>
+                        <span class="food-tag"><i class="fas fa-leaf"></i> Allergen Smart</span>
+                        <span class="food-tag"><i class="fas fa-clock"></i> Real-time Tracking</span>
+                    </div>
                 </div>
-                <div class="nav-items" id="navItemsContainer"></div>
-                <div class="profile-card" id="profileSidebarBtn">
-                    <div class="profile-avatar">${avatarInitial}</div>
-                    <div class="profile-info">
-                        <div class="profile-name">${escapeHtml(displayName)}</div>
-                        <div class="profile-role">${role} • ${secondaryInfo}</div>
+                
+                <div class="login-container">
+                    <h2 style="color: #c2410c; margin-bottom: 1rem;">Welcome to Uni-Eats</h2>
+                    <p style="color: #7a4c2c; margin-bottom: 1rem;">Please sign in with your Google account to continue</p>
+                    
+                    <button id="googleSignInBtn" class="google-login-btn">
+                        <i class="fab fa-google"></i> Sign in with Google
+                    </button>
+                    
+                    <div id="errorMessage" class="error-message" style="display: none;"></div>
+                    <div id="loadingIndicator" class="info-message" style="display: none;">
+                        <div class="spinner"></div> Redirecting to Google...
                     </div>
                 </div>
             </div>
-            <div class="main-content">
-                <div class="top-bar">
-                    <div class="user-greeting"><i class="fas fa-hand-peace"></i> Welcome, ${escapeHtml(displayName)}</div>
-                    <button class="logout-top" id="dashboardLogoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        `;
+        
+        const googleBtn = document.getElementById("googleSignInBtn");
+        if (googleBtn) googleBtn.addEventListener("click", signInWithGoogle);
+    }
+
+    function renderRoleSelection(appDiv) {
+        appDiv.innerHTML = `
+            <div class="landing-container">
+                <div class="hero">
+                    <div class="hero-icon"><i class="fas fa-user-plus"></i></div>
+                    <h1>Welcome ${escapeHtml(currentUser.fullName)}!</h1>
+                    <p>Please select your role to continue</p>
                 </div>
-                <div id="dynamicContentArea"><div class="loading" style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-pulse"></i> Loading...</div></div>
+                
+                <div class="role-cards">
+                    <div class="role-card" data-role="student">
+                        <div class="role-emoji">🎓</div>
+                        <h3>Student</h3>
+                        <p>Order food from campus vendors</p>
+                        <button class="role-login-btn" data-role="student">Continue as Student</button>
+                    </div>
+                    <div class="role-card" data-role="vendor">
+                        <div class="role-emoji">🍔</div>
+                        <h3>Vendor</h3>
+                        <p>Manage your restaurant</p>
+                        <button class="role-login-btn" data-role="vendor">Continue as Vendor</button>
+                    </div>
+                    <div class="role-card" data-role="admin">
+                        <div class="role-emoji">📊</div>
+                        <h3>Admin</h3>
+                        <p>Manage campus operations</p>
+                        <button class="role-login-btn" data-role="admin">Continue as Admin</button>
+                    </div>
+                </div>
+                
+                <div id="errorMessage" class="error-message" style="display: none;"></div>
             </div>
-        </div>
-    `;
-
-    const navContainer = document.getElementById("navItemsContainer");
-    navItems.forEach(item => {
-        const navDiv = document.createElement("div");
-        navDiv.className = `nav-item ${activeDashboardPage === item.id ? 'active' : ''}`;
-        navDiv.setAttribute("data-page", item.id);
-        navDiv.innerHTML = `<i class="${item.icon}"></i><span>${item.label}</span>`;
-        navDiv.addEventListener("click", () => {
-            activeDashboardPage = item.id;
-            renderDashboard();
+        `;
+        
+        document.querySelectorAll('.role-login-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const role = btn.getAttribute('data-role');
+                await completeUserRegistration(role);
+                renderApp();
+            });
         });
-        navContainer.appendChild(navDiv);
-    });
+    }
 
-    document.getElementById("toggleSidebarBtn").addEventListener("click", () => {
-        sidebarCollapsed = !sidebarCollapsed;
-        renderDashboard();
-    });
-    document.getElementById("dashboardLogoutBtn").addEventListener("click", () => {
-        currentUser = null;
-        activeDashboardPage = "overview";
-        sidebarCollapsed = false;
-        renderApp();
-    });
+    function renderDashboard(appDiv) {
+        const role = currentUser.role;
+        const displayName = role === 'vendor' ? currentUser.companyName : currentUser.fullName;
+        const avatarInitial = currentUser.avatarInitial || (displayName ? displayName.substring(0,2).toUpperCase() : "U");
+        
+        let navItems = [];
+        if (role === 'student') {
+            navItems = [
+                { id: "overview", label: "Dashboard", icon: "fas fa-home" },
+                { id: "orders", label: "My Orders", icon: "fas fa-shopping-bag" },
+                { id: "vendors", label: "Campus Vendors", icon: "fas fa-store" },
+                { id: "analytics", label: "Insights", icon: "fas fa-chart-line" }
+            ];
+        } else if (role === 'vendor') {
+            navItems = [
+                { id: "overview", label: "Vendor Home", icon: "fas fa-chalkboard-user" },
+                { id: "orders", label: "Incoming Orders", icon: "fas fa-clipboard-list" },
+                { id: "menu", label: "Menu Manager", icon: "fas fa-utensil-spoon" },
+                { id: "analytics", label: "Sales Pulse", icon: "fas fa-chart-simple" }
+            ];
+        } else {
+            navItems = [
+                { id: "overview", label: "Admin Console", icon: "fas fa-gauge-high" },
+                { id: "vendors", label: "Vendor Ecosystem", icon: "fas fa-building" },
+                { id: "analytics", label: "Reports", icon: "fas fa-chart-column" },
+                { id: "orders", label: "All Orders", icon: "fas fa-receipt" }
+            ];
+        }
+        
+        appDiv.innerHTML = `
+            <div class="dashboard-wrapper">
+                <div class="sidebar ${sidebarCollapsed ? 'collapsed' : ''}" id="mainSidebar">
+                    <div class="sidebar-header">
+                        <div class="logo-small"><i class="fas fa-bowl-food"></i> <span>Uni-Eats</span></div>
+                        <button class="menu-toggle" id="toggleSidebarBtn"><i class="fas fa-bars"></i></button>
+                    </div>
+                    <div class="nav-items" id="navItemsContainer"></div>
+                    <div class="profile-card" id="profileSidebarBtn">
+                        <div class="profile-avatar">${escapeHtml(avatarInitial)}</div>
+                        <div class="profile-info">
+                            <div class="profile-name">${escapeHtml(displayName)}</div>
+                            <div class="profile-role">${role}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="main-content">
+                    <div class="top-bar">
+                        <div class="user-greeting">
+                            <i class="fas fa-hand-peace"></i> Welcome, ${escapeHtml(displayName)}
+                            <small style="display:block; font-size:0.7rem;">${escapeHtml(currentUser.email)}</small>
+                        </div>
+                        <button class="logout-top" id="dashboardLogoutBtn">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </div>
+                    <div id="dynamicContentArea"></div>
+                </div>
+            </div>
+        `;
+        
+        const navContainer = document.getElementById("navItemsContainer");
+        if (navContainer) {
+            navItems.forEach(item => {
+                const navDiv = document.createElement("div");
+                navDiv.className = `nav-item ${activeDashboardPage === item.id ? 'active' : ''}`;
+                navDiv.innerHTML = `<i class="${item.icon}"></i><span>${item.label}</span>`;
+                navDiv.addEventListener("click", () => {
+                    activeDashboardPage = item.id;
+                    renderApp();
+                });
+                navContainer.appendChild(navDiv);
+            });
+        }
+        
+        const toggleBtn = document.getElementById("toggleSidebarBtn");
+        if (toggleBtn) toggleBtn.addEventListener("click", () => {
+            sidebarCollapsed = !sidebarCollapsed;
+            renderApp();
+        });
+        
+        const logoutBtn = document.getElementById("dashboardLogoutBtn");
+        if (logoutBtn) logoutBtn.addEventListener("click", () => signOut());
+        
+        const profileBtn = document.getElementById("profileSidebarBtn");
+        if (profileBtn) profileBtn.addEventListener("click", () => openProfileModal());
+        
+        renderDynamicContent();
+    }
 
-    const profileBtn = document.getElementById("profileSidebarBtn");
-    if (profileBtn) profileBtn.addEventListener("click", () => openProfileModal());
+    function openProfileModal() {
+        const modalDiv = document.createElement("div");
+        modalDiv.className = "modal-overlay";
+        const isVendor = currentUser.role === "vendor";
+        modalDiv.innerHTML = `
+            <div class="modal-content">
+                <h3><i class="fas fa-user-edit"></i> Edit Profile</h3>
+                <div class="form-group">
+                    <label>${isVendor ? "Company Name" : "Full Name"}</label>
+                    <input type="text" id="editFullName" value="${escapeHtml(isVendor ? currentUser.companyName : currentUser.fullName)}">
+                </div>
+                <div class="form-group">
+                    <label>Email (read only)</label>
+                    <input type="email" value="${escapeHtml(currentUser.email)}" disabled>
+                </div>
+                ${!isVendor ? `<div class="form-group"><label>Age</label><input type="number" id="editAge" value="${currentUser.age}"></div>` : 
+                              `<div class="form-group"><label>Vendor ID</label><input value="${escapeHtml(currentUser.regNumber)}" disabled></div>`}
+                <div class="modal-buttons">
+                    <button class="btn-primary" id="saveProfileBtn">Save Changes</button>
+                    <button class="btn-secondary" id="closeModalBtn">Cancel</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modalDiv);
+        
+        const saveBtn = modalDiv.querySelector("#saveProfileBtn");
+        const closeBtn = modalDiv.querySelector("#closeModalBtn");
+        
+        saveBtn.addEventListener("click", async () => {
+            const newName = modalDiv.querySelector("#editFullName").value.trim();
+            if (!isVendor) {
+                const newAge = parseInt(modalDiv.querySelector("#editAge").value);
+                if (!newName || isNaN(newAge) || newAge < 16) {
+                    alert("Please provide valid name and age (>=16).");
+                    return;
+                }
+                currentUser.fullName = newName;
+                currentUser.age = newAge;
+            } else {
+                if (!newName) {
+                    alert("Please provide a valid company name.");
+                    return;
+                }
+                currentUser.companyName = newName;
+                currentUser.fullName = newName;
+            }
+            currentUser.avatarInitial = newName.substring(0, 2).toUpperCase();
+            createUserInDatabase(currentUser);
+            modalDiv.remove();
+            renderApp();
+        });
+        
+        closeBtn.addEventListener("click", () => modalDiv.remove());
+    }
 
-    renderDynamicContent();
-}
-
-async function renderDynamicContent() {
-    const contentDiv = document.getElementById("dynamicContentArea");
-    if (!contentDiv) return;
-    
-    const role = currentUser.role;
-    
-    try {
+    function renderDynamicContent() {
+        const contentDiv = document.getElementById("dynamicContentArea");
+        if (!contentDiv) return;
+        
+        const role = currentUser.role;
+        
         if (role === 'student') {
             if (activeDashboardPage === "overview") {
-                const vendors = await getVendors();
                 contentDiv.innerHTML = `
                     <h2><i class="fas fa-graduation-cap"></i> Student Dashboard</h2>
                     <div class="card-grid">
-                        <div class="stat-card"><div class="stat-number" style="font-size:2rem;">0</div><div>Active Orders</div></div>
-                        <div class="stat-card"><div class="stat-number" style="font-size:2rem;">${vendors.length}</div><div>Vendors nearby</div></div>
-                        <div class="stat-card"><div class="stat-number" style="font-size:2rem;">★ 4.8</div><div>Campus rating</div></div>
+                        <div class="stat-card"><div class="stat-number">8</div><div>Active Orders</div></div>
+                        <div class="stat-card"><div class="stat-number">12</div><div>Vendors nearby</div></div>
+                        <div class="stat-card"><div class="stat-number">★ 4.8</div><div>Campus rating</div></div>
                     </div>
-                    <div class="mock-table"><h3>📋 Connected to Supabase!</h3><p>✅ Backend connected successfully using your Supabase URL</p><p>📊 Data is being fetched from your live database</p></div>
+                    <div class="mock-table">
+                        <h3>📋 Recent Activity</h3>
+                        <p>Last order: <strong>#UNI-234</strong> — Ready for pickup</p>
+                    </div>
+                `;
+            } else if (activeDashboardPage === "orders") {
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-receipt"></i> My Orders</h2>
+                    <div class="mock-table">
+                        <table>
+                            <tr><th>Order ID</th><th>Vendor</th><th>Status</th><th>ETA</th></tr>
+                            <tr><td>#ORD101</td><td>Campus Bites</td><td><span class="badge">Preparing</span></td><td>~10 min</td></tr>
+                            <tr><td>#ORD102</td><td>Grill Masters</td><td><span class="badge">Ready</span></td><td>Now</td></tr>
+                        </table>
+                    </div>
                 `;
             } else if (activeDashboardPage === "vendors") {
-                const vendors = await getVendors();
-                const menuItems = await getMenuItems();
-                
-                let html = `<h2><i class="fas fa-store"></i> Campus Vendors</h2>`;
-                for (const vendor of vendors) {
-                    const vendorMenu = menuItems.filter(item => item.vendor_id === vendor.id);
-                    html += `<div class="mock-table" style="margin-bottom:1rem;">
-                        <h3>🍽️ ${escapeHtml(vendor.company_name)}</h3>
-                        <p>${vendor.cuisine_type || 'Various cuisines'}</p>
-                        <table><thead><tr><th>Item</th><th>Price</th><th>Action</th></tr></thead><tbody>`;
-                    if (vendorMenu.length === 0) {
-                        html += `<tr><td colspan="3">No menu items available</td></tr>`;
-                    } else {
-                        for (const item of vendorMenu) {
-                            html += `<tr><td>${escapeHtml(item.name)}</td><td>R${item.price}</td><td><button class="small-mock" onclick="addToCart(${item.id}, '${escapeHtml(item.name)}', ${item.price}, '${vendor.id}')">Add to Cart</button></td></tr>`;
-                        }
-                    }
-                    html += `</tbody></table></div>`;
-                }
-                contentDiv.innerHTML = html;
-            } else if (activeDashboardPage === "orders") {
-                const orders = await getStudentOrders(currentUser.id);
-                if (orders.length === 0) {
-                    contentDiv.innerHTML = `<h2><i class="fas fa-receipt"></i> My Orders</h2><div class="mock-table"><p>No orders yet. Browse vendors to place an order!</p></div>`;
-                } else {
-                    let html = `<h2><i class="fas fa-receipt"></i> My Orders</h2><div class="mock-table"><table><thead><tr><th>Order ID</th><th>Status</th><th>Total</th><th>Date</th></tr></thead><tbody>`;
-                    for (const order of orders) {
-                        html += `<tr><td>#${order.id}</td><td><span class="badge">${order.status}</span></td><td>R${order.total_amount}</td><td>${new Date(order.created_at).toLocaleDateString()}</td></tr>`;
-                    }
-                    html += `</tbody></table></div>`;
-                    contentDiv.innerHTML = html;
-                }
-            } else if (activeDashboardPage === "cart") {
-                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-                if (cart.length === 0) {
-                    contentDiv.innerHTML = `<h2><i class="fas fa-shopping-cart"></i> My Cart</h2><div class="mock-table"><p>Your cart is empty.</p></div>`;
-                } else {
-                    let total = 0;
-                    let html = `<h2><i class="fas fa-shopping-cart"></i> My Cart</h2><div class="mock-table"><table><thead><tr><th>Item</th><th>Price</th><th>Quantity</th><th>Subtotal</th><th></th></tr></thead><tbody>`;
-                    cart.forEach(item => {
-                        const subtotal = item.price * item.quantity;
-                        total += subtotal;
-                        html += `<tr><td>${escapeHtml(item.name)}</td><td>R${item.price}</td><td>${item.quantity}</td><td>R${subtotal}</td><td><button class="small-mock" onclick="removeFromCart(${item.id})">Remove</button></td></tr>`;
-                    });
-                    html += `<tr style="font-weight:bold;"><td colspan="3">Total</td><td>R${total}</td><td></td></tr>`;
-                    html += `</tbody></table><button class="btn-primary" style="margin-top:1rem;" onclick="checkout()">Place Order</button></div>`;
-                    contentDiv.innerHTML = html;
-                }
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-store"></i> Campus Vendors</h2>
+                    <div class="mock-table">
+                        <table>
+                            <tr><th>Vendor</th><th>Cuisine</th><th>Distance</th><th>Action</th></tr>
+                            <tr><td>Campus Bites</td><td>Global Bowls</td><td>50m</td><td><button class="small-mock" disabled>Order Soon</button></td></tr>
+                            <tr><td>Grill Masters</td><td>Braai & Grill</td><td>120m</td><td><button class="small-mock" disabled>Order Soon</button></td></tr>
+                        </table>
+                    </div>
+                `;
+            } else {
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-chart-line"></i> Insights</h2>
+                    <div class="card-grid">
+                        <div class="stat-card">📊 Peak hours: 12:30-13:30</div>
+                        <div class="stat-card">🍽️ Top vendor: Campus Bites</div>
+                    </div>
+                `;
             }
         } else if (role === 'vendor') {
             if (activeDashboardPage === "overview") {
-                const orders = await getVendorOrders(currentUser.vendor?.id);
-                contentDiv.innerHTML = `<h2><i class="fas fa-kitchen-set"></i> Vendor Panel — ${currentUser.name}</h2>
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-kitchen-set"></i> Vendor Panel — ${escapeHtml(currentUser.companyName)}</h2>
                     <div class="card-grid">
-                        <div class="stat-card">📦 Today's orders: ${orders.length}</div>
+                        <div class="stat-card">📦 Today's orders: 24</div>
                         <div class="stat-card">⭐ Rating: 4.7</div>
-                        <div class="stat-card">🆔 Vendor ID: ${currentUser.vendor?.id || 'N/A'}</div>
+                        <div class="stat-card">🆔 Vendor ID: ${escapeHtml(currentUser.regNumber)}</div>
                     </div>
-                    <div class="mock-table"><h3>✅ Connected to Supabase Backend</h3><p>Your data is live from the database!</p></div>`;
+                    <div class="mock-table">
+                        <h3>🍽️ Sample Menu</h3>
+                        <p>• Combo-A - R55 - Available</p>
+                        <p>• Combo-B - R65 - Available</p>
+                    </div>
+                `;
             } else if (activeDashboardPage === "orders") {
-                const orders = await getVendorOrders(currentUser.vendor?.id);
-                if (orders.length === 0) {
-                    contentDiv.innerHTML = `<h2><i class="fas fa-truck-fast"></i> Incoming Orders</h2><div class="mock-table"><p>No orders yet.</p></div>`;
-                } else {
-                    let html = `<h2><i class="fas fa-truck-fast"></i> Incoming Orders</h2><div class="mock-table"><table><thead><tr><th>Order ID</th><th>Status</th><th>Total</th><th>Action</th></tr></thead><tbody>`;
-                    for (const order of orders) {
-                        html += `<tr><td>#${order.id}</td><td><span class="badge">${order.status}</span></td><td>R${order.total_amount}</td><td>`;
-                        if (order.status === 'pending') html += `<button class="small-mock" onclick="updateVendorOrderStatus(${order.id}, 'preparing')">Start Preparing</button>`;
-                        else if (order.status === 'preparing') html += `<button class="small-mock" onclick="updateVendorOrderStatus(${order.id}, 'ready')">Mark Ready</button>`;
-                        html += `</td></tr>`;
-                    }
-                    html += `</tbody></table></div>`;
-                    contentDiv.innerHTML = html;
-                }
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-truck-fast"></i> Incoming Orders</h2>
+                    <div class="mock-table">
+                        <table>
+                            <tr><th>Order ID</th><th>Student</th><th>Items</th><th>Status</th></tr>
+                            <tr><td>#V221</td><td>Lerato N.</td><td>Meal Deal</td><td><span class="badge">Preparing</span></td>
+                            </tr>
+                            <tr><td>#V222</td><td>Sarah C.</td><td>Combo-A</td><td><span class="badge">Received</span></td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
             } else if (activeDashboardPage === "menu") {
-                const menu = await getVendorMenu(currentUser.vendor?.id);
-                let html = `<h2><i class="fas fa-list-ul"></i> Menu Manager</h2>
-                    <button class="btn-primary" onclick="showAddMenuItemModal()" style="width:auto; margin-bottom:1rem;">+ Add Menu Item</button>
-                    <div class="mock-table"><table><thead><tr><th>Item</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
-                for (const item of menu) {
-                    html += `<tr><td>${escapeHtml(item.name)}</td><td>R${item.price}</td><td>${item.available ? 'Available' : 'Sold Out'}</td>
-                    <td><button class="small-mock" onclick="toggleMenuItemAvailability(${item.id}, ${!item.available})">${item.available ? 'Mark Sold Out' : 'Mark Available'}</button>
-                    <button class="small-mock" onclick="deleteMenuItem(${item.id})">Delete</button></td></tr>`;
-                }
-                html += `</tbody></table></div>`;
-                contentDiv.innerHTML = html;
-            } else if (activeDashboardPage === "analytics") {
-                const orders = await getVendorOrders(currentUser.vendor?.id);
-                const revenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-                contentDiv.innerHTML = `<h2><i class="fas fa-chart-simple"></i> Sales Pulse</h2>
-                    <div class="card-grid"><div class="stat-card">📈 Total Orders: ${orders.length}</div><div class="stat-card">💰 Revenue: R${revenue}</div></div>
-                    <div class="mock-table"><p>✅ Live data from your Supabase database</p></div>`;
-            }
-        } else if (role === 'admin') {
-            if (activeDashboardPage === "overview") {
-                const vendors = await getAllVendors();
-                const pending = vendors.filter(v => v.status === 'pending').length;
-                const active = vendors.filter(v => v.status === 'active').length;
-                contentDiv.innerHTML = `<h2><i class="fas fa-chart-pie"></i> Admin Console</h2>
-                    <div class="card-grid">
-                        <div class="stat-card"><div class="stat-number">${active}</div><div>Active Vendors</div></div>
-                        <div class="stat-card"><div class="stat-number">${pending}</div><div>Pending</div></div>
-                        <div class="stat-card"><div class="stat-number">${vendors.length}</div><div>Total Vendors</div></div>
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-list-ul"></i> Menu Manager</h2>
+                    <div class="placeholder-alert">
+                        🔧 Allergen data: SA National Food Database integration ready
                     </div>
-                    <div class="mock-table"><p>✅ Connected to Supabase - ${vendors.length} vendors in system</p></div>`;
+                `;
+            } else {
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-chart-simple"></i> Sales Pulse</h2>
+                    <div class="card-grid">
+                        <div class="stat-card">📈 +12% weekly orders</div>
+                        <div class="stat-card">⏰ Peak: 12-2PM</div>
+                    </div>
+                `;
+            }
+        } else {
+            if (activeDashboardPage === "overview") {
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-chart-pie"></i> Admin Console</h2>
+                    <div class="card-grid">
+                        <div class="stat-card"><div class="stat-number">124</div><div>Active Vendors</div></div>
+                        <div class="stat-card"><div class="stat-number">12</div><div>Pending</div></div>
+                        <div class="stat-card"><div class="stat-number">3</div><div>Suspended</div></div>
+                    </div>
+                `;
             } else if (activeDashboardPage === "vendors") {
-                const vendors = await getAllVendors();
-                let html = `<h2><i class="fas fa-shield-alt"></i> Vendor Ecosystem</h2><div class="mock-table"><table><thead><tr><th>Vendor</th><th>Status</th><th>Action</th></tr></thead><tbody>`;
-                for (const vendor of vendors) {
-                    html += `<tr><td>${escapeHtml(vendor.company_name)}</td><td><span class="badge">${vendor.status || 'pending'}</span></td><td>`;
-                    if (vendor.status === 'pending') html += `<button class="small-mock" onclick="approveVendor(${vendor.id})">Approve</button>`;
-                    else if (vendor.status === 'active') html += `<button class="small-mock" onclick="suspendVendor(${vendor.id})">Suspend</button>`;
-                    else if (vendor.status === 'suspended') html += `<button class="small-mock" onclick="approveVendor(${vendor.id})">Reactivate</button>`;
-                    html += `</td></tr>`;
-                }
-                html += `</tbody></table></div>`;
-                contentDiv.innerHTML = html;
-            } else if (activeDashboardPage === "orders") {
-                const response = await fetch(API.orders, { headers: { 'apikey': SUPABASE_ANON_KEY } });
-                const orders = await response.json();
-                let html = `<h2><i class="fas fa-globe"></i> All Campus Orders</h2><div class="mock-table"><table><thead><tr><th>Order ID</th><th>Status</th><th>Total</th><th>Date</th></tr></thead><tbody>`;
-                for (const order of orders) {
-                    html += `<tr><td>#${order.id}</td><td><span class="badge">${order.status}</span></td><td>R${order.total_amount}</td><td>${new Date(order.created_at).toLocaleString()}</td></tr>`;
-                }
-                html += `</tbody></table></div>`;
-                contentDiv.innerHTML = html;
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-shield-alt"></i> Vendor Ecosystem</h2>
+                    <div class="mock-table">
+                        <p>✅ Campus Bites - Approved</p>
+                        <p>⏳ Grill Masters - Pending Review</p>
+                        <p>✅ Green Bowl - Approved</p>
+                    </div>
+                `;
+            } else if (activeDashboardPage === "analytics") {
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-chart-column"></i> Reports & CSV</h2>
+                    <button class="small-mock" id="exportBtn">⬇️ Download Audit Report</button>
+                `;
+                setTimeout(() => {
+                    const exportBtn = document.getElementById("exportBtn");
+                    if (exportBtn) exportBtn.addEventListener("click", () => alert("📁 CSV Export: vendor_audit.csv (Backend ready)"));
+                }, 100);
+            } else {
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-globe"></i> All Campus Orders</h2>
+                    <div class="mock-table">
+                        <table>
+                            <tr><th>Order ID</th><th>Student</th><th>Vendor</th><th>Status</th></tr>
+                            <tr><td>#9991</td><td>Lerato</td><td>Campus Bites</td><td>Ready</td>
+                            </tr>
+                            <tr><td>#9992</td><td>Sarah</td><td>Grill Masters</td><td>Preparing</td>
+                            </tr>
+                        </table>
+                    </div>
+                `;
             }
         }
-    } catch (error) {
-        contentDiv.innerHTML = `<div class="placeholder-alert" style="color:red;">Error loading data: ${error.message}. Please check your Supabase connection.</div>`;
+        
+        const footer = document.createElement("div");
+        footer.className = "placeholder-alert";
+        footer.style.marginTop = "1.5rem";
+        footer.innerHTML = `<i class="fas fa-id-card"></i> ✅ Authenticated via Google | Role: ${currentUser.role} | Email: ${escapeHtml(currentUser.email)}`;
+        contentDiv.appendChild(footer);
     }
-}
 
-// ======================== PROFILE MODAL ========================
-function openProfileModal() {
-    const modalDiv = document.createElement("div");
-    modalDiv.className = "modal-overlay";
-    const isVendor = currentUser.role === "vendor";
-    modalDiv.innerHTML = `
-        <div class="modal-content">
-            <h3><i class="fas fa-user-edit"></i> Edit Profile</h3>
-            <div id="modalMessage"></div>
-            <div class="form-group">
-                <label>${isVendor ? "Company Name" : "Full Name"}</label>
-                <input type="text" id="editFullName" value="${escapeHtml(isVendor ? currentUser.vendor?.company_name || currentUser.name : currentUser.name)}">
-            </div>
-            <div class="form-group">
-                <label>Email (read only)</label>
-                <input type="email" value="${currentUser.email || 'N/A'}" disabled>
-            </div>
-            <div class="modal-buttons">
-                <button class="btn-primary" id="saveProfileBtn">Save Changes</button>
-                <button class="btn-secondary" id="closeModalBtn">Cancel</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modalDiv);
-
-    const saveBtn = modalDiv.querySelector("#saveProfileBtn");
-    const closeBtn = modalDiv.querySelector("#closeModalBtn");
-    saveBtn.addEventListener("click", async () => {
-        const newName = modalDiv.querySelector("#editFullName").value.trim();
-        if (!newName) {
-            showMessage(modalDiv.querySelector("#modalMessage"), "Name cannot be empty", true);
-            return;
+    // Initialize authentication - THIS IS KEY FOR HANDLING THE REDIRECT
+    async function initAuth() {
+        initSupabase();
+        
+        if (supabase) {
+            try {
+                // Check for existing session (this handles the redirect from Google)
+                const { data: { session }, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    console.error("Session error:", error);
+                }
+                
+                if (session && session.user) {
+                    console.log("Session found, processing user...");
+                    const user = await getOrCreateUserFromGoogle(session.user);
+                    if (user) {
+                        currentUser = user;
+                    }
+                } else {
+                    console.log("No active session");
+                }
+            } catch (error) {
+                console.error("Auth init error:", error);
+            }
+            
+            // Listen for auth state changes (important for OAuth redirect)
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                console.log("Auth state changed:", event);
+                
+                if (event === 'SIGNED_IN' && session && session.user) {
+                    console.log("User signed in, processing...");
+                    const user = await getOrCreateUserFromGoogle(session.user);
+                    if (user) {
+                        currentUser = user;
+                        renderApp();
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    console.log("User signed out");
+                    currentUser = null;
+                    renderApp();
+                } else if (event === 'TOKEN_REFRESHED') {
+                    console.log("Token refreshed");
+                }
+            });
         }
         
-        const response = await fetch(`${API.profiles}?id=eq.${currentUser.id}`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': SUPABASE_ANON_KEY
-            },
-            body: JSON.stringify({ name: newName })
-        });
-        
-        if (response.ok) {
-            currentUser.name = newName;
-            modalDiv.remove();
-            renderDashboard();
-        } else {
-            showMessage(modalDiv.querySelector("#modalMessage"), "Failed to update profile", true);
-        }
-    });
-    closeBtn.addEventListener("click", () => modalDiv.remove());
-}
-
-// ======================== GLOBAL FUNCTIONS ========================
-window.addToCart = (itemId, itemName, price, vendorId) => {
-    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    const existing = cart.find(i => i.id === itemId);
-    if (existing) existing.quantity++;
-    else cart.push({ id: itemId, name: itemName, price: price, quantity: 1, vendorId: vendorId });
-    localStorage.setItem('cart', JSON.stringify(cart));
-    alert(`${itemName} added to cart!`);
-};
-
-window.removeFromCart = (itemId) => {
-    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    cart = cart.filter(i => i.id !== itemId);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    renderDashboard();
-};
-
-window.checkout = async () => {
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
-    if (cart.length === 0) {
-        alert("Cart is empty!");
-        return;
+        renderApp();
     }
     
-    const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
-    const orderData = { student_id: currentUser.id, vendor_id: cart[0].vendorId, total_amount: total, status: 'pending' };
-    const orderItems = cart.map(i => ({ menu_item_id: i.id, quantity: i.quantity, price: i.price }));
-    
-    const result = await placeOrder(orderData, orderItems);
-    if (result.success) {
-        localStorage.removeItem('cart');
-        alert("Order placed successfully!");
-        activeDashboardPage = "orders";
-        renderDashboard();
-    } else {
-        alert("Failed to place order: " + result.error);
-    }
-};
-
-window.updateVendorOrderStatus = async (orderId, status) => {
-    await updateOrderStatus(orderId, status);
-    alert(`Order #${orderId} updated to ${status}`);
-    renderDashboard();
-};
-
-window.approveVendor = async (vendorId) => {
-    await updateVendorStatus(vendorId, 'active');
-    alert("Vendor approved!");
-    renderDashboard();
-};
-
-window.suspendVendor = async (vendorId) => {
-    await updateVendorStatus(vendorId, 'suspended');
-    alert("Vendor suspended!");
-    renderDashboard();
-};
-
-window.showAddMenuItemModal = () => {
-    const modalDiv = document.createElement("div");
-    modalDiv.className = "modal-overlay";
-    modalDiv.innerHTML = `
-        <div class="modal-content">
-            <h3>Add Menu Item</h3>
-            <div id="modalMessage"></div>
-            <div class="form-group"><label>Item Name</label><input type="text" id="itemName" placeholder="e.g., Chicken Burger"></div>
-            <div class="form-group"><label>Price (R)</label><input type="number" id="itemPrice" step="0.01" placeholder="49.99"></div>
-            <div class="modal-buttons"><button class="btn-primary" id="saveItemBtn">Add Item</button><button class="btn-secondary" id="closeModalBtn">Cancel</button></div>
-        </div>
-    `;
-    document.body.appendChild(modalDiv);
-    document.getElementById("saveItemBtn").addEventListener("click", async () => {
-        const name = document.getElementById("itemName").value.trim();
-        const price = parseFloat(document.getElementById("itemPrice").value);
-        if (!name || isNaN(price)) { alert("Please fill all fields"); return; }
-        await createMenuItem({ vendor_id: currentUser.vendor.id, name: name, price: price, available: true });
-        modalDiv.remove();
-        renderDashboard();
-    });
-    document.getElementById("closeModalBtn").addEventListener("click", () => modalDiv.remove());
-};
-
-window.toggleMenuItemAvailability = async (itemId, available) => {
-    await updateMenuItem(itemId, { available: available });
-    renderDashboard();
-};
-
-window.deleteMenuItem = async (itemId) => {
-    if (confirm("Delete this menu item?")) {
-        await deleteMenuItem(itemId);
-        renderDashboard();
-    }
-};
-
-// Start the app
-renderApp();
+    // Start the app
+    initAuth();
+})();
