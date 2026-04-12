@@ -107,31 +107,24 @@
 
     // Google Sign In
     async function signInWithGoogle() {
-        if (!supabase) {
-            showError("Supabase not initialized. Please refresh the page.");
-            return;
-        }
-        
-        showLoading(true);
-        
-        try {
-            // Get the current URL for redirect
-            const redirectUrl = window.location.origin + window.location.pathname;
-            console.log("Redirect URL:", redirectUrl);
-            
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUrl,
-                }
-            });
-            if (error) throw error;
-        } catch (error) {
-            console.error('Google sign-in error:', error);
-            showError('Google login failed: ' + error.message);
-            showLoading(false);
-        }
+    if (!supabase) {
+        showError("Supabase not initialized. Please refresh the page.");
+        return;
     }
+    showLoading(true);
+    try {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google'
+        });
+
+        if (error) throw error;
+
+    } catch (error) {
+        console.error('Google sign-in error:', error);
+        showError('Google login failed: ' + error.message);
+        showLoading(false);
+    }
+}
 
     // Sign Out
     async function signOut() {
