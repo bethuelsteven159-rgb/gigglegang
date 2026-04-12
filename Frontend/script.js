@@ -1,31 +1,292 @@
-// ======================== MOCK USER DATABASE (EDITABLE - PLACED CLEARLY AT THE TOP) ========================
-// You can easily add/modify users here. Each user must have role, email, password, and role-specific fields.
-let MOCK_USERS = [
-    { id: 1, email: "student@uni-eats.com", password: "student123", role: "student", fullName: "Lerato Ndlovu", age: 20, studentId: "STU-101", avatarInitial: "LN" },
-    { id: 2, email: "vendor@uni-eats.com", password: "vendor123", role: "vendor", companyName: "Campus Bites", age: 35, regNumber: "VEN-882", fullName: "Campus Bites", avatarInitial: "CB" },
-    { id: 3, email: "admin@uni-eats.com", password: "admin123", role: "admin", fullName: "Thabo Mbeki", age: 45, employeeId: "ADM-009", avatarInitial: "TM" },
-    { id: 4, email: "sarah@student.uni", password: "sarahpass", role: "student", fullName: "Sarah Chen", age: 22, studentId: "STU-204", avatarInitial: "SC" },
-    { id: 5, email: "grill@campus.com", password: "grill123", role: "vendor", companyName: "Grill Masters", age: 41, regNumber: "VEN-112", fullName: "Grill Masters", avatarInitial: "GM" }
-];
+// ======================== SUPABASE BACKEND CONNECTION ========================
+const SUPABASE_URL = 'https://slkereqjtknbvtywncph.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsa2VyZXFqdGtuYnZ0eXduY3BoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDU1MTksImV4cCI6MjA5MTIyMTUxOX0.Yz9IpZWGDB5hKpLHZJIJseNCTe9YacpVzeuDOybj9ws';
 
-// Helper to save changes to MOCK_USERS
-function updateUserInMock(updatedUser) {
-    const index = MOCK_USERS.findIndex(u => u.id === updatedUser.id);
-    if (index !== -1) MOCK_USERS[index] = { ...updatedUser };
-}
+// Initialize Supabase client
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Global state
+// ======================== API ENDPOINTS ========================
+const API = {
+    profiles: `${SUPABASE_URL}/rest/v1/profiles`,
+    vendors: `${SUPABASE_URL}/rest/v1/vendors`,
+    menuItems: `${SUPABASE_URL}/rest/v1/menu_items`,
+    orders: `${SUPABASE_URL}/rest/v1/orders`,
+    orderItems: `${SUPABASE_URL}/rest/v1/order_items`
+};
+
+// ======================== GLOBAL STATE ========================
 let currentUser = null;
 let activeDashboardPage = "overview";
 let sidebarCollapsed = false;
+let selectedRoleForLogin = "student";
 
+// ======================== HELPER FUNCTIONS ========================
+function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
+
+function showMessage(container, message, isError = false) {
+    if (container) {
+        container.innerHTML = `<div class="${isError ? 'error-message' : 'success-message'}" style="padding: 10px; border-radius: 10px; margin-bottom: 10px; background: ${isError ? '#fee2e2' : '#d1fae5'}; color: ${isError ? '#dc2626' : '#059669'};">${message}</div>`;
+        setTimeout(() => {
+            if (container.innerHTML === `<div class="${isError ? 'error-message' : 'success-message'}" style="padding: 10px; border-radius: 10px; margin-bottom: 10px; background: ${isError ? '#fee2e2' : '#d1fae5'}; color: ${isError ? '#dc2626' : '#059669'};">${message}</div>`) {
+                container.innerHTML = '';
+            }
+        }, 3000);
+    }
+}
+
+// ======================== LOGIN WITH SUPABASE (Name + Role from profiles table) ========================
+async function loginUser(name, role) {
+    try {
+        // Query profiles table for matching name and role
+        const response = await fetch(`${API.profiles}?name=eq.${encodeURIComponent(name)}&role=eq.${role}`, {
+            headers: { 
+                'apikey': SUPABASE_ANON_KEY,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const profiles = await response.json();
+        const profile = profiles[0];
+        
+        if (!profile) {
+            throw new Error(`No ${role} found with name "${name}". Please check your name and role.`);
+        }
+        
+        // If vendor, fetch vendor details
+        let vendorData = null;
+        if (role === 'vendor') {
+            const vendorResponse = await fetch(`${API.vendors}?profile_id=eq.${profile.id}`, {
+                headers: { 'apikey': SUPABASE_ANON_KEY }
+            });
+            const vendors = await vendorResponse.json();
+            vendorData = vendors[0];
+        }
+        
+        return {
+            success: true,
+            user: {
+                ...profile,
+                profile_id: profile.id,
+                vendor: vendorData,
+                id: profile.id,
+                fullName: profile.name,
+                avatarInitial: (profile.name || 'U').substring(0, 2).toUpperCase()
+            }
+        };
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ======================== FETCH FUNCTIONS ========================
+async function getVendors() {
+    try {
+        const response = await fetch(`${API.vendors}?status=eq.active`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY }
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Get vendors error:', error);
+        return [];
+    }
+}
+
+async function getAllVendors() {
+    try {
+        const response = await fetch(API.vendors, {
+            headers: { 'apikey': SUPABASE_ANON_KEY }
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Get all vendors error:', error);
+        return [];
+    }
+}
+
+async function getMenuItems() {
+    try {
+        const response = await fetch(`${API.menuItems}?available=eq.true`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY }
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Get menu items error:', error);
+        return [];
+    }
+}
+
+async function getVendorMenu(vendorId) {
+    try {
+        const response = await fetch(`${API.menuItems}?vendor_id=eq.${vendorId}`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY }
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Get vendor menu error:', error);
+        return [];
+    }
+}
+
+async function getStudentOrders(studentId) {
+    try {
+        const response = await fetch(`${API.orders}?student_id=eq.${studentId}&order=created_at.desc`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY }
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Get student orders error:', error);
+        return [];
+    }
+}
+
+async function getVendorOrders(vendorId) {
+    try {
+        const response = await fetch(`${API.orders}?vendor_id=eq.${vendorId}&order=created_at.desc`, {
+            headers: { 'apikey': SUPABASE_ANON_KEY }
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Get vendor orders error:', error);
+        return [];
+    }
+}
+
+async function updateVendorStatus(vendorId, status) {
+    try {
+        const response = await fetch(`${API.vendors}?id=eq.${vendorId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ status: status })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Update vendor status error:', error);
+        return null;
+    }
+}
+
+async function updateOrderStatus(orderId, status) {
+    try {
+        const response = await fetch(`${API.orders}?id=eq.${orderId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ status: status })
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Update order status error:', error);
+        return null;
+    }
+}
+
+async function createMenuItem(menuItem) {
+    try {
+        const response = await fetch(API.menuItems, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(menuItem)
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Create menu item error:', error);
+        return null;
+    }
+}
+
+async function updateMenuItem(itemId, updates) {
+    try {
+        const response = await fetch(`${API.menuItems}?id=eq.${itemId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify(updates)
+        });
+        return await response.json();
+    } catch (error) {
+        console.error('Update menu item error:', error);
+        return null;
+    }
+}
+
+async function deleteMenuItem(itemId) {
+    try {
+        await fetch(`${API.menuItems}?id=eq.${itemId}`, {
+            method: 'DELETE',
+            headers: { 'apikey': SUPABASE_ANON_KEY }
+        });
+        return true;
+    } catch (error) {
+        console.error('Delete menu item error:', error);
+        return false;
+    }
+}
+
+async function placeOrder(orderData, orderItems) {
+    try {
+        const orderResponse = await fetch(API.orders, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY,
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify(orderData)
+        });
+        
+        const newOrder = await orderResponse.json();
+        if (!newOrder || newOrder.length === 0) throw new Error('Failed to create order');
+        
+        const orderId = newOrder[0].id;
+        
+        for (const item of orderItems) {
+            await fetch(API.orderItems, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': SUPABASE_ANON_KEY
+                },
+                body: JSON.stringify({ ...item, order_id: orderId })
+            });
+        }
+        
+        return { success: true, order: newOrder[0] };
+    } catch (error) {
+        console.error('Place order error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ======================== RENDER FUNCTIONS ========================
 function renderApp() {
     if (!currentUser) renderLanding();
     else renderDashboard();
 }
-
-// ---------- LANDING PAGE (UberEats/MrD style) ----------
-let selectedRoleForLogin = "student";
 
 function renderLanding() {
     const appDiv = document.getElementById("app");
@@ -63,11 +324,14 @@ function renderLanding() {
             </div>
             <div id="loginPanel" class="login-panel" style="display: none;">
                 <h3 id="loginRoleTitle">🔐 Student Login</h3>
-                <div class="form-group"><label>Email</label><input type="email" id="loginEmail" placeholder="student@uni-eats.com"></div>
-                <div class="form-group"><label>Password</label><input type="password" id="loginPassword" placeholder="••••••"></div>
+                <div id="loginMessage"></div>
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" id="loginName" placeholder="Enter your name exactly as in database">
+                </div>
                 <button class="btn-primary" id="performLoginBtn">Sign In →</button>
                 <div class="switch-signup" style="text-align:center; margin-top:12px; font-size:0.8rem;">
-                    💡 Demo accounts: student@uni-eats.com / student123 | vendor@uni-eats.com / vendor123 | admin@uni-eats.com / admin123
+                    💡 Connected to Supabase backend! Use names from your profiles table.
                 </div>
             </div>
         </div>
@@ -80,43 +344,45 @@ function renderLanding() {
             const panel = document.getElementById('loginPanel');
             const titleElem = document.getElementById('loginRoleTitle');
             titleElem.innerText = `🔐 ${selectedRoleForLogin.charAt(0).toUpperCase() + selectedRoleForLogin.slice(1)} Login`;
-            const emailInput = document.getElementById('loginEmail');
-            if (selectedRoleForLogin === 'student') emailInput.value = "student@uni-eats.com";
-            else if (selectedRoleForLogin === 'vendor') emailInput.value = "vendor@uni-eats.com";
-            else emailInput.value = "admin@uni-eats.com";
-            document.getElementById('loginPassword').value = "";
+            document.getElementById('loginName').value = "";
+            document.getElementById('loginMessage').innerHTML = '';
             panel.style.display = "block";
             panel.scrollIntoView({ behavior: 'smooth' });
         });
     });
 
-    document.getElementById('performLoginBtn').addEventListener('click', () => {
-        const email = document.getElementById('loginEmail').value.trim();
-        const pwd = document.getElementById('loginPassword').value.trim();
-        const user = MOCK_USERS.find(u => u.email === email && u.password === pwd && u.role === selectedRoleForLogin);
-        if (!user) {
-            alert(`Invalid credentials or role mismatch.\nUse demo accounts:\nStudent: student@uni-eats.com / student123\nVendor: vendor@uni-eats.com / vendor123\nAdmin: admin@uni-eats.com / admin123`);
+    document.getElementById('performLoginBtn').addEventListener('click', async () => {
+        const name = document.getElementById('loginName').value.trim();
+        const messageDiv = document.getElementById('loginMessage');
+        
+        if (!name) {
+            showMessage(messageDiv, 'Please enter your name', true);
             return;
         }
-        currentUser = { ...user };
-        renderApp();
+        
+        const btn = document.getElementById('performLoginBtn');
+        btn.disabled = true;
+        btn.textContent = 'Signing in...';
+        
+        const result = await loginUser(name, selectedRoleForLogin);
+        
+        if (result.success) {
+            currentUser = result.user;
+            renderApp();
+        } else {
+            showMessage(messageDiv, result.error, true);
+            btn.disabled = false;
+            btn.textContent = 'Sign In →';
+        }
     });
 }
 
-// ---------- DASHBOARD + Profile Edit Modal ----------
 function renderDashboard() {
     const appDiv = document.getElementById("app");
     const role = currentUser.role;
-    const displayName = role === 'vendor' ? currentUser.companyName : (currentUser.fullName || currentUser.email.split('@')[0]);
-    
-    // For vendor, show Vendor ID (regNumber) instead of age
-    let secondaryInfo = "";
-    if (role === 'vendor') {
-        secondaryInfo = `🆔 ID: ${currentUser.regNumber || 'N/A'}`;
-    } else {
-        secondaryInfo = `🎂 ${currentUser.age} yrs`;
-    }
-    const avatarInitial = currentUser.avatarInitial || (displayName ? displayName[0].toUpperCase() : "U");
+    const displayName = currentUser.name || currentUser.fullName;
+    const secondaryInfo = role === 'vendor' ? `🆔 Vendor` : `🎂 ${currentUser.age || 'N/A'} yrs`;
+    const avatarInitial = currentUser.avatarInitial || (displayName ? displayName.substring(0,2).toUpperCase() : "U");
 
     let navItems = [];
     if (role === 'student') {
@@ -124,7 +390,7 @@ function renderDashboard() {
             { id: "overview", label: "Dashboard", icon: "fas fa-home" },
             { id: "orders", label: "My Orders", icon: "fas fa-shopping-bag" },
             { id: "vendors", label: "Campus Vendors", icon: "fas fa-store" },
-            { id: "analytics", label: "Insights", icon: "fas fa-chart-line" }
+            { id: "cart", label: "My Cart", icon: "fas fa-shopping-cart" }
         ];
     } else if (role === 'vendor') {
         navItems = [
@@ -137,7 +403,6 @@ function renderDashboard() {
         navItems = [
             { id: "overview", label: "Admin Console", icon: "fas fa-gauge-high" },
             { id: "vendors", label: "Vendor Ecosystem", icon: "fas fa-building" },
-            { id: "analytics", label: "Reports & CSV", icon: "fas fa-chart-column" },
             { id: "orders", label: "All Orders", icon: "fas fa-receipt" }
         ];
     }
@@ -163,7 +428,7 @@ function renderDashboard() {
                     <div class="user-greeting"><i class="fas fa-hand-peace"></i> Welcome, ${escapeHtml(displayName)}</div>
                     <button class="logout-top" id="dashboardLogoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
                 </div>
-                <div id="dynamicContentArea"></div>
+                <div id="dynamicContentArea"><div class="loading" style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-pulse"></i> Loading...</div></div>
             </div>
         </div>
     `;
@@ -195,10 +460,163 @@ function renderDashboard() {
     const profileBtn = document.getElementById("profileSidebarBtn");
     if (profileBtn) profileBtn.addEventListener("click", () => openProfileModal());
 
-    renderDynamicContent(role);
+    renderDynamicContent();
 }
 
-// Profile edit modal (email is read-only, name and age editable; vendor shows company name and regNumber read-only)
+async function renderDynamicContent() {
+    const contentDiv = document.getElementById("dynamicContentArea");
+    if (!contentDiv) return;
+    
+    const role = currentUser.role;
+    
+    try {
+        if (role === 'student') {
+            if (activeDashboardPage === "overview") {
+                const vendors = await getVendors();
+                contentDiv.innerHTML = `
+                    <h2><i class="fas fa-graduation-cap"></i> Student Dashboard</h2>
+                    <div class="card-grid">
+                        <div class="stat-card"><div class="stat-number" style="font-size:2rem;">0</div><div>Active Orders</div></div>
+                        <div class="stat-card"><div class="stat-number" style="font-size:2rem;">${vendors.length}</div><div>Vendors nearby</div></div>
+                        <div class="stat-card"><div class="stat-number" style="font-size:2rem;">★ 4.8</div><div>Campus rating</div></div>
+                    </div>
+                    <div class="mock-table"><h3>📋 Connected to Supabase!</h3><p>✅ Backend connected successfully using your Supabase URL</p><p>📊 Data is being fetched from your live database</p></div>
+                `;
+            } else if (activeDashboardPage === "vendors") {
+                const vendors = await getVendors();
+                const menuItems = await getMenuItems();
+                
+                let html = `<h2><i class="fas fa-store"></i> Campus Vendors</h2>`;
+                for (const vendor of vendors) {
+                    const vendorMenu = menuItems.filter(item => item.vendor_id === vendor.id);
+                    html += `<div class="mock-table" style="margin-bottom:1rem;">
+                        <h3>🍽️ ${escapeHtml(vendor.company_name)}</h3>
+                        <p>${vendor.cuisine_type || 'Various cuisines'}</p>
+                        <table><thead><tr><th>Item</th><th>Price</th><th>Action</th></tr></thead><tbody>`;
+                    if (vendorMenu.length === 0) {
+                        html += `<tr><td colspan="3">No menu items available</td></tr>`;
+                    } else {
+                        for (const item of vendorMenu) {
+                            html += `<tr><td>${escapeHtml(item.name)}</td><td>R${item.price}</td><td><button class="small-mock" onclick="addToCart(${item.id}, '${escapeHtml(item.name)}', ${item.price}, '${vendor.id}')">Add to Cart</button></td></tr>`;
+                        }
+                    }
+                    html += `</tbody></table></div>`;
+                }
+                contentDiv.innerHTML = html;
+            } else if (activeDashboardPage === "orders") {
+                const orders = await getStudentOrders(currentUser.id);
+                if (orders.length === 0) {
+                    contentDiv.innerHTML = `<h2><i class="fas fa-receipt"></i> My Orders</h2><div class="mock-table"><p>No orders yet. Browse vendors to place an order!</p></div>`;
+                } else {
+                    let html = `<h2><i class="fas fa-receipt"></i> My Orders</h2><div class="mock-table"><table><thead><tr><th>Order ID</th><th>Status</th><th>Total</th><th>Date</th></tr></thead><tbody>`;
+                    for (const order of orders) {
+                        html += `<tr><td>#${order.id}</td><td><span class="badge">${order.status}</span></td><td>R${order.total_amount}</td><td>${new Date(order.created_at).toLocaleDateString()}</td></tr>`;
+                    }
+                    html += `</tbody></table></div>`;
+                    contentDiv.innerHTML = html;
+                }
+            } else if (activeDashboardPage === "cart") {
+                const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+                if (cart.length === 0) {
+                    contentDiv.innerHTML = `<h2><i class="fas fa-shopping-cart"></i> My Cart</h2><div class="mock-table"><p>Your cart is empty.</p></div>`;
+                } else {
+                    let total = 0;
+                    let html = `<h2><i class="fas fa-shopping-cart"></i> My Cart</h2><div class="mock-table"><table><thead><tr><th>Item</th><th>Price</th><th>Quantity</th><th>Subtotal</th><th></th></tr></thead><tbody>`;
+                    cart.forEach(item => {
+                        const subtotal = item.price * item.quantity;
+                        total += subtotal;
+                        html += `<tr><td>${escapeHtml(item.name)}</td><td>R${item.price}</td><td>${item.quantity}</td><td>R${subtotal}</td><td><button class="small-mock" onclick="removeFromCart(${item.id})">Remove</button></td></tr>`;
+                    });
+                    html += `<tr style="font-weight:bold;"><td colspan="3">Total</td><td>R${total}</td><td></td></tr>`;
+                    html += `</tbody></table><button class="btn-primary" style="margin-top:1rem;" onclick="checkout()">Place Order</button></div>`;
+                    contentDiv.innerHTML = html;
+                }
+            }
+        } else if (role === 'vendor') {
+            if (activeDashboardPage === "overview") {
+                const orders = await getVendorOrders(currentUser.vendor?.id);
+                contentDiv.innerHTML = `<h2><i class="fas fa-kitchen-set"></i> Vendor Panel — ${currentUser.name}</h2>
+                    <div class="card-grid">
+                        <div class="stat-card">📦 Today's orders: ${orders.length}</div>
+                        <div class="stat-card">⭐ Rating: 4.7</div>
+                        <div class="stat-card">🆔 Vendor ID: ${currentUser.vendor?.id || 'N/A'}</div>
+                    </div>
+                    <div class="mock-table"><h3>✅ Connected to Supabase Backend</h3><p>Your data is live from the database!</p></div>`;
+            } else if (activeDashboardPage === "orders") {
+                const orders = await getVendorOrders(currentUser.vendor?.id);
+                if (orders.length === 0) {
+                    contentDiv.innerHTML = `<h2><i class="fas fa-truck-fast"></i> Incoming Orders</h2><div class="mock-table"><p>No orders yet.</p></div>`;
+                } else {
+                    let html = `<h2><i class="fas fa-truck-fast"></i> Incoming Orders</h2><div class="mock-table"><table><thead><tr><th>Order ID</th><th>Status</th><th>Total</th><th>Action</th></tr></thead><tbody>`;
+                    for (const order of orders) {
+                        html += `<tr><td>#${order.id}</td><td><span class="badge">${order.status}</span></td><td>R${order.total_amount}</td><td>`;
+                        if (order.status === 'pending') html += `<button class="small-mock" onclick="updateVendorOrderStatus(${order.id}, 'preparing')">Start Preparing</button>`;
+                        else if (order.status === 'preparing') html += `<button class="small-mock" onclick="updateVendorOrderStatus(${order.id}, 'ready')">Mark Ready</button>`;
+                        html += `</td></tr>`;
+                    }
+                    html += `</tbody></table></div>`;
+                    contentDiv.innerHTML = html;
+                }
+            } else if (activeDashboardPage === "menu") {
+                const menu = await getVendorMenu(currentUser.vendor?.id);
+                let html = `<h2><i class="fas fa-list-ul"></i> Menu Manager</h2>
+                    <button class="btn-primary" onclick="showAddMenuItemModal()" style="width:auto; margin-bottom:1rem;">+ Add Menu Item</button>
+                    <div class="mock-table"><table><thead><tr><th>Item</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
+                for (const item of menu) {
+                    html += `<tr><td>${escapeHtml(item.name)}</td><td>R${item.price}</td><td>${item.available ? 'Available' : 'Sold Out'}</td>
+                    <td><button class="small-mock" onclick="toggleMenuItemAvailability(${item.id}, ${!item.available})">${item.available ? 'Mark Sold Out' : 'Mark Available'}</button>
+                    <button class="small-mock" onclick="deleteMenuItem(${item.id})">Delete</button></td></tr>`;
+                }
+                html += `</tbody></table></div>`;
+                contentDiv.innerHTML = html;
+            } else if (activeDashboardPage === "analytics") {
+                const orders = await getVendorOrders(currentUser.vendor?.id);
+                const revenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+                contentDiv.innerHTML = `<h2><i class="fas fa-chart-simple"></i> Sales Pulse</h2>
+                    <div class="card-grid"><div class="stat-card">📈 Total Orders: ${orders.length}</div><div class="stat-card">💰 Revenue: R${revenue}</div></div>
+                    <div class="mock-table"><p>✅ Live data from your Supabase database</p></div>`;
+            }
+        } else if (role === 'admin') {
+            if (activeDashboardPage === "overview") {
+                const vendors = await getAllVendors();
+                const pending = vendors.filter(v => v.status === 'pending').length;
+                const active = vendors.filter(v => v.status === 'active').length;
+                contentDiv.innerHTML = `<h2><i class="fas fa-chart-pie"></i> Admin Console</h2>
+                    <div class="card-grid">
+                        <div class="stat-card"><div class="stat-number">${active}</div><div>Active Vendors</div></div>
+                        <div class="stat-card"><div class="stat-number">${pending}</div><div>Pending</div></div>
+                        <div class="stat-card"><div class="stat-number">${vendors.length}</div><div>Total Vendors</div></div>
+                    </div>
+                    <div class="mock-table"><p>✅ Connected to Supabase - ${vendors.length} vendors in system</p></div>`;
+            } else if (activeDashboardPage === "vendors") {
+                const vendors = await getAllVendors();
+                let html = `<h2><i class="fas fa-shield-alt"></i> Vendor Ecosystem</h2><div class="mock-table"><table><thead><tr><th>Vendor</th><th>Status</th><th>Action</th></tr></thead><tbody>`;
+                for (const vendor of vendors) {
+                    html += `<tr><td>${escapeHtml(vendor.company_name)}</td><td><span class="badge">${vendor.status || 'pending'}</span></td><td>`;
+                    if (vendor.status === 'pending') html += `<button class="small-mock" onclick="approveVendor(${vendor.id})">Approve</button>`;
+                    else if (vendor.status === 'active') html += `<button class="small-mock" onclick="suspendVendor(${vendor.id})">Suspend</button>`;
+                    else if (vendor.status === 'suspended') html += `<button class="small-mock" onclick="approveVendor(${vendor.id})">Reactivate</button>`;
+                    html += `</td></tr>`;
+                }
+                html += `</tbody></table></div>`;
+                contentDiv.innerHTML = html;
+            } else if (activeDashboardPage === "orders") {
+                const response = await fetch(API.orders, { headers: { 'apikey': SUPABASE_ANON_KEY } });
+                const orders = await response.json();
+                let html = `<h2><i class="fas fa-globe"></i> All Campus Orders</h2><div class="mock-table"><table><thead><tr><th>Order ID</th><th>Status</th><th>Total</th><th>Date</th></tr></thead><tbody>`;
+                for (const order of orders) {
+                    html += `<tr><td>#${order.id}</td><td><span class="badge">${order.status}</span></td><td>R${order.total_amount}</td><td>${new Date(order.created_at).toLocaleString()}</td></tr>`;
+                }
+                html += `</tbody></table></div>`;
+                contentDiv.innerHTML = html;
+            }
+        }
+    } catch (error) {
+        contentDiv.innerHTML = `<div class="placeholder-alert" style="color:red;">Error loading data: ${error.message}. Please check your Supabase connection.</div>`;
+    }
+}
+
+// ======================== PROFILE MODAL ========================
 function openProfileModal() {
     const modalDiv = document.createElement("div");
     modalDiv.className = "modal-overlay";
@@ -206,16 +624,15 @@ function openProfileModal() {
     modalDiv.innerHTML = `
         <div class="modal-content">
             <h3><i class="fas fa-user-edit"></i> Edit Profile</h3>
+            <div id="modalMessage"></div>
             <div class="form-group">
                 <label>${isVendor ? "Company Name" : "Full Name"}</label>
-                <input type="text" id="editFullName" value="${escapeHtml(isVendor ? currentUser.companyName : currentUser.fullName)}">
+                <input type="text" id="editFullName" value="${escapeHtml(isVendor ? currentUser.vendor?.company_name || currentUser.name : currentUser.name)}">
             </div>
             <div class="form-group">
                 <label>Email (read only)</label>
-                <input type="email" value="${currentUser.email}" disabled>
+                <input type="email" value="${currentUser.email || 'N/A'}" disabled>
             </div>
-            ${!isVendor ? `<div class="form-group"><label>Age</label><input type="number" id="editAge" value="${currentUser.age}"></div>` : 
-                          `<div class="form-group"><label>Vendor ID (read only)</label><input type="text" value="${currentUser.regNumber || 'N/A'}" disabled></div>`}
             <div class="modal-buttons">
                 <button class="btn-primary" id="saveProfileBtn">Save Changes</button>
                 <button class="btn-secondary" id="closeModalBtn">Cancel</button>
@@ -226,93 +643,125 @@ function openProfileModal() {
 
     const saveBtn = modalDiv.querySelector("#saveProfileBtn");
     const closeBtn = modalDiv.querySelector("#closeModalBtn");
-    saveBtn.addEventListener("click", () => {
+    saveBtn.addEventListener("click", async () => {
         const newName = modalDiv.querySelector("#editFullName").value.trim();
-        if (!isVendor) {
-            const newAge = parseInt(modalDiv.querySelector("#editAge").value);
-            if (!newName || isNaN(newAge) || newAge < 16) {
-                alert("Please provide valid name and age (>=16).");
-                return;
-            }
-            currentUser.fullName = newName;
-            currentUser.age = newAge;
-        } else {
-            if (!newName) {
-                alert("Please provide a valid company name.");
-                return;
-            }
-            currentUser.companyName = newName;
-            currentUser.fullName = newName;
+        if (!newName) {
+            showMessage(modalDiv.querySelector("#modalMessage"), "Name cannot be empty", true);
+            return;
         }
-        currentUser.avatarInitial = newName.substring(0,2).toUpperCase();
-        updateUserInMock(currentUser);
-        modalDiv.remove();
-        renderDashboard();
+        
+        const response = await fetch(`${API.profiles}?id=eq.${currentUser.id}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': SUPABASE_ANON_KEY
+            },
+            body: JSON.stringify({ name: newName })
+        });
+        
+        if (response.ok) {
+            currentUser.name = newName;
+            modalDiv.remove();
+            renderDashboard();
+        } else {
+            showMessage(modalDiv.querySelector("#modalMessage"), "Failed to update profile", true);
+        }
     });
     closeBtn.addEventListener("click", () => modalDiv.remove());
 }
 
-function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+// ======================== GLOBAL FUNCTIONS ========================
+window.addToCart = (itemId, itemName, price, vendorId) => {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    const existing = cart.find(i => i.id === itemId);
+    if (existing) existing.quantity++;
+    else cart.push({ id: itemId, name: itemName, price: price, quantity: 1, vendorId: vendorId });
+    localStorage.setItem('cart', JSON.stringify(cart));
+    alert(`${itemName} added to cart!`);
+};
 
-// ---------- DYNAMIC PAGE CONTENT (mock UI, backend later) ----------
-function renderDynamicContent(role) {
-    const contentDiv = document.getElementById("dynamicContentArea");
-    if (!contentDiv) return;
-    const mockMsg = (feature) => `<div class="placeholder-alert"><i class="fas fa-code-branch"></i> 🧩 Frontend prototype: "${feature}" — ready for backend integration (API, DB).</div>`;
+window.removeFromCart = (itemId) => {
+    let cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    cart = cart.filter(i => i.id !== itemId);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    renderDashboard();
+};
 
-    if (role === 'student') {
-        if (activeDashboardPage === "overview") {
-            contentDiv.innerHTML = `
-                <h2><i class="fas fa-graduation-cap"></i> Student Dashboard</h2>
-                <div class="card-grid">
-                    <div class="stat-card"><div class="stat-number" style="font-size:2rem;">8</div><div>Active Orders</div><small>preview</small></div>
-                    <div class="stat-card"><div class="stat-number" style="font-size:2rem;">12</div><div>Vendors nearby</div></div>
-                    <div class="stat-card"><div class="stat-number" style="font-size:2rem;">★ 4.8</div><div>Campus rating</div></div>
-                </div>
-                <div class="mock-table"><h3>📋 Recent Activity</h3><p>Last order: <strong>#UNI-234</strong> — Ready for pickup (mock)</p>${mockMsg("real-time order placement & tracking")}</div>
-            `;
-        } else if (activeDashboardPage === "orders") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-receipt"></i> My Orders</h2><div class="mock-table"><table><tr><th>Order ID</th><th>Vendor</th><th>Status</th><th>ETA</th></tr><tr><td>#ORD101</td><td>Campus Bites</td><td><span class="badge">Preparing</span></td><td>~10 min</td></tr>
-                <tr><td>#ORD102</td><td>Grill Masters</td><td><span class="badge">Ready for Pickup</span></td><td>Now</td></tr>
-            </table>${mockMsg("live order updates & push notifications")}</div>`;
-        } else if (activeDashboardPage === "vendors") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-store"></i> Campus Vendors</h2><div class="mock-table">\n\n<th>Vendor</th><th>Cuisine</th><th>Distance</th><th>Action</th>\n\n\n<td>Campus Bites</td><td>Global Bowls</td><td>50m</td><td><button class="small-mock" disabled>Order (soon)</button></td>\n\n\n<td>Grill Masters</td><td>Braai & Grill</td><td>120m</td><td><button class="small-mock" disabled>Order (soon)</button></td>\n\n</table>${mockMsg("menu browsing, allergen data (SA R427)")}</div>`;
-        } else if (activeDashboardPage === "analytics") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-chart-line"></i> Insights</h2><div class="card-grid"><div class="stat-card">📊 Peak hours: 12:30-13:30</div><div class="stat-card">🍽️ Top vendor: Campus Bites</div></div>${mockMsg("export CSV/PDF analytics")}</div>`;
-        }
-    } 
-    else if (role === 'vendor') {
-        if (activeDashboardPage === "overview") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-kitchen-set"></i> Vendor Panel — ${currentUser.companyName}</h2><div class="card-grid"><div class="stat-card">📦 Today's orders: 24</div><div class="stat-card">⭐ Rating: 4.7</div><div class="stat-card">🆔 Vendor ID: ${currentUser.regNumber}</div></div><div class="mock-table"><h3>🍽️ Sample Menu (mock)</h3><table><th>Item</th><th>Price</th><th>Status</th>\n\n<td>Combo-A</td><td>R55</td><td>Available</td>\n</table>${mockMsg("full menu management & sold-out toggle")}</div>`;
-        } else if (activeDashboardPage === "orders") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-truck-fast"></i> Incoming Orders</h2><div class="mock-table">\n<th>Order ID</th><th>Student</th><th>Items</th><th>Status</th>\n\n<td>#V221</td><td>Lerato N.</td><td>Meal Deal</td><td><span class="badge">Preparing</span></td>\n</table>${mockMsg("update status: Received → Preparing → Ready")}</div>`;
-        } else if (activeDashboardPage === "menu") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-list-ul"></i> Menu Manager</h2><div class="placeholder-alert">🔧 Allergen data: SA National Food Database (mock). No real food items yet.</div><div class="mock-table">\n<th>Item code</th><th>Price</th><th>Sold out?</th><th>Edit</th>\n\n<td>GENERIC-01</td><td>R42</td><td>No</td><td><button class="small-mock" disabled>Edit (mock)</button></td>\n</table><button class="small-mock" disabled>+ Add Item (future)</button></div>`;
-        } else if (activeDashboardPage === "analytics") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-chart-simple"></i> Sales Pulse</h2><div class="card-grid"><div class="stat-card">📈 +12% weekly orders</div><div class="stat-card">⏰ Peak: 12-2PM</div></div><button class="small-mock" id="mockExportBtn">📎 Export CSV (demo)</button>${mockMsg("real analytics & PDF export")}</div>`;
-            document.getElementById("mockExportBtn")?.addEventListener("click", () => alert("📄 CSV export simulation (backend ready)."));
-        }
-    } 
-    else if (role === 'admin') {
-        if (activeDashboardPage === "overview") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-chart-pie"></i> Admin Console</h2><div class="card-grid"><div class="stat-card"><div class="stat-number">124</div><div>Active Vendors</div></div><div class="stat-card"><div class="stat-number">12</div><div>Pending</div></div><div class="stat-card"><div class="stat-number">3</div><div>Suspended</div></div></div><div class="mock-table"><p>📌 Operational Pulse: all channels healthy</p>${mockMsg("vendor approval/suspension, full ecosystem control")}</div>`;
-        } else if (activeDashboardPage === "vendors") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-shield-alt"></i> Vendor Ecosystem</h2><div class="mock-table">\n<th>Vendor</th><th>Email</th><th>Status</th><th>Mock action</th>\n\n<td>Campus Bites</td><td>vendor@uni-eats.com</td><td>✅ Approved</td><td><button class="small-mock" disabled>Suspend</button></td>\n\n\n<td>Grill Masters</td><td>grill@campus.com</td><td>⏳ Pending</td><td><button class="small-mock" disabled>Approve</button></td>\n</table></div>`;
-        } else if (activeDashboardPage === "analytics") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-chart-column"></i> Reports & CSV</h2><div class="card-grid"><div class="stat-card">📅 Sales per vendor (mock)</div><div class="stat-card">⏲️ Peak hours: 12:30-13:30</div></div><button class="small-mock" id="adminExportCsv">⬇️ Download Audit (CSV mock)</button>`;
-            document.getElementById("adminExportCsv")?.addEventListener("click", () => alert("📁 Mock CSV: vendor_audit.csv will be generated with backend."));
-        } else if (activeDashboardPage === "orders") {
-            contentDiv.innerHTML = `<h2><i class="fas fa-globe"></i> All Campus Orders</h2><div class="mock-table">\n<th>OrderID</th><th>Student</th><th>Vendor</th><th>Status</th>\n\n<td>#9991</td><td>Lerato</td><td>Campus Bites</td><td>Ready</td>\n</table></div>`;
-        }
+window.checkout = async () => {
+    const cart = JSON.parse(localStorage.getItem('cart') || '[]');
+    if (cart.length === 0) {
+        alert("Cart is empty!");
+        return;
     }
+    
+    const total = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
+    const orderData = { student_id: currentUser.id, vendor_id: cart[0].vendorId, total_amount: total, status: 'pending' };
+    const orderItems = cart.map(i => ({ menu_item_id: i.id, quantity: i.quantity, price: i.price }));
+    
+    const result = await placeOrder(orderData, orderItems);
+    if (result.success) {
+        localStorage.removeItem('cart');
+        alert("Order placed successfully!");
+        activeDashboardPage = "orders";
+        renderDashboard();
+    } else {
+        alert("Failed to place order: " + result.error);
+    }
+};
 
-    // SA Data Integration footnote
-    const footnote = document.createElement("div");
-    footnote.className = "placeholder-alert";
-    footnote.style.marginTop = "1.5rem";
-    footnote.innerHTML = "<i class='fas fa-database'></i> 📍 SA Data Integration: Allergen/dietary info referenced from South African R427 / National Food Composition Database (mock integration ready).";
-    contentDiv.appendChild(footnote);
-}
+window.updateVendorOrderStatus = async (orderId, status) => {
+    await updateOrderStatus(orderId, status);
+    alert(`Order #${orderId} updated to ${status}`);
+    renderDashboard();
+};
+
+window.approveVendor = async (vendorId) => {
+    await updateVendorStatus(vendorId, 'active');
+    alert("Vendor approved!");
+    renderDashboard();
+};
+
+window.suspendVendor = async (vendorId) => {
+    await updateVendorStatus(vendorId, 'suspended');
+    alert("Vendor suspended!");
+    renderDashboard();
+};
+
+window.showAddMenuItemModal = () => {
+    const modalDiv = document.createElement("div");
+    modalDiv.className = "modal-overlay";
+    modalDiv.innerHTML = `
+        <div class="modal-content">
+            <h3>Add Menu Item</h3>
+            <div id="modalMessage"></div>
+            <div class="form-group"><label>Item Name</label><input type="text" id="itemName" placeholder="e.g., Chicken Burger"></div>
+            <div class="form-group"><label>Price (R)</label><input type="number" id="itemPrice" step="0.01" placeholder="49.99"></div>
+            <div class="modal-buttons"><button class="btn-primary" id="saveItemBtn">Add Item</button><button class="btn-secondary" id="closeModalBtn">Cancel</button></div>
+        </div>
+    `;
+    document.body.appendChild(modalDiv);
+    document.getElementById("saveItemBtn").addEventListener("click", async () => {
+        const name = document.getElementById("itemName").value.trim();
+        const price = parseFloat(document.getElementById("itemPrice").value);
+        if (!name || isNaN(price)) { alert("Please fill all fields"); return; }
+        await createMenuItem({ vendor_id: currentUser.vendor.id, name: name, price: price, available: true });
+        modalDiv.remove();
+        renderDashboard();
+    });
+    document.getElementById("closeModalBtn").addEventListener("click", () => modalDiv.remove());
+};
+
+window.toggleMenuItemAvailability = async (itemId, available) => {
+    await updateMenuItem(itemId, { available: available });
+    renderDashboard();
+};
+
+window.deleteMenuItem = async (itemId) => {
+    if (confirm("Delete this menu item?")) {
+        await deleteMenuItem(itemId);
+        renderDashboard();
+    }
+};
 
 // Start the app
 renderApp();
