@@ -6,18 +6,6 @@ A complete web-based food ordering platform where students can order from multip
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Live Demo](#live-demo)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [User Roles](#user-roles)
-- [Project Structure](#project-structure)
-- [Database Schema](#database-schema)
-- [Setup Instructions](#setup-instructions)
-- [Deployment](#deployment)
-- [Screenshots](#screenshots)
-- [Future Improvements](#future-improvements)
-
 ---
 
 ## Overview
