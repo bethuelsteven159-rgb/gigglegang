@@ -111,14 +111,18 @@
         showError("Supabase not initialized. Please refresh the page.");
         return;
     }
+
     showLoading(true);
+
     try {
         const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google'
+            provider: 'google',
+            options: {
+                redirectTo: 'https://bethuelsteven159-rgb.github.io/gigglegang/'
+            }
         });
 
         if (error) throw error;
-
     } catch (error) {
         console.error('Google sign-in error:', error);
         showError('Google login failed: ' + error.message);
