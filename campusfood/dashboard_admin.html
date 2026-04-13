@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard – Campus Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">🍔 Campus Food — Admin</span>
+  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
+    <span>👤 <span id="adminName"></span></span>
+    <button onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <h2>Welcome, <span id="adminNameWelcome"></span></h2>
+
+  <div class="cards">
+    <a class="card" href="admin_vendor_control.html">
+      <div class="icon">🏪</div>
+      <div class="label">Vendor Control</div>
+    </a>
+    <a class="card" href="admin_orders.html">
+      <div class="icon">📋</div>
+      <div class="label">All Orders</div>
+    </a>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="script.js"></script>
+<script>
+  const username = sessionStorage.getItem('username') || 'Admin';
+  document.getElementById('adminName').textContent = username;
+  document.getElementById('adminNameWelcome').textContent = username;
+
+  const role = sessionStorage.getItem('role');
+  if (role !== 'admin') {
+    window.location.href = 'index.html';
+  }
+</script>
+
+</body>
+</html>

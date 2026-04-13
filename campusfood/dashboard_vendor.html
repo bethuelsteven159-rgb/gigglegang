@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor Dashboard – Campus Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">🍔 Campus Food — Vendor</span>
+  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
+    <span>👤 <span id="vendorName"></span></span>
+    <button onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <h2>Welcome, <span id="vendorNameWelcome"></span></h2>
+
+  <div class="cards">
+    <a class="card" href="vendor_menu.html">
+      <div class="icon">🍽️</div>
+      <div class="label">Manage Menu</div>
+    </a>
+    <a class="card" href="vendor_orders.html">
+      <div class="icon">📦</div>
+      <div class="label">My Orders</div>
+    </a>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="script.js"></script>
+<script>
+  const username = sessionStorage.getItem('username') || 'Vendor';
+  document.getElementById('vendorName').textContent = username;
+  document.getElementById('vendorNameWelcome').textContent = username;
+
+  const role = sessionStorage.getItem('role');
+  if (role !== 'vendor') {
+    window.location.href = 'index.html';
+  }
+</script>
+
+</body>
+</html>
