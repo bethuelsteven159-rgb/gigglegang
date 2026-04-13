@@ -22,24 +22,25 @@ function toast(msg, type = "success") {
   }, 3000);
 }
 
-function setLoading(isLoading, text = "Checking your account...") {
+function showRoleSection(show = true) {
+  const roleSection = document.getElementById("roleSection");
+  if (roleSection) roleSection.style.display = show ? "block" : "none";
+}
+
+function setLoadingMessage(msg = "") {
   const loadingText = document.getElementById("loadingText");
-  const googleBtn = document.getElementById("googleLoginBtn");
-  const saveRoleBtn = document.getElementById("saveRoleBtn");
+  if (!loadingText) return;
 
-  if (loadingText) {
-    loadingText.style.display = isLoading ? "block" : "none";
-    loadingText.textContent = text;
+  if (msg) {
+    loadingText.style.display = "block";
+    loadingText.textContent = msg;
+  } else {
+    loadingText.style.display = "none";
+    loadingText.textContent = "";
   }
-
-  if (googleBtn) googleBtn.disabled = isLoading;
-  if (saveRoleBtn) saveRoleBtn.disabled = isLoading;
 }
 
 function getUsernameFromUser(user) {
-  const metaUsername = user?.user_metadata?.username;
-  if (metaUsername && metaUsername.trim()) return metaUsername.trim();
-
   const fullName = user?.user_metadata?.full_name;
   if (fullName && fullName.trim()) return fullName.trim();
 
@@ -47,15 +48,10 @@ function getUsernameFromUser(user) {
   return email.split("@")[0] || "user";
 }
 
-function showRoleSection(show = true) {
-  const roleSection = document.getElementById("roleSection");
-  if (roleSection) roleSection.style.display = show ? "block" : "none";
-}
-
 function storeSessionUser(user, role, username) {
   sessionStorage.setItem("userId", user.id);
   sessionStorage.setItem("email", user.email || "");
-  sessionStorage.setItem("username", username || getUsernameFromUser(user));
+  sessionStorage.setItem("username", username);
   sessionStorage.setItem("role", role);
 }
 
@@ -69,50 +65,40 @@ function redirectByRole(role) {
   window.location.href = routes[role] || "dashboard_student.html";
 }
 
-// ==================== GOOGLE LOGIN ====================
+// ==================== AUTH ====================
 async function signInWithGoogle() {
   try {
-    console.log("Google button clicked");
+    setLoadingMessage("Redirecting to Google...");
 
-    setLoading(true, "Redirecting to Google...");
-
-    const redirectTo = "https://bethuelsteven159-rgb.github.io/gigglegang/";
-
-    const { data, error } = await sb.auth.signInWithOAuth({
+    const { error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo,
-        queryParams: {
-          prompt: "select_account"
-        }
+        redirectTo: "https://bethuelsteven159-rgb.github.io/gigglegang/"
       }
     });
 
-    console.log("OAuth result:", data, error);
-
     if (error) throw error;
   } catch (err) {
-    console.error("Google sign-in error:", err);
-    toast(err.message || "Google sign-in failed", "error");
-    setLoading(false);
+    console.error("Google login error:", err);
+    toast(err.message || "Google sign in failed", "error");
+    setLoadingMessage("");
   }
 }
 
 async function getExistingRole(user) {
-  const email = user.email || "";
   const username = getUsernameFromUser(user);
 
-  if (email === "admin123@campusfood.com") {
+  if (user.email === "admin123@campusfood.com") {
     return { role: "admin", username };
   }
 
-  const { data: vendorData } = await sb
+  const { data: vendorData, error: vendorError } = await sb
     .from("vendors")
     .select("id, username, status")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (vendorData) {
+  if (!vendorError && vendorData) {
     return {
       role: "vendor",
       username: vendorData.username || username,
@@ -120,13 +106,13 @@ async function getExistingRole(user) {
     };
   }
 
-  const { data: studentData } = await sb
+  const { data: studentData, error: studentError } = await sb
     .from("students")
     .select("id, username")
     .eq("id", user.id)
     .maybeSingle();
 
-  if (studentData) {
+  if (!studentError && studentData) {
     return {
       role: "student",
       username: studentData.username || username
@@ -136,45 +122,45 @@ async function getExistingRole(user) {
   return null;
 }
 
-async function handleLoggedInUser() {
+async function checkLoginAfterRedirect() {
   try {
+    setLoadingMessage("Checking your account...");
+
     const { data, error } = await sb.auth.getSession();
     if (error) throw error;
 
-    const session = data.session;
-    if (!session || !session.user) {
-      setLoading(false);
+    const user = data.session?.user;
+    if (!user) {
+      setLoadingMessage("");
       return;
     }
 
-    const user = session.user;
     const username = getUsernameFromUser(user);
-    const existing = await getExistingRole(user);
+    const existingRole = await getExistingRole(user);
 
-    if (!existing) {
+    if (!existingRole) {
+      setLoadingMessage("");
       showRoleSection(true);
-      setLoading(false);
       return;
     }
 
-    storeSessionUser(user, existing.role, existing.username || username);
-    redirectByRole(existing.role);
+    storeSessionUser(user, existingRole.role, existingRole.username || username);
+    redirectByRole(existingRole.role);
   } catch (err) {
-    console.error("Session handling error:", err);
-    toast(err.message || "Failed to check login session", "error");
-    setLoading(false);
+    console.error("Session check error:", err);
+    toast(err.message || "Failed to check login", "error");
+    setLoadingMessage("");
   }
 }
 
 async function saveRoleForFirstTimeUser() {
   try {
-    setLoading(true, "Saving your account type...");
+    setLoadingMessage("Saving account type...");
 
-    const chosenRole = document.getElementById("roleSelect")?.value;
-
-    if (!chosenRole) {
-      toast("Please choose a role", "error");
-      setLoading(false);
+    const role = document.getElementById("roleSelect")?.value;
+    if (!role) {
+      toast("Choose a role first", "error");
+      setLoadingMessage("");
       return;
     }
 
@@ -183,76 +169,71 @@ async function saveRoleForFirstTimeUser() {
 
     const user = data.session?.user;
     if (!user) {
-      toast("No active session found. Please sign in again.", "error");
-      setLoading(false);
+      toast("Please sign in with Google first", "error");
+      setLoadingMessage("");
       return;
     }
 
     const username = getUsernameFromUser(user);
 
-    await sb.auth.updateUser({
-      data: {
-        username,
-        role: chosenRole
-      }
-    });
-
-    if (chosenRole === "vendor") {
-      const { error: insertVendorError } = await sb
+    if (role === "vendor") {
+      const { error: vendorError } = await sb
         .from("vendors")
         .upsert([{
           id: user.id,
-          username,
+          username: username,
           status: "pending"
         }], { onConflict: "id" });
 
-      if (insertVendorError) throw insertVendorError;
-
-      storeSessionUser(user, "vendor", username);
-      redirectByRole("vendor");
-      return;
+      if (vendorError) throw vendorError;
     }
 
-    if (chosenRole === "student") {
-      const { error: insertStudentError } = await sb
+    if (role === "student") {
+      const { error: studentError } = await sb
         .from("students")
         .upsert([{
           id: user.id,
-          username
+          username: username
         }], { onConflict: "id" });
 
-      if (insertStudentError) throw insertStudentError;
-
-      storeSessionUser(user, "student", username);
-      redirectByRole("student");
-      return;
+      if (studentError) throw studentError;
     }
 
-    setLoading(false);
+    await sb.auth.updateUser({
+      data: {
+        role: role,
+        username: username
+      }
+    });
+
+    storeSessionUser(user, role, username);
+    redirectByRole(role);
   } catch (err) {
     console.error("Save role error:", err);
     toast(err.message || "Failed to save role", "error");
-    setLoading(false);
+    setLoadingMessage("");
   }
 }
 
 // ==================== STARTUP ====================
-window.addEventListener("load", async () => {
-  console.log("script loaded");
-
+document.addEventListener("DOMContentLoaded", () => {
   const googleBtn = document.getElementById("googleLoginBtn");
   const saveRoleBtn = document.getElementById("saveRoleBtn");
 
-  console.log("googleBtn =", googleBtn);
-  console.log("saveRoleBtn =", saveRoleBtn);
+  if (googleBtn) googleBtn.addEventListener("click", signInWithGoogle);
+  if (saveRoleBtn) saveRoleBtn.addEventListener("click", saveRoleForFirstTimeUser);
 
-  if (googleBtn) {
-    googleBtn.onclick = signInWithGoogle;
-  }
-
-  if (saveRoleBtn) {
-    saveRoleBtn.onclick = saveRoleForFirstTimeUser;
-  }
-
-  await handleLoggedInUser();
+  checkLoginAfterRedirect();
 });
+
+// ==================== LOGOUT ====================
+async function logout() {
+  try {
+    await sb.auth.signOut();
+  } catch (err) {
+    console.error("Logout error:", err);
+  }
+
+  sessionStorage.clear();
+  window.location.href = "index.html";
+}
