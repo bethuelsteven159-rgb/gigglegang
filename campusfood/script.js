@@ -425,7 +425,7 @@ async function addMenuItem() {
 
   if (uploadError) {
     console.error(uploadError);
-    toast("Image upload failed", "error");
+    toast(uploadError.message, "error");
     return;
   }
 
