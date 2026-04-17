@@ -375,42 +375,24 @@ async function loadVendorMenu() {
     container.innerHTML = "<p>No items yet.</p>";
     return;
   }
+container.innerHTML = data.map(item => `
+  <div class="menu-item">
+    <div><b>${item.name}</b></div>
 
-  container.innerHTML = data.map(item => `
-  <div class="menu-item" style="padding:1rem; border:1px solid #ddd; border-radius:10px; margin-bottom:10px;">
+    <img src="${item.image_url}" 
+         style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin:5px 0;" />
 
-    <!-- ITEM NAME -->
-    <h3 style="margin:0 0 8px 0;">${item.name}</h3>
+    <div>${item.description || ""}</div>
 
-    <!-- IMAGE -->
-    <img 
-      src="${item.image_url || 'https://via.placeholder.com/120'}" 
-      alt="${item.name}" 
-      style="width:120px; height:120px; object-fit:cover; border-radius:10px; display:block; margin-bottom:8px;"
-    />
+    <div>R${item.price}</div>
 
-    <!-- DESCRIPTION -->
-    <p style="margin:0 0 8px 0; color:#555;">
-      ${item.description || 'No description yet'}
-    </p>
+    <div>${item.status}</div>
 
-    <!-- PRICE -->
-    <div><strong>R${item.price}</strong></div>
+    <button onclick="toggleSoldOut(${item.id}, ${item.status === "sold_out"})">
+      ${item.status === "sold_out" ? "Mark Available" : "Mark Sold Out"}
+    </button>
 
-    <!-- STATUS -->
-    <div>Status: ${item.status}</div>
-
-    <!-- ACTIONS -->
-    <div style="margin-top:10px; display:flex; gap:10px;">
-      <button onclick="toggleSoldOut(${item.id}, ${item.status === "sold_out"})">
-        ${item.status === "sold_out" ? "Mark Available" : "Mark Sold Out"}
-      </button>
-
-      <button onclick="deleteMenuItem(${item.id})">
-        Delete
-      </button>
-    </div>
-
+    <button onclick="deleteMenuItem(${item.id})">Delete</button>
   </div>
 `).join("");
 }
