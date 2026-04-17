@@ -416,20 +416,15 @@ async function loadVendorMenu() {
 }
 
 async function addMenuItem() {
-   const nameEl = document.getElementById("itemName");
-  const priceEl = document.getElementById("itemPrice");
-  const descEl = document.getElementById("itemDescription");
-  const imageEl = document.getElementById("itemImage");
-
-  const name = nameEl?.value.trim();
-  const price = Number(priceEl?.value);
-  const description = descEl?.value.trim();
-  const file = imageEl?.files[0];
+  const name = document.getElementById("itemName")?.value.trim();
+  const price = Number(document.getElementById("itemPrice")?.value);
+  const description = document.getElementById("itemDescription")?.value.trim();
+  const file = document.getElementById("itemImage")?.files[0];
 
   const username = sessionStorage.getItem("username");
 
-  if (!name || !price) {
-    toast("Fill in name and price", "error");
+  if (!name || !price || !file) {
+    toast("Fill all fields including image", "error");
     return;
   }
 
@@ -439,51 +434,43 @@ async function addMenuItem() {
     return;
   }
 
-  let imageUrl = null;
+  //  Upload image to Supabase Storage
+  const fileName = `${Date.now()}_${file.name}`;
 
-  // Upload image to Supabase Storage (if file selected)
-  if (file) {
-    const fileName = `${Date.now()}_${file.name}`;
+  const { error: uploadError } = await sb.storage
+    .from("menu_images")
+    .upload(fileName, file);
 
-    const { error: uploadError } = await sb.storage
-      .from("menu-images")
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.error(uploadError);
-      toast("Image upload failed", "error");
-      return;
-    }
-
-    const { data } = sb.storage
-      .from("menu-images")
-      .getPublicUrl(fileName);
-
-    imageUrl = data.publicUrl;
+  if (uploadError) {
+    console.error(uploadError);
+    toast("Image upload failed", "error");
+    return;
   }
 
-  // Insert into database
-  const { error } = await sb.from("menu").insert([{
-    vendor_id: vendorId,
-    name,
-    price,
-    description,
-    image_url: imageUrl,
-    status: "available"
-  }]);
+  // Get public URL
+  const { data: urlData } = sb.storage
+    .from("menu_images")
+    .getPublicUrl(fileName);
+
+  const imageUrl = urlData.publicUrl;
+
+  // Save menu item in database
+  const { error } = await sb
+    .from("menu")
+    .insert([{
+      vendor_id: vendorId,
+      name,
+      price,
+      description,
+      image_url: imageUrl,
+      status: "available"
+    }]);
 
   if (error) {
     console.error(error);
     toast("Failed to add item", "error");
   } else {
     toast("Item added successfully");
-
-    // clear form
-    nameEl.value = "";
-    priceEl.value = "";
-    descEl.value = "";
-    imageEl.value = "";
-
     loadVendorMenu();
   }
 }
