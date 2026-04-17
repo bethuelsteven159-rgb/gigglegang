@@ -377,16 +377,42 @@ async function loadVendorMenu() {
   }
 
   container.innerHTML = data.map(item => `
-    <div class="menu-item">
-      <div>${item.name}</div>
-      <div>R${item.price}</div>
-      <div>${item.status}</div>
+  <div class="menu-item" style="padding:1rem; border:1px solid #ddd; border-radius:10px; margin-bottom:10px;">
+
+    <!-- ITEM NAME -->
+    <h3 style="margin:0 0 8px 0;">${item.name}</h3>
+
+    <!-- IMAGE -->
+    <img 
+      src="${item.image_url || 'https://via.placeholder.com/120'}" 
+      alt="${item.name}" 
+      style="width:120px; height:120px; object-fit:cover; border-radius:10px; display:block; margin-bottom:8px;"
+    />
+
+    <!-- DESCRIPTION -->
+    <p style="margin:0 0 8px 0; color:#555;">
+      ${item.description || 'No description yet'}
+    </p>
+
+    <!-- PRICE -->
+    <div><strong>R${item.price}</strong></div>
+
+    <!-- STATUS -->
+    <div>Status: ${item.status}</div>
+
+    <!-- ACTIONS -->
+    <div style="margin-top:10px; display:flex; gap:10px;">
       <button onclick="toggleSoldOut(${item.id}, ${item.status === "sold_out"})">
         ${item.status === "sold_out" ? "Mark Available" : "Mark Sold Out"}
       </button>
-      <button onclick="deleteMenuItem(${item.id})">Delete</button>
+
+      <button onclick="deleteMenuItem(${item.id})">
+        Delete
+      </button>
     </div>
-  `).join("");
+
+  </div>
+`).join("");
 }
 
 async function addMenuItem() {
