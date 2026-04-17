@@ -18,11 +18,29 @@
 </nav>
 
 <div class="page">
-  <h2>Available Menu</h2>
-  <div id="menuContainer" class="menu-grid">
-    <p style="color:var(--muted)">Loading menu…</p>
+  <!-- Toggle Buttons -->
+  <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+    <button id="browseByMenuBtn" class="btn btn-primary">Browse by Menu</button>
+    <button id="browseByVendorBtn" class="btn" style="background: var(--surface-alt); color: var(--text);">Browse by Vendor</button>
   </div>
 
+  <!-- Menu Items View (default) -->
+  <div id="menuView">
+    <h2>Available Menu</h2>
+    <div id="menuContainer" class="menu-grid">
+      <p style="color:var(--muted)">Loading menu…</p>
+    </div>
+  </div>
+
+  <!-- Vendors View (hidden by default) -->
+  <div id="vendorsView" style="display: none;">
+    <h2>All Vendors</h2>
+    <div id="vendorsContainer" class="menu-grid">
+      <p style="color:var(--muted)">Loading vendors…</p>
+    </div>
+  </div>
+
+  <!-- Cart Panel -->
   <div class="panel" id="cartPanel" style="margin-top:2rem; display:none;">
     <h2>Your Cart</h2>
     <div id="cartItems"></div>
@@ -39,7 +57,134 @@
   const username = sessionStorage.getItem('username') || 'Student';
   document.getElementById('studentName').textContent = username;
 
-  window.addEventListener('load', loadStudentMenu);
+  // Get elements
+  const menuView = document.getElementById('menuView');
+  const vendorsView = document.getElementById('vendorsView');
+  const browseByMenuBtn = document.getElementById('browseByMenuBtn');
+  const browseByVendorBtn = document.getElementById('browseByVendorBtn');
+
+  // Toggle to Menu View
+  browseByMenuBtn.addEventListener('click', () => {
+    menuView.style.display = 'block';
+    vendorsView.style.display = 'none';
+    
+    // Update button styles
+    browseByMenuBtn.className = 'btn btn-primary';
+    browseByVendorBtn.className = 'btn';
+    browseByVendorBtn.style.background = 'var(--surface-alt)';
+    browseByVendorBtn.style.color = 'var(--text)';
+    
+    // Reload menu
+    loadStudentMenu();
+  });
+
+  // Toggle to Vendors View
+  browseByVendorBtn.addEventListener('click', () => {
+    menuView.style.display = 'none';
+    vendorsView.style.display = 'block';
+    
+    // Update button styles
+    browseByVendorBtn.className = 'btn btn-primary';
+    browseByMenuBtn.className = 'btn';
+    browseByMenuBtn.style.background = 'var(--surface-alt)';
+    browseByMenuBtn.style.color = 'var(--text)';
+    
+    // Load vendors
+    loadVendorsList();
+  });
+
+  // Function to load all approved vendors
+  async function loadVendorsList() {
+    const container = document.getElementById('vendorsContainer');
+    if (!container) return;
+
+    const { data: vendors, error } = await sb
+      .from('vendors')
+      .select('id, username')
+      .eq('status', 'approved');
+
+    if (error || !vendors || vendors.length === 0) {
+      container.innerHTML = '<p style="color:var(--muted)">No vendors available yet.</p>';
+      return;
+    }
+
+    container.innerHTML = vendors.map(vendor => `
+      <div class="menu-item" style="cursor: pointer;" onclick="showVendorMenu('${vendor.id}', '${vendor.username}')">
+        <div style="font-weight: bold; font-size: 1.2rem;">🏪 ${vendor.username}</div>
+        <div style="color: var(--accent); margin-top: 0.5rem;">Click to view menu →</div>
+      </div>
+    `).join('');
+  }
+
+  // Function to show menu for a specific vendor
+  window.showVendorMenu = async function(vendorId, vendorName) {
+    const container = document.getElementById('menuContainer');
+    if (!container) return;
+
+    // Switch to menu view
+    menuView.style.display = 'block';
+    vendorsView.style.display = 'none';
+    
+    // Update button styles
+    browseByMenuBtn.className = 'btn btn-primary';
+    browseByVendorBtn.className = 'btn';
+    browseByVendorBtn.style.background = 'var(--surface-alt)';
+    browseByVendorBtn.style.color = 'var(--text)';
+
+    // Show loading state
+    container.innerHTML = `<p style="color:var(--muted)">Loading ${vendorName}'s menu...</p>`;
+
+    // Fetch menu items for this vendor
+    const { data: menu, error } = await sb
+      .from('menu')
+      .select('*')
+      .eq('vendor_id', vendorId)
+      .eq('status', 'available');
+
+    if (error || !menu || menu.length === 0) {
+      container.innerHTML = `<p style="color:var(--muted)">No items available from ${vendorName} yet.</p>`;
+      return;
+    }
+
+    // Update the heading
+    const menuHeading = document.querySelector('#menuView h2');
+    if (menuHeading) {
+      menuHeading.innerHTML = `${vendorName} Menu <button onclick="resetToAllMenu()" style="margin-left: 1rem; padding: 0.25rem 0.75rem; font-size: 0.8rem;" class="btn">Back to All Menu</button>`;
+    }
+
+    container.innerHTML = menu.map(item => `
+      <div class="menu-item">
+        <div style="font-weight: bold;">${item.name}</div>
+        <div>R${item.price}</div>
+        <div style="font-size: 12px; color: var(--text-muted);">${item.description || ''}</div>
+        ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ''}
+        <button class="btn btn-primary btn-sm" onclick="addToCart('${item.id}', '${item.name}', ${item.price}, '${vendorId}')">
+          + Add to Cart
+        </button>
+      </div>
+    `).join('');
+
+    // Reload cart display
+    const savedCart = sessionStorage.getItem('cart');
+    if (savedCart) {
+      cart = JSON.parse(savedCart);
+      updateCartDisplay();
+    }
+  };
+
+  // Function to reset to all menu view
+  window.resetToAllMenu = function() {
+    const menuHeading = document.querySelector('#menuView h2');
+    if (menuHeading) {
+      menuHeading.innerHTML = 'Available Menu';
+    }
+    loadStudentMenu();
+  };
+
+  // Load initial menu
+  window.addEventListener('load', () => {
+    loadStudentMenu();
+  });
 </script>
 
 </body>
