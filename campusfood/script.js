@@ -398,15 +398,20 @@ container.innerHTML = data.map(item => `
 }
 
 async function addMenuItem() {
-  const name = document.getElementById("itemName")?.value.trim();
-  const price = Number(document.getElementById("itemPrice")?.value);
-  const description = document.getElementById("itemDescription")?.value.trim();
-  const file = document.getElementById("itemImage")?.files[0];
+  const nameEl = document.getElementById("itemName");
+  const priceEl = document.getElementById("itemPrice");
+  const descEl = document.getElementById("itemDescription");
+  const imageEl = document.getElementById("itemImage");
+
+  const name = nameEl?.value.trim();
+  const price = Number(priceEl?.value);
+  const description = descEl?.value.trim();
+  const file = imageEl?.files[0];
 
   const username = sessionStorage.getItem("username");
 
-  if (!name || !price || !file) {
-    toast("Fill all fields including image", "error");
+  if (!name || !price || !description) {
+    toast("Fill in all fields", "error");
     return;
   }
 
@@ -416,27 +421,33 @@ async function addMenuItem() {
     return;
   }
 
-  //  Upload image to Supabase Storage
-  const fileName = `${Date.now()}_${file.name}`;
+  let imageUrl = null;
 
-  const { error: uploadError } = await sb.storage
-    .from("menu_images")
-    .upload(fileName, file);
+  // ================= UPLOAD IMAGE =================
+  if (file) {
+    const fileName = `${Date.now()}-${file.name}`;
 
-  if (uploadError) {
-    console.error(uploadError);
-    toast(uploadError.message, "error");
-    return;
+    const { data: uploadData, error: uploadError } = await sb
+      .storage
+      .from("menu_images")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error(uploadError);
+      toast("Image upload failed", "error");
+      return;
+    }
+
+    // Get public URL
+    const { data: urlData } = sb
+      .storage
+      .from("menu_images")
+      .getPublicUrl(fileName);
+
+    imageUrl = urlData.publicUrl;
   }
 
-  // Get public URL
-  const { data: urlData } = sb.storage
-    .from("menu_images")
-    .getPublicUrl(fileName);
-
-  const imageUrl = urlData.publicUrl;
-
-  // Save menu item in database
+  // ================= SAVE TO DATABASE =================
   const { error } = await sb
     .from("menu")
     .insert([{
@@ -453,6 +464,10 @@ async function addMenuItem() {
     toast("Failed to add item", "error");
   } else {
     toast("Item added successfully");
+    nameEl.value = "";
+    priceEl.value = "";
+    descEl.value = "";
+    imageEl.value = "";
     loadVendorMenu();
   }
 }
