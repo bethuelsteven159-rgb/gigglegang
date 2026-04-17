@@ -382,7 +382,7 @@ container.innerHTML = data.map(item => `
 
     ${item.image_url ? `
       <img src="${item.image_url}" 
-           style="width:100px;height:100px;object-fit:cover;border-radius:8px;margin:5px 0;" />
+           style="width:180px;height:180px;object-fit:cover;border-radius:10px;margin:8px 0;" />
     ` : ""}
 
     <div>${item.description || ""}</div>
