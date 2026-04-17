@@ -390,15 +390,20 @@ async function loadVendorMenu() {
 }
 
 async function addMenuItem() {
-  const nameEl = document.getElementById("itemName");
+   const nameEl = document.getElementById("itemName");
   const priceEl = document.getElementById("itemPrice");
+  const descEl = document.getElementById("itemDescription");
+  const imageEl = document.getElementById("itemImage");
 
   const name = nameEl?.value.trim();
   const price = Number(priceEl?.value);
+  const description = descEl?.value.trim();
+  const file = imageEl?.files[0];
+
   const username = sessionStorage.getItem("username");
 
   if (!name || !price) {
-    toast("Fill in both fields", "error");
+    toast("Fill in name and price", "error");
     return;
   }
 
@@ -408,16 +413,51 @@ async function addMenuItem() {
     return;
   }
 
-  const { error } = await sb
-    .from("menu")
-    .insert([{ vendor_id: vendorId, name, price, status: "available" }]);
+  let imageUrl = null;
+
+  // Upload image to Supabase Storage (if file selected)
+  if (file) {
+    const fileName = `${Date.now()}_${file.name}`;
+
+    const { error: uploadError } = await sb.storage
+      .from("menu-images")
+      .upload(fileName, file);
+
+    if (uploadError) {
+      console.error(uploadError);
+      toast("Image upload failed", "error");
+      return;
+    }
+
+    const { data } = sb.storage
+      .from("menu-images")
+      .getPublicUrl(fileName);
+
+    imageUrl = data.publicUrl;
+  }
+
+  // Insert into database
+  const { error } = await sb.from("menu").insert([{
+    vendor_id: vendorId,
+    name,
+    price,
+    description,
+    image_url: imageUrl,
+    status: "available"
+  }]);
 
   if (error) {
+    console.error(error);
     toast("Failed to add item", "error");
   } else {
-    toast("Item added");
+    toast("Item added successfully");
+
+    // clear form
     nameEl.value = "";
     priceEl.value = "";
+    descEl.value = "";
+    imageEl.value = "";
+
     loadVendorMenu();
   }
 }
