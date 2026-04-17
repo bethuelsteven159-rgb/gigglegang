@@ -276,7 +276,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (googleBtn) googleBtn.addEventListener("click", signInWithGoogle);
   if (saveRoleBtn) saveRoleBtn.addEventListener("click", saveRoleForFirstTimeUser);
 
-  // Only run login redirect logic on index page
   if (currentPage === "index.html" || currentPage === "") {
     checkLoginAfterRedirect();
   }
@@ -375,37 +374,22 @@ async function loadVendorMenu() {
     container.innerHTML = "<p>No items yet.</p>";
     return;
   }
-container.innerHTML = data.map(item => `
-  <div class="menu-item">
 
-    <div style="font-weight:bold">${item.name}</div>
-
-    ${item.image_url ? `
-  <img src="${item.image_url}" 
-    style="
-      display: block;
-      margin: 10px auto;
-      width: 180px;
-      height: 180px;
-      object-fit: cover;
-      border-radius: 10px;
-    "
-  />
-` : ""}
-    <div>${item.description || ""}</div>
-
-    <div>R${item.price}</div>
-
-    <div>${item.status}</div>
-
-    <button onclick="toggleSoldOut(${item.id}, ${item.status === "sold_out"})">
-      ${item.status === "sold_out" ? "Mark Available" : "Mark Sold Out"}
-    </button>
-
-    <button onclick="deleteMenuItem(${item.id})">Delete</button>
-
-  </div>
-`).join("");
+  container.innerHTML = data.map(item => `
+    <div class="menu-item">
+      <div style="font-weight:bold">${item.name}</div>
+      ${item.image_url ? `
+        <img src="${item.image_url}" style="display: block; margin: 10px auto; width: 180px; height: 180px; object-fit: cover; border-radius: 10px;" />
+      ` : ""}
+      <div>${item.description || ""}</div>
+      <div>R${item.price}</div>
+      <div>${item.status}</div>
+      <button onclick="toggleSoldOut(${item.id}, ${item.status === "sold_out"})">
+        ${item.status === "sold_out" ? "Mark Available" : "Mark Sold Out"}
+      </button>
+      <button onclick="deleteMenuItem(${item.id})">Delete</button>
+    </div>
+  `).join("");
 }
 
 async function addMenuItem() {
@@ -434,7 +418,6 @@ async function addMenuItem() {
 
   let imageUrl = null;
 
-  // ================= UPLOAD IMAGE =================
   if (file) {
     const fileName = `${Date.now()}-${file.name}`;
 
@@ -449,7 +432,6 @@ async function addMenuItem() {
       return;
     }
 
-    // Get public URL
     const { data: urlData } = sb
       .storage
       .from("menu_images")
@@ -458,7 +440,6 @@ async function addMenuItem() {
     imageUrl = urlData.publicUrl;
   }
 
-  // ================= SAVE TO DATABASE =================
   const { error } = await sb
     .from("menu")
     .insert([{
@@ -617,11 +598,13 @@ async function loadStudentMenu() {
 
   container.innerHTML = allMenu.map(item => `
     <div class="menu-item">
-      <div>${item.name}</div>
+      <div style="font-weight: bold;">${item.name}</div>
       <div>R${item.price}</div>
-      <div>${item.vendor_name}</div>
-      <button onclick="addToCart('${item.id}', '${item.name}', ${item.price}, '${item.vendor_id}')">
-        Add to Cart
+      <div style="font-size: 12px; color: var(--text-muted);">${item.vendor_name}</div>
+      <div style="font-size: 12px; color: var(--text-muted);">${item.description || ""}</div>
+      ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ""}
+      <button class="btn btn-primary btn-sm" onclick="addToCart('${item.id}', '${item.name}', ${item.price}, '${item.vendor_id}')">
+        + Add to Cart
       </button>
     </div>
   `).join("");
@@ -720,6 +703,96 @@ async function placeOrder() {
   }
 }
 
+// ==================== STUDENT: BROWSE BY VENDOR ====================
+
+async function loadVendorsList() {
+  const container = document.getElementById("vendorsContainer");
+  if (!container) return;
+
+  const { data: vendors, error } = await sb
+    .from("vendors")
+    .select("id, username")
+    .eq("status", "approved");
+
+  if (error || !vendors || vendors.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted)">No vendors available yet.</p>';
+    return;
+  }
+
+  container.innerHTML = vendors.map(vendor => `
+    <div class="menu-item" style="cursor: pointer;" onclick="showVendorMenu('${vendor.id}', '${vendor.username}')">
+      <div style="font-weight: bold; font-size: 1.2rem;">🏪 ${vendor.username}</div>
+      <div style="color: var(--accent); margin-top: 0.5rem;">Click to view menu →</div>
+    </div>
+  `).join('');
+}
+
+async function showVendorMenu(vendorId, vendorName) {
+  const container = document.getElementById("menuContainer");
+  if (!container) return;
+
+  const menuView = document.getElementById("menuView");
+  const vendorsView = document.getElementById("vendorsView");
+  const browseByMenuBtn = document.getElementById("browseByMenuBtn");
+  const browseByVendorBtn = document.getElementById("browseByVendorBtn");
+
+  if (menuView && vendorsView) {
+    menuView.style.display = "block";
+    vendorsView.style.display = "none";
+  }
+
+  if (browseByMenuBtn && browseByVendorBtn) {
+    browseByMenuBtn.className = "btn btn-primary";
+    browseByVendorBtn.className = "btn";
+    browseByVendorBtn.style.background = "var(--surface-alt)";
+    browseByVendorBtn.style.color = "var(--text)";
+  }
+
+  container.innerHTML = `<p style="color:var(--muted)">Loading ${vendorName}'s menu...</p>`;
+
+  const { data: menu, error } = await sb
+    .from("menu")
+    .select("*")
+    .eq("vendor_id", vendorId)
+    .eq("status", "available");
+
+  if (error || !menu || menu.length === 0) {
+    container.innerHTML = `<p style="color:var(--muted)">No items available from ${vendorName} yet.</p>`;
+    return;
+  }
+
+  const menuHeading = document.querySelector("#menuView h2");
+  if (menuHeading) {
+    menuHeading.innerHTML = `${vendorName} Menu <button onclick="resetToAllMenu()" style="margin-left: 1rem; padding: 0.25rem 0.75rem; font-size: 0.8rem;" class="btn">Back to All Menu</button>`;
+  }
+
+  container.innerHTML = menu.map(item => `
+    <div class="menu-item">
+      <div style="font-weight: bold;">${item.name}</div>
+      <div>R${item.price}</div>
+      <div style="font-size: 12px; color: var(--text-muted);">${item.description || ""}</div>
+      ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ""}
+      <button class="btn btn-primary btn-sm" onclick="addToCart('${item.id}', '${item.name}', ${item.price}, '${vendorId}')">
+        + Add to Cart
+      </button>
+    </div>
+  `).join("");
+
+  const savedCart = sessionStorage.getItem("cart");
+  if (savedCart) {
+    cart = JSON.parse(savedCart);
+    updateCartDisplay();
+  }
+}
+
+function resetToAllMenu() {
+  const menuHeading = document.querySelector("#menuView h2");
+  if (menuHeading) {
+    menuHeading.innerHTML = "Available Menu";
+  }
+  loadStudentMenu();
+}
+
 // ==================== STUDENT: ORDER HISTORY ====================
 async function loadStudentOrderHistory() {
   const tbody = document.getElementById("historyBody");
@@ -812,3 +885,8 @@ window.updateCartDisplay = updateCartDisplay;
 window.placeOrder = placeOrder;
 window.loadStudentOrderHistory = loadStudentOrderHistory;
 window.loadAllOrders = loadAllOrders;
+
+// NEW EXPORTS for Browse by Vendor
+window.loadVendorsList = loadVendorsList;
+window.showVendorMenu = showVendorMenu;
+window.resetToAllMenu = resetToAllMenu;
