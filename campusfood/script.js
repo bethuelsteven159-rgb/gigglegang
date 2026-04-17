@@ -377,10 +377,13 @@ async function loadVendorMenu() {
   }
 container.innerHTML = data.map(item => `
   <div class="menu-item">
-    <div><b>${item.name}</b></div>
 
-    <img src="${item.image_url}" 
-         style="width:100%;max-height:120px;object-fit:cover;border-radius:8px;margin:5px 0;" />
+    <div style="font-weight:bold">${item.name}</div>
+
+    ${item.image_url ? `
+      <img src="${item.image_url}" 
+           style="width:100px;height:100px;object-fit:cover;border-radius:8px;margin:5px 0;" />
+    ` : ""}
 
     <div>${item.description || ""}</div>
 
@@ -393,6 +396,7 @@ container.innerHTML = data.map(item => `
     </button>
 
     <button onclick="deleteMenuItem(${item.id})">Delete</button>
+
   </div>
 `).join("");
 }
