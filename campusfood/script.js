@@ -381,10 +381,17 @@ container.innerHTML = data.map(item => `
     <div style="font-weight:bold">${item.name}</div>
 
     ${item.image_url ? `
-      <img src="${item.image_url}" 
-           style="width:180px;height:180px;object-fit:cover;border-radius:10px;margin:8px 0;" />
-    ` : ""}
-
+  <img src="${item.image_url}" 
+    style="
+      display: block;
+      margin: 10px auto;
+      width: 180px;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+    "
+  />
+` : ""}
     <div>${item.description || ""}</div>
 
     <div>R${item.price}</div>
