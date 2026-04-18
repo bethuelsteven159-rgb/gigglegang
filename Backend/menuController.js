@@ -1,9 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
-
-const SUPABASE_URL = 'https://mslvqduxmkuusuyaewej.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbHZxZHV4bWt1dXN1eWFld2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODkzNDcsImV4cCI6MjA5MTU2NTM0N30.VxvR39nI5lNK_JZ6fwctQJgAH06YhbCTd8bXuiLpJgs';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+import { supabase } from './supabaseClient.js';
 
 // CREATE MENU ITEM
 export async function createMenuItem(item, user) {
@@ -47,7 +42,7 @@ export async function deleteMenuItem(id) {
   return { data, error };
 }
 
-// TOGGLE AVAILABILITY (SOLD OUT / AVAILABLE)
+// TOGGLE AVAILABILITY
 export async function toggleAvailability(id, status) {
   const { data, error } = await supabase
     .from('menu_items')
@@ -79,4 +74,4 @@ export async function setVendorStatus(vendorId, status) {
     .single();
 
   return { data, error };
-} 
+}
