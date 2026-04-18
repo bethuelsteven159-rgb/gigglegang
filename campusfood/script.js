@@ -583,56 +583,89 @@ async function loadVendorOrders() {
 }
 
 async function updateOrderStatus(orderId, newStatus) {
-    if (!sb) return;
+    console.log("=== UPDATE ORDER STATUS DEBUG ===");
+    console.log("Order ID:", orderId);
+    console.log("New Status:", newStatus);
+    
+    if (!sb) {
+        console.error("Supabase client not initialized");
+        toast("System error: Supabase not ready", "error");
+        return;
+    }
 
     try {
-        // First get the order to get student email
-        const { data: order, error: fetchError } = await sb
+        // Get current vendor info
+        const username = sessionStorage.getItem("username");
+        console.log("Current vendor username:", username);
+        
+        const vendorId = await getVendorId(username);
+        console.log("Vendor ID from vendors table:", vendorId);
+        
+        if (!vendorId) {
+            console.error("No vendor ID found for username:", username);
+            toast("Vendor not found. Please login again.", "error");
+            return;
+        }
+
+        // First, let's check if the order exists and belongs to this vendor
+        const { data: orderCheck, error: checkError } = await sb
             .from("orders")
-            .select("*")
+            .select("id, vendor_id, status, order_number")
             .eq("id", orderId)
             .single();
-            
-        if (fetchError) throw fetchError;
-
-        const { error } = await sb
+        
+        console.log("Order check result:", orderCheck);
+        console.log("Order check error:", checkError);
+        
+        if (checkError) {
+            console.error("Error fetching order:", checkError);
+            toast(`Cannot find order: ${checkError.message}`, "error");
+            return;
+        }
+        
+        if (orderCheck.vendor_id !== vendorId) {
+            console.error("Vendor mismatch! Order vendor_id:", orderCheck.vendor_id, "Current vendor_id:", vendorId);
+            toast("You don't have permission to update this order", "error");
+            return;
+        }
+        
+        // Now try to update
+        console.log("Attempting to update order...");
+        const { data: updateData, error: updateError } = await sb
             .from("orders")
             .update({ 
                 status: newStatus,
-                updated_at: new Date()
+                updated_at: new Date().toISOString()
             })
-            .eq("id", orderId);
-
-        if (error) throw error;
-
-        // Log status change (only if table exists)
-        try {
-            await sb.from("order_status_logs").insert({
-                order_id: orderId,
-                status: newStatus
+            .eq("id", orderId)
+            .select();  // This returns the updated record
+            
+        console.log("Update response data:", updateData);
+        console.log("Update error:", updateError);
+        
+        if (updateError) {
+            console.error("Update error details:", {
+                message: updateError.message,
+                code: updateError.code,
+                details: updateError.details,
+                hint: updateError.hint
             });
-        } catch (logErr) {
-            console.warn("Status log skipped:", logErr.message);
+            toast(`Update failed: ${updateError.message}`, "error");
+            return;
         }
-
-        // Send email notification
-        await sendOrderEmail({
-            student_email: order.student_email,
-            status: newStatus,
-            order_number: order.order_number
-        });
-
+        
+        console.log("Update successful!");
         toast(`Order status updated to ${newStatus}`, "success");
         
-        // Refresh relevant views
-        if (typeof loadVendorOrders === 'function') loadVendorOrders();
-        if (typeof loadStudentOrderHistory === 'function') loadStudentOrderHistory();
-
+        // Refresh the orders list
+        await loadVendorOrders();
+        
     } catch (err) {
-        console.error("❌ Error:", err);
-        toast("Failed to update order", "error");
+        console.error("Unexpected error:", err);
+        toast(err.message || "Failed to update order status", "error");
     }
 }
+
 
 // ==================== STUDENT: MENU & CART ====================
 async function loadStudentMenu() {
