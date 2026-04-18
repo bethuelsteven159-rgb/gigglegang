@@ -601,89 +601,80 @@ async function loadVendorOrders() {
 }
 
 async function updateOrderStatus(orderId, newStatus) {
-    console.log("=== UPDATE ORDER STATUS DEBUG ===");
-    console.log("Order ID:", orderId);
-    console.log("New Status:", newStatus);
+    if (!sb) return;
+
+    const selectElement = event?.target;
+    const originalValue = selectElement?.value;
     
-    if (!sb) {
-        console.error("Supabase client not initialized");
-        toast("System error: Supabase not ready", "error");
-        return;
+    if (selectElement) {
+        selectElement.disabled = true;
     }
 
     try {
-        // Get current vendor info
         const username = sessionStorage.getItem("username");
-        console.log("Current vendor username:", username);
-        
         const vendorId = await getVendorId(username);
-        console.log("Vendor ID from vendors table:", vendorId);
         
         if (!vendorId) {
-            console.error("No vendor ID found for username:", username);
             toast("Vendor not found. Please login again.", "error");
             return;
         }
 
-        // First, let's check if the order exists and belongs to this vendor
-        const { data: orderCheck, error: checkError } = await sb
-            .from("orders")
-            .select("id, vendor_id, status, order_number")
-            .eq("id", orderId)
-            .single();
-        
-        console.log("Order check result:", orderCheck);
-        console.log("Order check error:", checkError);
-        
-        if (checkError) {
-            console.error("Error fetching order:", checkError);
-            toast(`Cannot find order: ${checkError.message}`, "error");
-            return;
-        }
-        
-        if (orderCheck.vendor_id !== vendorId) {
-            console.error("Vendor mismatch! Order vendor_id:", orderCheck.vendor_id, "Current vendor_id:", vendorId);
-            toast("You don't have permission to update this order", "error");
-            return;
-        }
-        
-        // Now try to update
-        console.log("Attempting to update order...");
-        const { data: updateData, error: updateError } = await sb
+        // Update the order status - remove .single() from update
+        const { error: updateError } = await sb
             .from("orders")
             .update({ 
                 status: newStatus,
                 updated_at: new Date().toISOString()
             })
             .eq("id", orderId)
-            .select();  // This returns the updated record
-            
-        console.log("Update response data:", updateData);
-        console.log("Update error:", updateError);
-        
+            .eq("vendor_id", vendorId);
+
         if (updateError) {
-            console.error("Update error details:", {
-                message: updateError.message,
-                code: updateError.code,
-                details: updateError.details,
-                hint: updateError.hint
-            });
-            toast(`Update failed: ${updateError.message}`, "error");
+            console.error("Update error:", updateError);
+            toast(updateError.message || "Status update failed", "error");
             return;
         }
-        
-        console.log("Update successful!");
+
+        // Optional: Fetch the updated order separately if you need the data
+        const { data: order, error: fetchError } = await sb
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .maybeSingle();  // Use maybeSingle() instead of single() to avoid errors
+
+        if (fetchError) {
+            console.warn("Could not fetch updated order:", fetchError);
+        }
+
+        // Try to log status change (non-critical)
+        try {
+            await sb.from("order_status_logs").insert({
+                order_id: orderId,
+                status: newStatus,
+                changed_at: new Date().toISOString()
+            });
+        } catch (logErr) {
+            console.log("Status log skipped:", logErr.message);
+        }
+
         toast(`Order status updated to ${newStatus}`, "success");
         
-        // Refresh the orders list
+        // Refresh the vendor orders view
         await loadVendorOrders();
         
     } catch (err) {
-        console.error("Unexpected error:", err);
+        console.error("Error in updateOrderStatus:", err);
         toast(err.message || "Failed to update order status", "error");
+        
+        if (selectElement && originalValue) {
+            selectElement.value = originalValue;
+        }
+    } finally {
+        if (selectElement) {
+            selectElement.disabled = false;
+        }
     }
 }
-
 
 // ==================== STUDENT: MENU & CART ====================
 async function loadStudentMenu() {
