@@ -535,51 +535,69 @@ async function deleteMenuItem(itemId) {
 }
 
 // ==================== VENDOR: ORDERS ====================
+
 async function loadVendorOrders() {
-  const tbody = document.getElementById("ordersBody");
-  if (!tbody) return;
+    const tbody = document.getElementById("ordersBody");
+    if (!tbody) {
+        console.log("ordersBody element not found");
+        return;
+    }
 
-  const username = sessionStorage.getItem("username");
-  const vendorId = await getVendorId(username);
+    const username = sessionStorage.getItem("username");
+    console.log("Loading orders for vendor:", username);
+    
+    const vendorId = await getVendorId(username);
+    console.log("Vendor ID from database:", vendorId);
+    
+    if (!vendorId) {
+        tbody.innerHTML = "<tr><td colspan='6'>Vendor not found. Please contact admin.</td></tr>";
+        return;
+    }
 
-  if (!vendorId) {
-    tbody.innerHTML = "<tr><td colspan='6'>Vendor not found</td></tr>";
-    return;
-  }
+    // First, let's get ALL orders to see what's in the table
+    const { data: allOrders, error: allError } = await sb
+        .from("orders")
+        .select("*");
+    
+    console.log("All orders in system:", allOrders);
+    
+    // Now get vendor-specific orders
+    const { data, error } = await sb
+        .from("orders")
+        .select("*")
+        .eq("vendor_id", vendorId)
+        .order("created_at", { ascending: false });
 
-  const { data, error } = await sb
-    .from("orders")
-    .select("*")
-    .eq("vendor_id", vendorId)
-    .order("created_at", { ascending: false });
+    console.log("Vendor orders query result:", { data, error });
 
-  if (error) {
-    tbody.innerHTML = "<tr><td colspan='6'>Failed to load orders</td></tr>";
-    return;
-  }
+    if (error) {
+        console.error("Load orders error:", error);
+        tbody.innerHTML = `<tr><td colspan='6'>Error: ${error.message}</td></tr>`;
+        return;
+    }
 
-  if (!data || data.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No orders yet</td></tr>";
-    return;
-  }
+    if (!data || data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6'>No orders yet. Orders will appear here when students place them.</td></tr>";
+        return;
+    }
 
-  tbody.innerHTML = data.map(order => `
-    <tr>
-      <td>#${order.order_number || order.id}</td>
-      <td>${order.student_username}</td>
-      <td>${Array.isArray(order.items) ? order.items.map(i => i.name).join(", ") : ""}</td>
-      <td>R${order.total_price}</td>
-      <td>${order.status}</td>
-      <td>
-        <select onchange="updateOrderStatus(${order.id}, this.value)">
-          <option value="Order Placed" ${order.status === "Order Placed" ? "selected" : ""}>Order Placed</option>
-          <option value="Being Prepared" ${order.status === "Being Prepared" ? "selected" : ""}>Being Prepared</option>
-          <option value="Ready for Collection" ${order.status === "Ready for Collection" ? "selected" : ""}>Ready for Collection</option>
-            <option value="Completed" ${order.status === "Completed" ? "selected" : ""}>Completed</option>
-        </select>
-      </td>
-    </tr>
-  `).join("");
+    tbody.innerHTML = data.map(order => `
+        <tr>
+            <td>#${order.order_number || order.id}</td>
+            <td>${order.student_username}</td>
+            <td>${Array.isArray(order.items) ? order.items.map(i => i.name).join(", ") : ""}</td>
+            <td>R${order.total_price}</td>
+            <td>${order.status}</td>
+            <td>
+                <select onchange="updateOrderStatus(${order.id}, this.value)">
+                    <option value="Order Placed" ${order.status === "Order Placed" ? "selected" : ""}>Order Placed</option>
+                    <option value="Being Prepared" ${order.status === "Being Prepared" ? "selected" : ""}>Being Prepared</option>
+                    <option value="Ready for Collection" ${order.status === "Ready for Collection" ? "selected" : ""}>Ready for Collection</option>
+                    <option value="Completed" ${order.status === "Completed" ? "selected" : ""}>Completed</option>
+                </select>
+            </td>
+        </tr>
+    `).join("");
 }
 
 async function updateOrderStatus(orderId, newStatus) {
