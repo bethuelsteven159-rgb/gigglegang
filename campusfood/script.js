@@ -597,78 +597,30 @@ async function loadVendorOrders() {
 }
 
 async function updateOrderStatus(orderId, newStatus) {
-    if (!sb) return;
-
-    const selectElement = event?.target;
-    const originalValue = selectElement?.value;
-    
-    if (selectElement) {
-        selectElement.disabled = true;
-    }
-
     try {
         const username = sessionStorage.getItem("username");
         const vendorId = await getVendorId(username);
         
         if (!vendorId) {
-            toast("Vendor not found. Please login again.", "error");
+            toast("Vendor not found", "error");
             return;
         }
 
-        // Update the order status - remove .single() from update
-        const { error: updateError } = await sb
+        // Simple update without any data fetching
+        const { error } = await sb
             .from("orders")
-            .update({ 
-                status: newStatus,
-                updated_at: new Date().toISOString()
-            })
+            .update({ status: newStatus })
             .eq("id", orderId)
             .eq("vendor_id", vendorId);
 
-        if (updateError) {
-            console.error("Update error:", updateError);
-            toast(updateError.message || "Status update failed", "error");
-            return;
-        }
-
-        // Optional: Fetch the updated order separately if you need the data
-        const { data: order, error: fetchError } = await sb
-            .from("orders")
-            .select("*")
-            .eq("id", orderId)
-            .maybeSingle();  // Use maybeSingle() instead of single() to avoid errors
-
-        if (fetchError) {
-            console.warn("Could not fetch updated order:", fetchError);
-        }
-
-        // Try to log status change (non-critical)
-        try {
-            await sb.from("order_status_logs").insert({
-                order_id: orderId,
-                status: newStatus,
-                changed_at: new Date().toISOString()
-            });
-        } catch (logErr) {
-            console.log("Status log skipped:", logErr.message);
-        }
+        if (error) throw error;
 
         toast(`Order status updated to ${newStatus}`, "success");
-        
-        // Refresh the vendor orders view
-        await loadVendorOrders();
+        loadVendorOrders(); // Refresh the list
         
     } catch (err) {
-        console.error("Error in updateOrderStatus:", err);
-        toast(err.message || "Failed to update order status", "error");
-        
-        if (selectElement && originalValue) {
-            selectElement.value = originalValue;
-        }
-    } finally {
-        if (selectElement) {
-            selectElement.disabled = false;
-        }
+        console.error("Update error:", err);
+        toast("Failed to update order status", "error");
     }
 }
 
