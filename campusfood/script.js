@@ -319,23 +319,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
-
-
-// ==================== STARTUP ====================
-document.addEventListener("DOMContentLoaded", () => {
-  const currentPage = window.location.pathname.split("/").pop() || "index.html";
-
-  const googleBtn = document.getElementById("googleLoginBtn");
-  const saveRoleBtn = document.getElementById("saveRoleBtn");
-
-  if (googleBtn) googleBtn.addEventListener("click", signInWithGoogle);
-  if (saveRoleBtn) saveRoleBtn.addEventListener("click", saveRoleForFirstTimeUser);
-
-  if (currentPage === "index.html" || currentPage === "") {
-    checkLoginAfterRedirect();
-  }
-});
-
 // ==================== ADMIN: VENDOR CONTROL ====================
 async function loadVendors() {
   const tbody = document.getElementById("vendorBody");
