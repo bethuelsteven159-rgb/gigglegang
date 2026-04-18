@@ -546,11 +546,10 @@ async function loadVendorOrders() {
 
 
 async function updateOrderStatus(orderId, newStatus) {
-    if (!supabase) return;
+    if (!sb) return;  // ✅ Use 'sb' instead of 'supabase'
 
     try {
-        // 1. Update order
-        const { data, error } = await supabase
+        const { data, error } = await sb  // ✅ Use 'sb'
             .from("orders")
             .update({ 
                 status: newStatus,
@@ -562,19 +561,18 @@ async function updateOrderStatus(orderId, newStatus) {
 
         if (error) throw error;
 
-        console.log("✅ Order updated:", data);
-
-        // 2. Log status change
-        await supabase.from("order_status_logs").insert({
+        // Log status change
+        await sb.from("order_status_logs").insert({  // ✅ Use 'sb'
             order_id: orderId,
             status: newStatus
         });
 
-        // 3. Trigger email (via edge function)
+        // Trigger email
         await sendOrderEmail(data);
 
     } catch (err) {
         console.error("❌ Error:", err);
+        toast("Failed to update order", "error");
     }
 }
 
