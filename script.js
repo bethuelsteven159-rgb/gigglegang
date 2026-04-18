@@ -570,6 +570,29 @@
         contentDiv.appendChild(footer);
     }
 
+
+    async function updateOrderStatus(orderId, newStatus) {
+    if (!supabase) {
+        alert("Supabase not initialized");
+        return;
+    }
+
+    try {
+        const { error } = await supabase
+            .from("orders")
+            .update({ status: newStatus })
+            .eq("id", orderId);
+
+        if (error) throw error;
+
+        alert("✅ Order updated to " + newStatus);
+
+    } catch (err) {
+        console.error("❌ Update failed:", err);
+        alert("Failed to update order");
+    }
+}
+
     // Initialize authentication - THIS IS KEY FOR HANDLING THE REDIRECT
     async function initAuth() {
         initSupabase();
