@@ -870,24 +870,21 @@ function resetToAllMenu() {
 
 async function sendOrderEmail(order) {
     try {
-        await fetch("https://mslvqduxmkuusuyaewej.supabase.co/functions/v1/send-order-email", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+        // You need to call your edge function properly
+        const { data, error } = await sb.functions.invoke('send-order-email', {
             body: JSON.stringify({
-                email: order.user_email,
-                status: order.status
+                email: order.student_email, // Make sure this field exists
+                status: order.status,
+                orderNumber: order.order_number
             })
         });
-
-        console.log("📧 Email sent");
-
+        
+        if (error) throw error;
+        console.log("📧 Email sent successfully");
     } catch (err) {
         console.error("Email failed:", err);
     }
 }
-
 
 // ==================== STUDENT: ORDER HISTORY ====================
 async function loadStudentOrderHistory() {
