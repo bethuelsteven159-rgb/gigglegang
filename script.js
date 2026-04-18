@@ -484,12 +484,21 @@
                     <div class="mock-table">
                         <table>
                             <tr><th>Order ID</th><th>Student</th><th>Items</th><th>Status</th></tr>
-                            <tr><td>#V221</td><td>Lerato N.</td><td>Meal Deal</td><td><span class="badge">Preparing</span></td>
+                            <tr><td>#V221</td>
+                                <td>Lerato N.</td>
+                                <td>Meal Deal</td>
+                                <td>
+                                    <button onclick="updateOrderStatus('ORDER_ID_1','Preparing')">Preparing</button>
+                                    <button onclick="updateOrderStatus('ORDER_ID_1','Ready')">Ready</button>
+                                </td>
                             </tr>
                             <tr>
                                 <td>#V222</td><td>Sarah C.</td>
                                 <td>Combo-A</td>
-                                <td><button onclick="updateOrderStatus('ORDER_ID_1','Preparing')">Preparing</button><button onclick="updateOrderStatus('ORDER_ID_1','Ready')">Ready</button></td>
+                                <td>
+                                    <button onclick="updateOrderStatus('ORDER_ID_2','Preparing')">Preparing</button>
+                                    <button onclick="updateOrderStatus('ORDER_ID_2','Ready')">Ready</button>
+                                    </td>
                             </tr>
                         </table>
                     </div>
