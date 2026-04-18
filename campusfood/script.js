@@ -714,68 +714,59 @@ function updateCartDisplay() {
   cartTotalSpan.textContent = `R${total}`;
 }
 
+// FIX: Remove the first insert and keep only the complete one
 async function placeOrder() {
-  if (cart.length === 0) {
-    toast("Your cart is empty", "error");
-    return;
-  }
+    if (cart.length === 0) {
+        toast("Your cart is empty", "error");
+        return;
+    }
 
-  const username = sessionStorage.getItem("username");
-  const studentId = await getStudentId(username);
-
-  if (!studentId) {
-    toast("Student not found. Please login again.", "error");
-    return;
-  }
-
-  const vendorIds = [...new Set(cart.map(item => item.vendor_id))];
-  if (vendorIds.length > 1) {
-    toast("Please order from one vendor at a time", "error");
-    return;
-  }
-
-  const vendorId = vendorIds[0];
-  const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
-  const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-  const { error } = await sb
-    .from("orders")
-    .insert([{
-      order_number: orderNumber,
-      student_id: studentId,
-      student_username: username,
-      vendor_id: vendorId,
-      items: cart.map(item => ({ id: item.id, name: item.name, price: item.price })),
-      total_price: totalPrice,
-      status: "pending"
-    }]);
-
-  if (error) {
-    toast("Failed to place order", "error");
-  } else {
-    toast("Order placed");
-    cart = [];
-    sessionStorage.removeItem("cart");
-    updateCartDisplay();
-  }
-
-  const { data: userData } = await sb.auth.getUser();
-    const userEmail = userData.user?.email;
+    const username = sessionStorage.getItem("username");
+    const studentId = await getStudentId(username);
     
+    // Get user email
+    const { data: userData } = await sb.auth.getUser();
+    const userEmail = userData.user?.email;
+
+    if (!studentId) {
+        toast("Student not found. Please login again.", "error");
+        return;
+    }
+
+    const vendorIds = [...new Set(cart.map(item => item.vendor_id))];
+    if (vendorIds.length > 1) {
+        toast("Please order from one vendor at a time", "error");
+        return;
+    }
+
+    const vendorId = vendorIds[0];
+    const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
+    const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // Single insert with all required fields
     const { error } = await sb
         .from("orders")
         .insert([{
             order_number: orderNumber,
             student_id: studentId,
             student_username: username,
-            student_email: userEmail,  // ✅ Add this field
+            student_email: userEmail,
             vendor_id: vendorId,
             items: cart.map(item => ({ id: item.id, name: item.name, price: item.price })),
             total_price: totalPrice,
-            status: "pending"
+            status: "Order Placed"  // Changed from "pending" to match status options
         }]);
 
-  
+    if (error) {
+        console.error("Order error:", error);
+        toast("Failed to place order", "error");
+    } else {
+        toast("Order placed successfully!");
+        cart = [];
+        sessionStorage.removeItem("cart");
+        updateCartDisplay();
+        loadStudentOrderHistory(); // Refresh history
+    }
 }
 
 // ==================== STUDENT: BROWSE BY VENDOR ====================
