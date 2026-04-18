@@ -583,31 +583,51 @@ async function loadVendorOrders() {
   `).join("");
 }
 
-
 async function updateOrderStatus(orderId, newStatus) {
-    if (!sb) return;  // ✅ Use 'sb' instead of 'supabase'
+    if (!sb) return;
 
     try {
-        const { data, error } = await sb  // ✅ Use 'sb'
+        // First get the order to get student email
+        const { data: order, error: fetchError } = await sb
+            .from("orders")
+            .select("*")
+            .eq("id", orderId)
+            .single();
+            
+        if (fetchError) throw fetchError;
+
+        const { error } = await sb
             .from("orders")
             .update({ 
                 status: newStatus,
                 updated_at: new Date()
             })
-            .eq("id", orderId)
-            .select()
-            .single();
+            .eq("id", orderId);
 
         if (error) throw error;
 
-        // Log status change
-        await sb.from("order_status_logs").insert({  // ✅ Use 'sb'
-            order_id: orderId,
-            status: newStatus
+        // Log status change (only if table exists)
+        try {
+            await sb.from("order_status_logs").insert({
+                order_id: orderId,
+                status: newStatus
+            });
+        } catch (logErr) {
+            console.warn("Status log skipped:", logErr.message);
+        }
+
+        // Send email notification
+        await sendOrderEmail({
+            student_email: order.student_email,
+            status: newStatus,
+            order_number: order.order_number
         });
 
-        // Trigger email
-        await sendOrderEmail(data);
+        toast(`Order status updated to ${newStatus}`, "success");
+        
+        // Refresh relevant views
+        if (typeof loadVendorOrders === 'function') loadVendorOrders();
+        if (typeof loadStudentOrderHistory === 'function') loadStudentOrderHistory();
 
     } catch (err) {
         console.error("❌ Error:", err);
