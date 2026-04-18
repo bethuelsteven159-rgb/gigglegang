@@ -550,21 +550,45 @@ async function deleteMenuItem(itemId) {
 
 async function loadVendorOrders() {
     const tbody = document.getElementById("ordersBody");
-    if (!tbody) return;
-
-    const username = sessionStorage.getItem("username");
-    const vendorId = await getVendorId(username);
-
-    if (!vendorId) {
-        tbody.innerHTML = "<tr><td colspan='6'>Vendor not found</td></tr>";
+    if (!tbody) {
+        console.log("ordersBody element not found");
         return;
     }
 
+    const username = sessionStorage.getItem("username");
+    console.log("Loading orders for vendor:", username);
+    
+    if (!username) {
+        tbody.innerHTML = "<tr><td colspan='6'>Please login again</td></tr>";
+        return;
+    }
+    
+    const vendorId = await getVendorId(username);
+    console.log("Vendor ID from getVendorId:", vendorId);
+    
+    if (!vendorId) {
+        tbody.innerHTML = "<tr><td colspan='6'>Vendor profile not found. Contact admin.</td></tr>";
+        return;
+    }
+
+    // First, let's check what orders exist in the system
+    const { data: allOrders, error: allError } = await sb
+        .from("orders")
+        .select("*")
+        .limit(5);
+    
+    console.log("Sample of all orders:", allOrders);
+    
+    // Now get vendor-specific orders
     const { data, error } = await sb
         .from("orders")
         .select("*")
         .eq("vendor_id", vendorId)
         .order("created_at", { ascending: false });
+
+    console.log("Vendor orders query - Data:", data);
+    console.log("Vendor orders query - Error:", error);
+    console.log("Number of orders found:", data?.length || 0);
 
     if (error) {
         console.error("Load orders error:", error);
@@ -573,15 +597,15 @@ async function loadVendorOrders() {
     }
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6'>No orders yet</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6'>No orders yet. Orders will appear here when students place them.</td></tr>";
         return;
     }
 
     tbody.innerHTML = data.map(order => `
         <tr>
             <td>#${order.order_number || order.id}</td>
-            <td>${order.student_username}</td>
-            <td>${Array.isArray(order.items) ? order.items.map(i => i.name).join(", ") : ""}</td>
+            <td>${order.student_username || 'Unknown'}</td>
+            <td>${Array.isArray(order.items) ? order.items.map(i => i.name).join(", ") : ''}</td>
             <td>R${order.total_price}</td>
             <td>${order.status}</td>
             <td>
