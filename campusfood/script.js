@@ -841,6 +841,8 @@ async function loadStudentOrderHistory() {
 
   const username = sessionStorage.getItem("username");
   const studentId = await getStudentId(username);
+  // Start realtime listening
+  subscribeToOrderUpdates(studentId);
 
   if (!studentId) {
     tbody.innerHTML = "<tr><td colspan='6'>Student not found</td></tr>";
