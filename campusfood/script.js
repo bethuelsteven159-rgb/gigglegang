@@ -266,6 +266,61 @@ async function saveRoleForFirstTimeUser() {
   }
 }
 
+// ==================== BROWSER NOTIFICATIONS ====================
+async function requestNotificationPermission() {
+    // Check if browser supports notifications
+    if (!("Notification" in window)) {
+        console.log("This browser does not support notifications");
+        return;
+    }
+    
+    // Check if permission is already granted
+    if (Notification.permission === "granted") {
+        console.log("🔔 Notifications already enabled");
+        return;
+    }
+    
+    // Request permission if not denied
+    if (Notification.permission !== "denied") {
+        const permission = await Notification.requestPermission();
+        if (permission === "granted") {
+            console.log("🔔 Notifications enabled");
+            toast("Notifications enabled! You'll receive order updates.", "success");
+        } else {
+            console.log("Notifications denied");
+        }
+    }
+}
+
+// ==================== STARTUP ====================
+document.addEventListener("DOMContentLoaded", () => {
+  const currentPage = window.location.pathname.split("/").pop() || "index.html";
+
+  const googleBtn = document.getElementById("googleLoginBtn");
+  const saveRoleBtn = document.getElementById("saveRoleBtn");
+
+  if (googleBtn) googleBtn.addEventListener("click", signInWithGoogle);
+  if (saveRoleBtn) saveRoleBtn.addEventListener("click", saveRoleForFirstTimeUser);
+
+  if (currentPage === "index.html" || currentPage === "") {
+    checkLoginAfterRedirect();
+  }
+  
+  // ✅ REQUEST NOTIFICATION PERMISSION FOR ALL PAGES
+  // But only request when user is logged in (on dashboard pages)
+  const currentPageLower = currentPage.toLowerCase();
+  if (currentPageLower.includes("dashboard") || 
+      currentPageLower.includes("student") || 
+      currentPageLower.includes("vendor")) {
+    // Small delay to ensure user is logged in and page is ready
+    setTimeout(() => {
+      requestNotificationPermission();
+    }, 1000);
+  }
+});
+
+
+
 // ==================== STARTUP ====================
 document.addEventListener("DOMContentLoaded", () => {
   const currentPage = window.location.pathname.split("/").pop() || "index.html";
