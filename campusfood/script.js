@@ -731,12 +731,63 @@ async function placeOrder() {
     }
 
     const username = sessionStorage.getItem("username");
-    const studentId = await getStudentId(username);
+    console.log("=== PLACING ORDER ===");
+    console.log("Username:", username);
+    console.log("Cart:", cart);
     
-    // Get user email
-    const { data: userData } = await sb.auth.getUser();
-    const userEmail = userData.user?.email;
-
+    if (!username) {
+        toast("Please login again", "error");
+        return;
+    }
+    
+    // Get current user
+    const { data: { user }, error: userError } = await sb.auth.getUser();
+    if (userError || !user) {
+        toast("Please login again", "error");
+        return;
+    }
+    
+    console.log("Auth user:", user.id, user.email);
+    
+    // Get or create student ID
+    let studentId = sessionStorage.getItem("studentId");
+    
+    if (!studentId) {
+        // Check if student exists
+        const { data: existingStudent, error: findError } = await sb
+            .from("students")
+            .select("id")
+            .eq("username", username)
+            .maybeSingle();
+        
+        if (existingStudent) {
+            studentId = existingStudent.id;
+            sessionStorage.setItem("studentId", studentId);
+            console.log("Found existing student:", studentId);
+        } else {
+            // Create new student
+            const { data: newStudent, error: createError } = await sb
+                .from("students")
+                .insert([{
+                    id: user.id,
+                    username: username,
+                    email: user.email
+                }])
+                .select()
+                .maybeSingle();
+            
+            if (createError) {
+                console.error("Create student error:", createError);
+                toast("Failed to create student profile: " + createError.message, "error");
+                return;
+            }
+            
+            studentId = newStudent.id;
+            sessionStorage.setItem("studentId", studentId);
+            console.log("Created new student:", studentId);
+        }
+    }
+    
     if (!studentId) {
         toast("Student not found. Please login again.", "error");
         return;
@@ -744,8 +795,6 @@ async function placeOrder() {
 
     // Get unique vendor IDs from cart
     const vendorIds = [...new Set(cart.map(item => item.vendor_id))];
-    
-    console.log("Cart items:", cart);
     console.log("Unique vendor IDs:", vendorIds);
     
     if (vendorIds.length > 1) {
@@ -754,18 +803,26 @@ async function placeOrder() {
     }
 
     const vendorId = vendorIds[0];
+    console.log("Selected vendor_id:", vendorId);
     
-    // Verify this vendor exists and is approved
+    // Verify this vendor exists and is approved - use maybeSingle() instead of single()
     const { data: vendorCheck, error: vendorError } = await sb
         .from("vendors")
         .select("id, username, status")
         .eq("id", vendorId)
-        .single();
+        .maybeSingle();  // Changed from .single() to .maybeSingle()
     
-    console.log("Vendor check:", vendorCheck);
+    console.log("Vendor check result:", vendorCheck);
+    console.log("Vendor error:", vendorError);
     
-    if (vendorError || !vendorCheck) {
-        toast("Vendor not found", "error");
+    if (vendorError) {
+        console.error("Vendor query error:", vendorError);
+        toast("Error checking vendor", "error");
+        return;
+    }
+    
+    if (!vendorCheck) {
+        toast("Vendor not found. Please try again.", "error");
         return;
     }
     
@@ -782,41 +839,52 @@ async function placeOrder() {
         order_number: orderNumber,
         student_id: studentId,
         student_username: username,
-        student_email: userEmail,
-        vendor_id: vendorId,  // Make sure this is set
+        student_email: user.email,
+        vendor_id: vendorId,
         items: cart.map(item => ({ 
             id: item.id, 
             name: item.name, 
-            price: item.price,
-            vendor_id: item.vendor_id 
+            price: item.price
         })),
         total_price: totalPrice,
-        status: "Order Placed",  // Use consistent status
+        status: "Order Placed",
         created_at: new Date().toISOString()
     };
     
-    console.log("Placing order with data:", orderData);
+    console.log("Submitting order data:", orderData);
 
-    const { data: newOrder, error } = await sb
+    const { data: newOrder, error: insertError } = await sb
         .from("orders")
         .insert([orderData])
-        .select();  // This returns the inserted order
+        .select();
 
-    if (error) {
-        console.error("Order error:", error);
-        toast("Failed to place order: " + error.message, "error");
-    } else {
-        console.log("Order placed successfully:", newOrder);
-        toast("Order placed successfully!");
-        cart = [];
-        sessionStorage.removeItem("cart");
-        updateCartDisplay();
-        
-        // Redirect to order history or refresh
-        if (typeof loadStudentOrderHistory === 'function') {
-            loadStudentOrderHistory();
-        }
+    if (insertError) {
+        console.error("Order insertion error:", insertError);
+        toast("Failed to place order: " + insertError.message, "error");
+        return;
     }
+
+    console.log("Order placed successfully:", newOrder);
+    toast("Order placed successfully!");
+    
+    // Clear cart
+    cart = [];
+    sessionStorage.removeItem("cart");
+    updateCartDisplay();
+    
+    // Refresh order history if on student page
+    if (typeof loadStudentOrderHistory === 'function') {
+        await loadStudentOrderHistory();
+    }
+    
+    // Optional: Show success and maybe redirect
+    setTimeout(() => {
+        // You could redirect to order history tab
+        const historyTab = document.querySelector('[data-tab="history"]');
+        if (historyTab) {
+            historyTab.click();
+        }
+    }, 1500);
 }
 
 // ==================== STUDENT: BROWSE BY VENDOR ====================
