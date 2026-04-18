@@ -766,7 +766,7 @@ function updateCartDisplay() {
   cartTotalSpan.textContent = `R${total}`;
 }
 
-// FIX: Remove the first insert and keep only the complete one
+// Fix the placeOrder function - ensure vendor_id is set correctly
 async function placeOrder() {
     if (cart.length === 0) {
         toast("Your cart is empty", "error");
@@ -785,39 +785,80 @@ async function placeOrder() {
         return;
     }
 
+    // Get unique vendor IDs from cart
     const vendorIds = [...new Set(cart.map(item => item.vendor_id))];
+    
+    console.log("Cart items:", cart);
+    console.log("Unique vendor IDs:", vendorIds);
+    
     if (vendorIds.length > 1) {
         toast("Please order from one vendor at a time", "error");
         return;
     }
 
     const vendorId = vendorIds[0];
+    
+    // Verify this vendor exists and is approved
+    const { data: vendorCheck, error: vendorError } = await sb
+        .from("vendors")
+        .select("id, username, status")
+        .eq("id", vendorId)
+        .single();
+    
+    console.log("Vendor check:", vendorCheck);
+    
+    if (vendorError || !vendorCheck) {
+        toast("Vendor not found", "error");
+        return;
+    }
+    
+    if (vendorCheck.status !== "approved") {
+        toast("This vendor is not available at the moment", "error");
+        return;
+    }
+
     const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
     const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    // Single insert with all required fields
-    const { error } = await sb
+    // Create order with explicit vendor_id
+    const orderData = {
+        order_number: orderNumber,
+        student_id: studentId,
+        student_username: username,
+        student_email: userEmail,
+        vendor_id: vendorId,  // Make sure this is set
+        items: cart.map(item => ({ 
+            id: item.id, 
+            name: item.name, 
+            price: item.price,
+            vendor_id: item.vendor_id 
+        })),
+        total_price: totalPrice,
+        status: "Order Placed",  // Use consistent status
+        created_at: new Date().toISOString()
+    };
+    
+    console.log("Placing order with data:", orderData);
+
+    const { data: newOrder, error } = await sb
         .from("orders")
-        .insert([{
-            order_number: orderNumber,
-            student_id: studentId,
-            student_username: username,
-            student_email: userEmail,
-            vendor_id: vendorId,
-            items: cart.map(item => ({ id: item.id, name: item.name, price: item.price })),
-            total_price: totalPrice,
-            status: "Order Placed"  // Changed from "pending" to match status options
-        }]);
+        .insert([orderData])
+        .select();  // This returns the inserted order
 
     if (error) {
         console.error("Order error:", error);
-        toast("Failed to place order", "error");
+        toast("Failed to place order: " + error.message, "error");
     } else {
+        console.log("Order placed successfully:", newOrder);
         toast("Order placed successfully!");
         cart = [];
         sessionStorage.removeItem("cart");
         updateCartDisplay();
-        loadStudentOrderHistory(); // Refresh history
+        
+        // Redirect to order history or refresh
+        if (typeof loadStudentOrderHistory === 'function') {
+            loadStudentOrderHistory();
+        }
     }
 }
 
