@@ -544,18 +544,38 @@ async function loadVendorOrders() {
   `).join("");
 }
 
-async function updateOrderStatus(orderId, newStatus) {
-  const { error } = await sb
-    .from("orders")
-    .update({ status: newStatus })
-    .eq("id", orderId);
 
-  if (error) {
-    toast("Update failed", "error");
-  } else {
-    toast("Order updated");
-    loadVendorOrders();
-  }
+async function updateOrderStatus(orderId, newStatus) {
+    if (!supabase) return;
+
+    try {
+        // 1. Update order
+        const { data, error } = await supabase
+            .from("orders")
+            .update({ 
+                status: newStatus,
+                updated_at: new Date()
+            })
+            .eq("id", orderId)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        console.log("✅ Order updated:", data);
+
+        // 2. Log status change
+        await supabase.from("order_status_logs").insert({
+            order_id: orderId,
+            status: newStatus
+        });
+
+        // 3. Trigger email (via edge function)
+        await sendOrderEmail(data);
+
+    } catch (err) {
+        console.error("❌ Error:", err);
+    }
 }
 
 // ==================== STUDENT: MENU & CART ====================
