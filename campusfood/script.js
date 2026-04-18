@@ -88,17 +88,23 @@ async function logout() {
   sessionStorage.clear();
   window.location.href = "index.html";
 }
-
 async function getVendorId(username) {
-  const { data, error } = await sb
-    .from("vendors")
-    .select("id")
-    .eq("username", username)
-    .maybeSingle();
+    if (!username) return null;
+    
+    const { data, error } = await sb
+        .from("vendors")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();  // Use maybeSingle() instead of single()
 
-  if (error || !data) return null;
-  return data.id;
+    if (error || !data) {
+        console.warn("Vendor not found for username:", username);
+        return null;
+    }
+    
+    return data.id;
 }
+
 
 async function getStudentId(username) {
   const { data, error } = await sb
