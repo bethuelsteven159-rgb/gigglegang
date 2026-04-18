@@ -538,37 +538,21 @@ async function deleteMenuItem(itemId) {
 
 async function loadVendorOrders() {
     const tbody = document.getElementById("ordersBody");
-    if (!tbody) {
-        console.log("ordersBody element not found");
-        return;
-    }
+    if (!tbody) return;
 
     const username = sessionStorage.getItem("username");
-    console.log("Loading orders for vendor:", username);
-    
     const vendorId = await getVendorId(username);
-    console.log("Vendor ID from database:", vendorId);
-    
+
     if (!vendorId) {
-        tbody.innerHTML = "<tr><td colspan='6'>Vendor not found. Please contact admin.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6'>Vendor not found</td></tr>";
         return;
     }
 
-    // First, let's get ALL orders to see what's in the table
-    const { data: allOrders, error: allError } = await sb
-        .from("orders")
-        .select("*");
-    
-    console.log("All orders in system:", allOrders);
-    
-    // Now get vendor-specific orders
     const { data, error } = await sb
         .from("orders")
         .select("*")
         .eq("vendor_id", vendorId)
         .order("created_at", { ascending: false });
-
-    console.log("Vendor orders query result:", { data, error });
 
     if (error) {
         console.error("Load orders error:", error);
@@ -577,7 +561,7 @@ async function loadVendorOrders() {
     }
 
     if (!data || data.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6'>No orders yet. Orders will appear here when students place them.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='6'>No orders yet</td></tr>";
         return;
     }
 
