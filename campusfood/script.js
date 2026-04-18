@@ -875,6 +875,41 @@ async function loadStudentOrderHistory() {
   `).join("");
 }
 
+
+// ================= REALTIME SUBSCRIPTION =================
+function subscribeToOrderUpdates(studentId) {
+  const channel = sb
+    .channel("orders-realtime")
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "orders",
+        filter: `student_id=eq.${studentId}`
+      },
+      (payload) => {
+        console.log("📡 Realtime update:", payload);
+
+        const newStatus = payload.new.status;
+
+        // 🔔 Show toast notification
+        toast(`Order update: ${newStatus}`);
+
+        // 🔊 Optional browser notification
+        if (Notification.permission === "granted") {
+          new Notification("Order Update", {
+            body: `Your order is now: ${newStatus}`
+          });
+        }
+
+        // 🔄 Reload table automatically
+        loadStudentOrderHistory();
+      }
+    )
+    .subscribe();
+}
+
 // ==================== ADMIN: ALL ORDERS ====================
 async function loadAllOrders() {
   const tbody = document.getElementById("allOrdersBody");
