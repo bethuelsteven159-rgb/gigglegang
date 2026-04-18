@@ -813,6 +813,27 @@ function resetToAllMenu() {
   loadStudentMenu();
 }
 
+async function sendOrderEmail(order) {
+    try {
+        await fetch("https://mslvqduxmkuusuyaewej.supabase.co/functions/v1/send-order-email", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                email: order.user_email,
+                status: order.status
+            })
+        });
+
+        console.log("📧 Email sent");
+
+    } catch (err) {
+        console.error("Email failed:", err);
+    }
+}
+
+
 // ==================== STUDENT: ORDER HISTORY ====================
 async function loadStudentOrderHistory() {
   const tbody = document.getElementById("historyBody");
