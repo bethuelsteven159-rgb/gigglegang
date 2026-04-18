@@ -719,6 +719,24 @@ async function placeOrder() {
     sessionStorage.removeItem("cart");
     updateCartDisplay();
   }
+
+  const { data: userData } = await sb.auth.getUser();
+    const userEmail = userData.user?.email;
+    
+    const { error } = await sb
+        .from("orders")
+        .insert([{
+            order_number: orderNumber,
+            student_id: studentId,
+            student_username: username,
+            student_email: userEmail,  // ✅ Add this field
+            vendor_id: vendorId,
+            items: cart.map(item => ({ id: item.id, name: item.name, price: item.price })),
+            total_price: totalPrice,
+            status: "pending"
+        }]);
+
+  
 }
 
 // ==================== STUDENT: BROWSE BY VENDOR ====================
