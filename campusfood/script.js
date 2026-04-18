@@ -105,17 +105,23 @@ async function getVendorId(username) {
     return data.id;
 }
 
-
 async function getStudentId(username) {
-  const { data, error } = await sb
-    .from("students")
-    .select("id")
-    .eq("username", username)
-    .maybeSingle();
+    if (!username) return null;
+    
+    const { data, error } = await sb
+        .from("students")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();  // Use maybeSingle()
 
-  if (error || !data) return null;
-  return data.id;
+    if (error || !data) {
+        console.warn("Student not found for username:", username);
+        return null;
+    }
+    
+    return data.id;
 }
+
 
 // ==================== AUTH ====================
 async function signInWithGoogle() {
