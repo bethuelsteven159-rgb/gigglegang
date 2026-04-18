@@ -572,12 +572,11 @@ async function loadVendorOrders() {
       <td>${order.status}</td>
       <td>
         <select onchange="updateOrderStatus(${order.id}, this.value)">
-        <option value="Order Placed" ${order.status === "Order Placed" ? "selected" : ""}>Order Placed</option>
-        <option value="Being Prepared" ${order.status === "Being Prepared" ? "selected" : ""}>Being Prepared</option>
-        <option value="Ready for Collection" ${order.status === "Ready for Collection" ? "selected" : ""}>Ready for Collection</option>
-        <option value="Completed" ${order.status === "Completed" ? "selected" : ""}>Completed</option>
-</select>
-       
+          <option value="Order Placed" ${order.status === "Order Placed" ? "selected" : ""}>Order Placed</option>
+          <option value="Being Prepared" ${order.status === "Being Prepared" ? "selected" : ""}>Being Prepared</option>
+          <option value="Ready for Collection" ${order.status === "Ready for Collection" ? "selected" : ""}>Ready for Collection</option>
+            <option value="Completed" ${order.status === "Completed" ? "selected" : ""}>Completed</option>
+        </select>
       </td>
     </tr>
   `).join("");
