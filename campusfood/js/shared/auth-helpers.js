@@ -1,22 +1,19 @@
 import { sb } from '../config/supabase.js';
 
-export function setLoadingMessage(msg = '') {
+export function setLoadingMessage(message = '') {
   const loadingText = document.getElementById('loadingText');
   const googleBtn = document.getElementById('googleLoginBtn');
   const saveRoleBtn = document.getElementById('saveRoleBtn');
 
+  const isLoading = Boolean(message);
+
   if (loadingText) {
-    if (msg) {
-      loadingText.style.display = 'block';
-      loadingText.textContent = msg;
-    } else {
-      loadingText.style.display = 'none';
-      loadingText.textContent = '';
-    }
+    loadingText.style.display = isLoading ? 'block' : 'none';
+    loadingText.textContent = message;
   }
 
-  if (googleBtn) googleBtn.disabled = !!msg;
-  if (saveRoleBtn) saveRoleBtn.disabled = !!msg;
+  if (googleBtn) googleBtn.disabled = isLoading;
+  if (saveRoleBtn) saveRoleBtn.disabled = isLoading;
 }
 
 export function showRoleSection(show = true) {
@@ -28,7 +25,7 @@ export function showRoleSection(show = true) {
 
 export function getUsernameFromUser(user) {
   const fullName = user?.user_metadata?.full_name;
-  if (fullName && fullName.trim()) return fullName.trim();
+  if (fullName?.trim()) return fullName.trim();
 
   const email = user?.email || '';
   return email.split('@')[0] || 'user';
@@ -41,12 +38,7 @@ export function redirectByRole(role) {
     student: 'dashboard_student.html',
   };
 
-  const target = routes[role] || 'dashboard_student.html';
-  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-
-  if (currentPage !== target) {
-    window.location.href = target;
-  }
+  window.location.href = routes[role] || 'dashboard_student.html';
 }
 
 export async function getVendorId(username) {
@@ -59,7 +51,7 @@ export async function getVendorId(username) {
     .maybeSingle();
 
   if (error || !data) {
-    console.warn('Vendor not found for username:', username);
+    console.warn('Vendor not found for username:', username, error);
     return null;
   }
 
@@ -76,7 +68,7 @@ export async function getStudentId(username) {
     .maybeSingle();
 
   if (error || !data) {
-    console.warn('Student not found for username:', username);
+    console.warn('Student not found for username:', username, error);
     return null;
   }
 
