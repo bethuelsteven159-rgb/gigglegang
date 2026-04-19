@@ -13,11 +13,7 @@ import { initStudentDashboardPage } from './pages/student-dashboard-page.js';
 import { initStudentOrdersPage } from './pages/student-orders-page.js';
 import { initStudentHistoryPage } from './pages/student-history-page.js';
 
-// =======================
-// PAGE ROUTER
-// =======================
-
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
   const routes = {
@@ -36,9 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const init = routes[currentPage];
-  if (init) init();
 
-  // Ask for notification permission on relevant pages
+  if (typeof init === 'function') {
+    await init();
+  }
+
   const currentPageLower = currentPage.toLowerCase();
 
   if (
@@ -51,31 +49,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   }
 });
-
-// =======================
-// TOAST FUNCTION (optional global)
-// =======================
-
-export function showToast(message) {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-
-  const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.textContent = message;
-
-  container.appendChild(toast);
-
-  setTimeout(() => toast.classList.add('show'), 50);
-
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
-}
-
-
-
-
-
-
