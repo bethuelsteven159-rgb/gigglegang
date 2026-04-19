@@ -880,4 +880,20 @@ tr:hover td {
   }
 }
 
+.vendor-review-text {
+  width: 100%;
+  min-height: 120px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+  white-space: pre-wrap;
+}
+
+
+
+
 
