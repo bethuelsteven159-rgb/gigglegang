@@ -40,3 +40,55 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1000);
   }
 });
+
+
+// =======================
+// TOAST NOTIFICATION
+// =======================
+
+function showToast(message) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => toast.classList.add('show'), 50);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+// =======================
+// BROWSER NOTIFICATION
+// =======================
+
+function showBrowserNotification(message) {
+  if (!('Notification' in window)) return;
+
+  if (Notification.permission === 'granted') {
+    new Notification('Order Update', {
+      body: message
+    });
+  }
+}
+
+// ask permission once
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+}
+
+
+
+
+
+
