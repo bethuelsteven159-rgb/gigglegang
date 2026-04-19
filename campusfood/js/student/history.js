@@ -36,16 +36,15 @@ function canReviewOrder(order) {
 }
 
 function getOrderMenuId(order) {
-  if (order?.menu_id) return order.menu_id;
+  if (order?.menu_id != null) return order.menu_id;
 
-  if (Array.isArray(order?.items) && order.items.length > 0) {
-    const firstItem = order.items[0];
-    return firstItem?.menu_id || firstItem?.id || null;
+  if (Array.isArray(order?.items) && order.items.length === 1) {
+    const item = order.items[0];
+    return item?.menu_id || item?.id || null;
   }
 
   return null;
 }
-
 function findReviewForOrder(order) {
   const menuId = getOrderMenuId(order);
   if (menuId == null) return null;
