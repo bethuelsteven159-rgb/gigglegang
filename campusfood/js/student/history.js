@@ -88,22 +88,18 @@ export function subscribeToOrderUpdates(studentId) {
 
         if (!oldOrder || !newOrder) return;
 
-        // Only notify if the status really changed
         if (oldOrder.status === newOrder.status) return;
 
         const message = `Order #${newOrder.order_number || newOrder.id} is now: ${newOrder.status}`;
 
-        // In-app toast
-        toast(message);
+        showToast(message);
 
-        // Browser notification
         if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Order Update', {
             body: message
           });
         }
 
-        // Refresh table so student sees the new status
         loadStudentOrderHistory();
       }
     )
@@ -111,6 +107,11 @@ export function subscribeToOrderUpdates(studentId) {
       console.log('Student order realtime status:', status);
     });
 }
+
+export function initStudentHistoryPage() {
+  loadStudentOrderHistory();
+}
+
 
 
 
