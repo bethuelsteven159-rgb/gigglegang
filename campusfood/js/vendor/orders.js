@@ -3,7 +3,7 @@ import { toast } from '../shared/notifications.js';
 import { getVendorId } from '../shared/auth-helpers.js';
 
 export async function loadVendorOrders() {
-  const container = document.getElementById('vendorOrdersBody');
+  const container = document.getElementById('ordersBody');
   if (!container) return;
 
   const username = sessionStorage.getItem('username');
