@@ -48,21 +48,14 @@ function getOrderMenuId(order) {
 
 function findReviewForOrder(order) {
   const menuId = getOrderMenuId(order);
-
-  if (menuId != null) {
-    const byMenu = reviews.find(
-      r =>
-        String(r.vendor_id) === String(order.vendor_id) &&
-        String(r.menu_id) === String(menuId)
-    );
-    if (byMenu) return byMenu;
-  }
+  if (menuId == null) return null;
 
   return reviews.find(
-    r => String(r.vendor_id) === String(order.vendor_id)
+    r =>
+      String(r.vendor_id) === String(order.vendor_id) &&
+      String(r.menu_id) === String(menuId)
   ) || null;
 }
-
 function updateStars(value) {
   document.querySelectorAll('.star').forEach(star => {
     star.textContent = Number(star.dataset.value) <= value ? '★' : '☆';
