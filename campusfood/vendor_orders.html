@@ -40,13 +40,6 @@
 
 <div id="toast"></div>
 <script type="module" src="js/main.js"></script>
-<script>
-  const username = sessionStorage.getItem('username') || 'Vendor';
-  document.getElementById('vendorName').textContent = username;
-  document.getElementById('vendorLabel').textContent = username;
-
-  window.addEventListener('load', loadVendorOrders);
-</script>
 
 </body>
 </html>
