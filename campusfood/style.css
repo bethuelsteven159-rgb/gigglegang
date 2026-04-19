@@ -655,3 +655,39 @@ tr:hover td {
     padding: 0.625rem;
   }
 }
+
+
+
+/* =========================
+   TOAST NOTIFICATIONS
+========================= */
+
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.toast {
+  background: #222;
+  color: #fff;
+  padding: 14px 18px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  min-width: 240px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+  opacity: 0;
+  transform: translateX(30px);
+  transition: all 0.3s ease;
+  font-size: 14px;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+
+
+
