@@ -16,4 +16,6 @@ router.get('/vendor/:vendorId', getVendorOrders);
 // Vendor updates order status
 router.put('/:orderId/status', updateOrderStatus);
 
+router.delete('/:orderId', cancelOrder);
+router.put('/:orderId/edit', editOrder);
 export default router;
