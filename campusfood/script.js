@@ -303,7 +303,6 @@ async function requestNotificationPermission() {
         }
     }
 }
-
 // ==================== STARTUP ====================
 document.addEventListener("DOMContentLoaded", () => {
   const currentPage = window.location.pathname.split("/").pop() || "index.html";
