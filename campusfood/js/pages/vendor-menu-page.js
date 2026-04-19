@@ -4,12 +4,18 @@ import { loadVendorMenu, addMenuItem, toggleSoldOut, deleteMenuItem } from '../v
 import { logout } from '../shared/session.js';
 
 export function initVendorMenuPage() {
+  // Protect page
   requireRole('vendor');
+
+  // Show username
   renderVendorName();
+
+  // Load menu items
   loadVendorMenu();
 
-  window.logout = logout;
+  // Expose functions used by inline onclick in HTML
   window.addMenuItem = addMenuItem;
   window.toggleSoldOut = toggleSoldOut;
   window.deleteMenuItem = deleteMenuItem;
+  window.logout = logout;
 }
