@@ -7,12 +7,12 @@ let currentReview = null;
 let rating = 0;
 let ordersChannel = null;
 
-function showToast(message) {
+function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
 
   const toast = document.createElement('div');
-  toast.className = 'toast';
+  toast.className = `toast ${type}`;
   toast.textContent = message;
 
   container.appendChild(toast);
@@ -22,7 +22,17 @@ function showToast(message) {
   setTimeout(() => {
     toast.classList.remove('show');
     setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  }, 4500);
+}
+
+function showBrowserNotification(title, message) {
+  if (!('Notification' in window)) return;
+  if (Notification.permission !== 'granted') return;
+
+  new Notification(title, {
+    body: message,
+    icon: 'https://cdn-icons-png.flaticon.com/512/1046/1046784.png'
+  });
 }
 
 function normalizeStatus(status) {
@@ -200,13 +210,37 @@ export function subscribeToOrderUpdates(studentId) {
         if (!oldOrder || !newOrder) return;
         if (oldOrder.status === newOrder.status) return;
 
-        const message = `Order #${newOrder.order_number || newOrder.id} is now: ${newOrder.status}`;
+        const orderLabel = `Order #${newOrder.order_number || newOrder.id}`;
+        const newStatus = newOrder.status || 'Updated';
 
-        showToast(message);
+        let toastMessage = `${orderLabel} is now: ${newStatus}`;
+        let toastType = 'info';
+        let notificationTitle = 'Order Update';
+        let notificationBody = toastMessage;
 
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('Order Update', { body: message });
+        if (newStatus === 'Being Prepared') {
+          toastMessage = `${orderLabel} is now being prepared 🍳`;
+          toastType = 'info';
+          notificationTitle = 'Order Being Prepared';
+          notificationBody = toastMessage;
         }
+
+        if (newStatus === 'Ready for Collection') {
+          toastMessage = `${orderLabel} is ready for collection 🛍️`;
+          toastType = 'success';
+          notificationTitle = 'Order Ready';
+          notificationBody = toastMessage;
+        }
+
+        if (newStatus === 'Completed') {
+          toastMessage = `${orderLabel} has been completed ✅`;
+          toastType = 'success';
+          notificationTitle = 'Order Completed';
+          notificationBody = `${orderLabel} is complete. You can now leave a review.`;
+        }
+
+        showToast(toastMessage, toastType);
+        showBrowserNotification(notificationTitle, notificationBody);
 
         loadStudentOrderHistory();
       }
@@ -290,17 +324,17 @@ export async function submitReview() {
   const studentId = await getCurrentStudentId();
 
   if (!studentId || !currentOrder) {
-    showToast('Could not submit review');
+    showToast('Could not submit review', 'error');
     return;
   }
 
   if (!canReviewOrder(currentOrder)) {
-    showToast('You can only review completed orders');
+    showToast('You can only review completed orders', 'error');
     return;
   }
 
   if (rating < 1 || rating > 5) {
-    showToast('Please choose a rating');
+    showToast('Please choose a rating', 'error');
     return;
   }
 
@@ -319,11 +353,11 @@ export async function submitReview() {
 
     if (error) {
       console.error('submitReview update error:', error);
-      showToast('Failed to update review');
+      showToast('Failed to update review', 'error');
       return;
     }
 
-    showToast('Review updated');
+    showToast('Review updated', 'success');
   } else {
     const { error } = await sb
       .from('reviews')
@@ -339,11 +373,11 @@ export async function submitReview() {
 
     if (error) {
       console.error('submitReview insert error:', error);
-      showToast('Failed to submit review');
+      showToast('Failed to submit review', 'error');
       return;
     }
 
-    showToast('Review submitted');
+    showToast('Review submitted', 'success');
   }
 
   closeModal();
@@ -352,7 +386,7 @@ export async function submitReview() {
 
 export async function deleteReview() {
   if (!currentReview?.id) {
-    showToast('No review found');
+    showToast('No review found', 'error');
     return;
   }
 
@@ -363,11 +397,11 @@ export async function deleteReview() {
 
   if (error) {
     console.error('deleteReview error:', error);
-    showToast('Failed to delete review');
+    showToast('Failed to delete review', 'error');
     return;
   }
 
-  showToast('Review deleted');
+  showToast('Review deleted', 'success');
   closeModal();
   await loadStudentOrderHistory();
 }
