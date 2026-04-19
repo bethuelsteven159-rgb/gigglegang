@@ -1049,6 +1049,29 @@ async function loadStudentOrderHistory() {
     return;
   }
 
+  const { data: { user } } = await supabase.auth.getUser();
+
+const channel = supabase
+  .channel('orders-realtime')
+  .on(
+    'postgres_changes',
+    {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'orders',
+      filter: `student_id=eq.${user.id}`
+    },
+    (payload) => {
+      console.log("Realtime update:", payload);
+
+      const newStatus = payload.new.status;
+
+      showToast(`Order status: ${newStatus}`);
+      sendBrowserNotification(newStatus);
+    }
+  )
+  .subscribe();
+
   tbody.innerHTML = data.map(order => `
     <tr>
       <td>#${order.order_number || order.id}</td>
