@@ -232,6 +232,38 @@ export function openModal(id) {
     tag.classList.remove('active');
   });
 
+  const orderNumberEl = document.getElementById('reviewOrderNumber');
+  const vendorNameEl = document.getElementById('reviewVendorName');
+  const itemsEl = document.getElementById('reviewItems');
+  const totalEl = document.getElementById('reviewTotal');
+  const orderInfoEl = document.getElementById('reviewOrderInfo');
+
+  const itemsText = Array.isArray(currentOrder.items)
+    ? currentOrder.items.map(i => i.name || i.title || 'Item').join(', ')
+    : '';
+
+  if (orderNumberEl) {
+    orderNumberEl.textContent = `#${currentOrder.order_number || currentOrder.id}`;
+  }
+
+  if (vendorNameEl) {
+    vendorNameEl.textContent = currentOrder.vendors?.username || 'Unknown vendor';
+  }
+
+  if (itemsEl) {
+    itemsEl.textContent = itemsText || 'No items';
+  }
+
+  if (totalEl) {
+    totalEl.textContent = `R${currentOrder.total_price ?? 0}`;
+  }
+
+  if (orderInfoEl) {
+    orderInfoEl.textContent = currentReview
+      ? 'You are editing your review for this order'
+      : 'You are reviewing this completed order';
+  }
+
   updateStars(rating);
 
   const modal = document.getElementById('reviewModal');
@@ -241,6 +273,13 @@ export function openModal(id) {
 export function closeModal() {
   const modal = document.getElementById('reviewModal');
   if (modal) modal.style.display = 'none';
+
+  const reviewText = document.getElementById('reviewText');
+  if (reviewText) reviewText.value = '';
+
+  document.querySelectorAll('.tag').forEach(tag => {
+    tag.classList.remove('active');
+  });
 
   currentOrder = null;
   currentReview = null;
