@@ -1,207 +1,146 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+// ===============================
+// SUPABASE CLIENT
+// ===============================
+const SUPABASE_URL = 'https://mslvqduxmkuusuyaewej.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbHZxZHV4bWt1dXN1eWFld2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODkzNDcsImV4cCI6MjA5MTU2NTM0N30.VxvR39nI5lNK_JZ6fwctQJgAH06YhbCTd8bXuiLpJgs';
 
-// ==============================
-// 🔑 SUPABASE CONFIG
-// ==============================
-const supabaseUrl = "YOUR_URL";
-const supabaseKey = "YOUR_ANON_KEY";
-const sb = createClient(supabaseUrl, supabaseKey);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ==============================
-// GLOBAL STATE (STUDENT)
-// ==============================
+// ===============================
+// STATE
+// ===============================
+let orders = [];
+let reviews = [];
+let selectedOrderId = null;
 let selectedRating = 0;
-let currentOrderId = null;
 
-// ==============================
-// ⭐ STAR UI (STUDENT)
-// ==============================
-function initStars() {
-  const stars = document.querySelectorAll(".star");
+// assume logged-in student
+const studentId = localStorage.getItem("user_id") || "demo-user";
 
-  stars.forEach(star => {
-    star.addEventListener("click", () => {
-      selectedRating = parseInt(star.dataset.value);
+// ===============================
+// LOAD DATA
+// ===============================
+async function loadData() {
 
-      stars.forEach(s => {
-        const val = parseInt(s.dataset.value);
-        s.textContent = val <= selectedRating ? "★" : "☆";
-      });
-    });
-  });
-}
+  // ORDERS
+  const { data: orderData } = await sb
+    .from("orders")
+    .select("*")
+    .eq("student_id", studentId);
 
-// ==============================
-// 🪟 MODAL CONTROL
-// ==============================
-window.openReviewModal = function(orderId) {
-  currentOrderId = orderId;
-  document.getElementById("reviewModal").style.display = "flex";
-};
+  orders = orderData || [];
 
-window.closeReviewModal = function() {
-  document.getElementById("reviewModal").style.display = "none";
-  selectedRating = 0;
-
-  document.querySelectorAll(".star").forEach(s => {
-    s.textContent = "☆";
-  });
-};
-
-// ==============================
-// 💾 SAVE REVIEW (SUPABASE)
-// ==============================
-async function saveReview(orderId, rating) {
-  // check if exists
-  const { data: existing } = await sb
+  // REVIEWS
+  const { data: reviewData } = await sb
     .from("reviews")
     .select("*")
-    .eq("order_id", orderId)
-    .single();
+    .eq("student_id", studentId);
 
-  if (existing) {
-    return await sb
-      .from("reviews")
-      .update({ rating })
-      .eq("order_id", orderId);
-  }
+  reviews = reviewData || [];
 
-  return await sb.from("reviews").insert([
-    {
-      order_id: orderId,
-      rating: rating
-    }
-  ]);
+  renderTable();
 }
 
-// ==============================
-// 📤 SUBMIT REVIEW (STUDENT)
-// ==============================
-window.submitReview = async function() {
-  if (!currentOrderId || selectedRating === 0) {
-    alert("Select a rating");
-    return;
-  }
-
-  await saveReview(currentOrderId, selectedRating);
-
-  closeReviewModal();
-
-  // reload page so both student + vendor reflect
-  location.reload();
-};
-
-// ==============================
-// 📥 FETCH REVIEWS
-// ==============================
-async function getReviewMap() {
-  const { data, error } = await sb.from("reviews").select("*");
-
-  if (error) {
-    console.error(error);
-    return {};
-  }
-
-  const map = {};
-  data.forEach(r => {
-    map[r.order_id] = r.rating;
-  });
-
-  return map;
-}
-
-// ==============================
-// ⭐ RENDER STARS
-// ==============================
-function getStars(rating) {
-  if (!rating) return `<span class="review-none">No review</span>`;
-
-  let html = `<div class="review-stars">`;
-
-  for (let i = 1; i <= 5; i++) {
-    html += i <= rating
-      ? `<span class="filled">★</span>`
-      : `<span class="empty">☆</span>`;
-  }
-
-  html += `</div>`;
-  return html;
-}
-
-// ==============================
-// 👨‍🎓 STUDENT HISTORY PAGE
-// ==============================
-async function loadStudentHistory() {
+// ===============================
+// RENDER TABLE
+// ===============================
+function renderTable() {
   const tbody = document.getElementById("historyBody");
-  if (!tbody) return;
-
-  const { data: orders } = await sb.from("orders").select("*");
-  const reviewMap = await getReviewMap();
-
   tbody.innerHTML = "";
 
   orders.forEach(order => {
-    const hasReview = reviewMap[order.id];
+
+    const review = reviews.find(r => r.order_id === order.id);
 
     const row = document.createElement("tr");
 
     row.innerHTML = `
       <td>${order.id}</td>
-      <td>${order.vendor || "Vendor"}</td>
+      <td>${order.vendor}</td>
       <td>${order.items}</td>
       <td>${order.total}</td>
       <td>${order.status}</td>
-      <td>${order.date || ""}</td>
+      <td>${order.date}</td>
+
       <td>
         ${
-          hasReview
-            ? getStars(hasReview)
-            : `<button onclick="openReviewModal(${order.id})">Review</button>`
+          review
+            ? `<span style="color:green;">★ ${review.rating}</span>`
+            : order.status === "Delivered"
+              ? `<button onclick="openReview(${order.id})">Review</button>`
+              : `<span style="color:gray;">Locked</span>`
         }
       </td>
     `;
 
     tbody.appendChild(row);
   });
-
-  initStars();
 }
 
-// ==============================
-// 🧑‍🍳 VENDOR ORDERS PAGE
-// ==============================
-async function loadVendorOrders() {
-  const tbody = document.getElementById("ordersBody");
-  if (!tbody) return;
+// ===============================
+// REVIEW MODAL
+// ===============================
+window.openReview = (orderId) => {
+  selectedOrderId = orderId;
+  selectedRating = 0;
 
-  const { data: orders } = await sb.from("orders").select("*");
-  const reviewMap = await getReviewMap();
+  document.getElementById("reviewModal").style.display = "flex";
+  resetStars();
+};
 
-  tbody.innerHTML = "";
+window.closeReviewModal = () => {
+  document.getElementById("reviewModal").style.display = "none";
+};
 
-  orders.forEach(order => {
-    const rating = reviewMap[order.id] || 0;
+// ===============================
+// STAR RATING
+// ===============================
+document.querySelectorAll(".star").forEach(star => {
+  star.addEventListener("click", () => {
+    selectedRating = parseInt(star.dataset.value);
+    updateStars(selectedRating);
+  });
+});
 
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td>${order.id}</td>
-      <td>${order.student_name || "Student"}</td>
-      <td>${order.items}</td>
-      <td>${order.total}</td>
-      <td>${order.status}</td>
-      <td><button>Update</button></td>
-      <td>${getStars(rating)}</td>
-    `;
-
-    tbody.appendChild(row);
+function updateStars(rating) {
+  document.querySelectorAll(".star").forEach(s => {
+    s.textContent = s.dataset.value <= rating ? "★" : "☆";
   });
 }
 
-// ==============================
-// 🚀 AUTO PAGE DETECTION
-// ==============================
-window.addEventListener("DOMContentLoaded", () => {
-  loadStudentHistory();  // only runs if table exists
-  loadVendorOrders();    // only runs if table exists
-});
+function resetStars() {
+  document.querySelectorAll(".star").forEach(s => s.textContent = "☆");
+}
+
+// ===============================
+// SUBMIT REVIEW (SUPABASE)
+// ===============================
+window.submitReview = async () => {
+
+  if (!selectedOrderId || selectedRating === 0) return;
+
+  const text = document.getElementById("reviewText").value;
+
+  // UPSERT = ensures ONLY ONE review per order per user
+  const { error } = await sb
+    .from("reviews")
+    .upsert({
+      order_id: selectedOrderId,
+      student_id: studentId,
+      rating: selectedRating,
+      text: text
+    });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  closeReviewModal();
+  loadData();
+};
+
+// ===============================
+// INIT
+// ===============================
+loadData();
