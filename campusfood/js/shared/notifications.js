@@ -1,11 +1,6 @@
 export function toast(message, type = 'success') {
   const el = document.getElementById('toast');
-
-  if (!el) {
-    console.warn('Toast element #toast not found');
-    alert(message);
-    return;
-  }
+  if (!el) return;
 
   el.textContent = message;
   el.className = `show ${type}`;
@@ -29,9 +24,12 @@ export async function requestNotificationPermission() {
     return;
   }
 
-  const permission = await Notification.requestPermission();
-
-  if (permission === 'granted') {
-    toast("Notifications enabled! You'll receive order updates.", 'success');
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      console.log('Notification permission granted');
+    }
+  } catch (error) {
+    console.error('Notification permission error:', error);
   }
 }
