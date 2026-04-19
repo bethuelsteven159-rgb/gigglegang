@@ -27,7 +27,7 @@
   <div class="page">
     <h2>Your Order History</h2>
 
-    <div class="panel" style="padding:0; overflow:hidden;">
+    <div class="panel table-wrapper" style="padding:0;">
       <table style="width:100%">
         <thead>
           <tr>
@@ -55,9 +55,41 @@
   <!-- REVIEW MODAL -->
   <div id="reviewModal" class="review-modal">
     <div class="review-box">
-      <h3>Rate Your Order</h3>
+      <div class="review-header">
+        <div>
+          <h3>Rate Your Order</h3>
+          <p id="reviewOrderInfo" class="review-order-info">
+            You are reviewing this completed order
+          </p>
+        </div>
+        <button type="button" class="review-close" onclick="closeModal()">✕</button>
+      </div>
+
+      <!-- ORDER SUMMARY -->
+      <div class="review-summary">
+        <div class="review-summary-row">
+          <span class="label">Order</span>
+          <span id="reviewOrderNumber">-</span>
+        </div>
+
+        <div class="review-summary-row">
+          <span class="label">Vendor</span>
+          <span id="reviewVendorName">-</span>
+        </div>
+
+        <div class="review-summary-row">
+          <span class="label">Items</span>
+          <span id="reviewItems">-</span>
+        </div>
+
+        <div class="review-summary-row">
+          <span class="label">Total</span>
+          <span id="reviewTotal">-</span>
+        </div>
+      </div>
 
       <!-- STARS -->
+      <label class="review-subtitle">Your rating</label>
       <div id="starContainer" class="stars">
         <span class="star" data-value="1">☆</span>
         <span class="star" data-value="2">☆</span>
@@ -67,26 +99,29 @@
       </div>
 
       <!-- QUICK REVIEW TAGS -->
+      <label class="review-subtitle">Quick tags</label>
       <div class="tag-box">
-        <button class="tag">Arrived on time</button>
-        <button class="tag">Fast service</button>
-        <button class="tag">Good value</button>
-        <button class="tag">Friendly staff</button>
-        <button class="tag">Cold food</button>
-        <button class="tag">Bad taste</button>
-        <button class="tag">Small portion</button>
-        <button class="tag">Great quality</button>
-        <button class="tag">Would order again</button>
-        <button class="tag">Poor packaging</button>
+        <button type="button" class="tag">Arrived on time</button>
+        <button type="button" class="tag">Fast service</button>
+        <button type="button" class="tag">Good value</button>
+        <button type="button" class="tag">Friendly staff</button>
+        <button type="button" class="tag">Cold food</button>
+        <button type="button" class="tag">Bad taste</button>
+        <button type="button" class="tag">Small portion</button>
+        <button type="button" class="tag">Great quality</button>
+        <button type="button" class="tag">Would order again</button>
+        <button type="button" class="tag">Poor packaging</button>
       </div>
 
       <!-- DESCRIPTION -->
-      <textarea id="reviewText" placeholder="Optional comment..."></textarea>
+      <label for="reviewText" class="review-subtitle">Comment</label>
+      <textarea id="reviewText" placeholder="Tell us what you liked or didn’t like..."></textarea>
 
       <!-- ACTIONS -->
       <div class="actions">
-        <button onclick="closeModal()">Cancel</button>
-        <button onclick="submitReview()">Submit</button>
+        <button type="button" class="btn" onclick="closeModal()">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="deleteReview()">Delete</button>
+        <button type="button" class="btn btn-primary" onclick="submitReview()">Submit</button>
       </div>
     </div>
   </div>
@@ -99,6 +134,3 @@
 
 </body>
 </html>
-
-
-
