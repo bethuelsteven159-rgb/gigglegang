@@ -1,6 +1,23 @@
 import { sb } from '../config/supabase.js';
 import { getStudentId } from '../shared/auth-helpers.js';
-import { toast } from '../shared/notifications.js';
+
+function showToast(message) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => toast.classList.add('show'), 50);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
 
 let ordersChannel = null;
 
