@@ -109,9 +109,9 @@ export function subscribeToOrderUpdates(studentId) {
 }
 
 export function initStudentHistoryPage() {
+  console.log('initStudentHistoryPage is running');
   loadStudentOrderHistory();
 }
-
 
 
 
