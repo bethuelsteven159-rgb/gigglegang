@@ -9,7 +9,8 @@ const STATUS_ORDER = {
   'Order Placed': 1,
   'Being Prepared': 2,
   'Ready for Collection': 3,
-  'Completed': 4
+  'Completed': 4,
+  'Cancelled': 5
 };
 
 function sortOrdersByStatus(orders) {
@@ -35,8 +36,9 @@ function findReviewForOrder(order) {
 }
 
 function renderStars(rating = 0) {
-  const full = '★'.repeat(Number(rating) || 0);
-  const empty = '☆'.repeat(5 - (Number(rating) || 0));
+  const safeRating = Number(rating) || 0;
+  const full = '★'.repeat(safeRating);
+  const empty = '☆'.repeat(5 - safeRating);
   return `${full}${empty}`;
 }
 
@@ -106,7 +108,9 @@ function renderOrders() {
       : (order.items || '');
 
     const review = findReviewForOrder(order);
-    const isCompleted = order.status === 'Completed';
+    const isLocked =
+      order.status === 'Completed' ||
+      order.status === 'Cancelled';
 
     const reviewCell = review
       ? `
@@ -116,8 +120,16 @@ function renderOrders() {
       `
       : '<span style="color: var(--text-muted);">-</span>';
 
-    const actionCell = isCompleted
-      ? `<span class="status status-completed">Completed</span>`
+    const actionCell = isLocked
+      ? `
+        <span class="status ${
+          order.status === 'Cancelled'
+            ? 'status-cancelled'
+            : 'status-completed'
+        }">
+          ${order.status}
+        </span>
+      `
       : `
         <select onchange="updateOrderStatus('${order.id}', this.value)">
           <option value="Order Placed" ${order.status === 'Order Placed' ? 'selected' : ''}>Order Placed</option>
@@ -188,8 +200,8 @@ export async function updateOrderStatus(orderId, newStatus) {
     return;
   }
 
-  if (order.status === 'Completed') {
-    toast('Completed orders cannot be changed', 'error');
+  if (order.status === 'Completed' || order.status === 'Cancelled') {
+    toast('This order is locked and cannot be changed', 'error');
     return;
   }
 
