@@ -7,14 +7,24 @@ let reviews = [];
 let currentOrder = null;
 let rating = 0;
 
-const studentId = getUserId();
-
 export async function initStudentHistoryPage() {
   await load();
   bindEvents();
 }
 
 async function load() {
+  const studentId = await getUserId();
+
+  console.log("studentId:", studentId);
+
+  if (!studentId) {
+    console.error("No logged in student found");
+    orders = [];
+    reviews = [];
+    render();
+    return;
+  }
+
   const { data: o, error: ordersError } = await sb
     .from("orders")
     .select("*")
@@ -26,7 +36,6 @@ async function load() {
     .select("*")
     .eq("student_id", studentId);
 
-  console.log("studentId:", studentId);
   console.log("orders:", o);
   console.log("ordersError:", ordersError);
   console.log("reviews:", r);
@@ -96,7 +105,7 @@ function bindEvents() {
     }
 
     if (e.target.classList.contains("star")) {
-      rating = parseInt(e.target.dataset.value);
+      rating = parseInt(e.target.dataset.value, 10);
       updateStars(rating);
     }
 
@@ -115,7 +124,7 @@ function bindEvents() {
 
 function updateStars(value) {
   document.querySelectorAll(".star").forEach(s => {
-    s.textContent = s.dataset.value <= value ? "★" : "☆";
+    s.textContent = Number(s.dataset.value) <= value ? "★" : "☆";
   });
 }
 
@@ -136,9 +145,12 @@ window.closeModal = () => {
 window.closeReviewModal = window.closeModal;
 
 window.submitReview = async () => {
+  const studentId = await getUserId();
+  if (!studentId || !currentOrder) return;
+
   const text = document.getElementById("reviewText").value;
 
-  await sb.from("reviews").upsert({
+  const { error } = await sb.from("reviews").upsert({
     student_id: studentId,
     vendor_id: currentOrder.vendor_id,
     menu_id: currentOrder.menu_id,
@@ -147,17 +159,30 @@ window.submitReview = async () => {
     created_at: new Date().toISOString()
   });
 
+  if (error) {
+    console.error("submitReview error:", error);
+    return;
+  }
+
   closeModal();
-  load();
+  await load();
 };
 
 window.deleteReview = async () => {
-  await sb
+  const studentId = await getUserId();
+  if (!studentId || !currentOrder) return;
+
+  const { error } = await sb
     .from("reviews")
     .delete()
     .eq("student_id", studentId)
     .eq("menu_id", currentOrder.menu_id);
 
+  if (error) {
+    console.error("deleteReview error:", error);
+    return;
+  }
+
   closeModal();
-  load();
+  await load();
 };
