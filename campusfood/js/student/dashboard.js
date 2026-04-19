@@ -128,11 +128,12 @@ async function loadLiveOrders() {
   }
 
   const { data, error } = await sb
-    .from('orders')
-    .select('*, vendors(username)')
-    .eq('student_id', studentId)
-    .not('status', 'in', '("Completed","Cancelled")')
-    .order('created_at', { ascending: false });
+  .from('orders')
+  .select('*, vendors(username)')
+  .eq('student_id', studentId)
+  .neq('status', 'Completed')
+  .neq('status', 'Cancelled')
+  .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Load live orders error:', error);
