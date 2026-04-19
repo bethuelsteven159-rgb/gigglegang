@@ -1,25 +1,24 @@
 import { sb } from "../config/supabase.js";
 
 export async function getUserId() {
-  const {
-    data: { user },
-    error
-  } = await sb.auth.getUser();
+  const { data, error } = await sb.auth.getSession();
 
   if (error) {
-    console.error("getUserId error:", error);
+    console.error("getUserId session error:", error);
     return null;
   }
 
-  return user ? user.id : null;
+  const user = data?.session?.user || null;
+  console.log("getUserId user:", user);
+
+  return user?.id || null;
 }
 
-export function logout() {
-  sb.auth.signOut().finally(() => {
-    localStorage.clear();
-    sessionStorage.clear();
-    window.location.href = "index.html";
-  });
+export async function logout() {
+  await sb.auth.signOut();
+  localStorage.clear();
+  sessionStorage.clear();
+  window.location.href = "index.html";
 }
 
 window.logout = logout;
