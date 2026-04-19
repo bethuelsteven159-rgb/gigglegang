@@ -1169,6 +1169,14 @@ async function loadAllOrders() {
   `).join("");
 }
 
+function sendBrowserNotification(status) {
+  if (Notification.permission === "granted") {
+    new Notification("Order Update", {
+      body: `Your order is now: ${status}`
+    });
+  }
+}
+
 // ==================== GLOBAL EXPORTS ====================
 window.logout = logout;
 window.loadVendors = loadVendors;
