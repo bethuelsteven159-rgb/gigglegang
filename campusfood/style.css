@@ -893,7 +893,92 @@ tr:hover td {
   white-space: pre-wrap;
 }
 
+/* =========================
+   STUDENT LIVE ORDERS
+========================= */
 
+.live-orders-panel {
+  margin-top: 2rem;
+}
+
+.live-orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.live-orders-subtext {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.live-orders-empty {
+  color: var(--text-muted);
+  padding: 1rem 0;
+}
+
+.live-order-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.live-order-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.live-order-number {
+  font-weight: 700;
+  color: var(--primary);
+  font-size: 1rem;
+}
+
+.live-order-vendor {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.live-order-items {
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.live-order-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: var(--text-light);
+  font-size: 0.9rem;
+  margin-bottom: 0.9rem;
+}
+
+.live-order-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 768px) {
+  .live-order-top {
+    flex-direction: column;
+  }
+
+  .live-order-actions {
+    justify-content: stretch;
+  }
+
+  .live-order-actions .btn {
+    width: 100%;
+  }
+}
 
 
 
