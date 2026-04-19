@@ -7,9 +7,9 @@ import {
 import { logout } from '../shared/session.js';
 
 export async function initVendorOrdersPage() {
-  requireRole('vendor');
-  renderVendorName();
+  if (!requireRole('vendor')) return;
 
+  renderVendorName();
   await loadVendorOrders();
 
   window.updateOrderStatus = updateOrderStatus;
