@@ -12,7 +12,7 @@ export async function loadStudentOrderHistory() {
   const studentId = await getStudentId(username);
 
   if (!studentId) {
-    tbody.innerHTML = "<tr><td colspan='6'>Student not found</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='7'>Student not found</td></tr>";
     return;
   }
 
@@ -25,34 +25,38 @@ export async function loadStudentOrderHistory() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    tbody.innerHTML = "<tr><td colspan='6'>Failed to load orders</td></tr>";
+    console.error('Student history load error:', error);
+    tbody.innerHTML = "<tr><td colspan='7'>Failed to load orders</td></tr>";
     return;
   }
 
   if (!data || data.length === 0) {
-    tbody.innerHTML = "<tr><td colspan='6'>No orders yet</td></tr>";
+    tbody.innerHTML = "<tr><td colspan='7'>No orders yet</td></tr>";
     return;
   }
 
   tbody.innerHTML = data.map(order => `
-    <tr>
+    <tr data-order-id="${order.id}">
       <td>#${order.order_number || order.id}</td>
       <td>${order.vendors?.username || 'Unknown'}</td>
-      <td>${Array.isArray(order.items) ? order.items.map(i => i.name).join(', ') : ''}</td>
-      <td>R${order.total_price}</td>
-      <td>${order.status}</td>
-      <td>${new Date(order.created_at).toLocaleDateString()}</td>
+      <td>${Array.isArray(order.items) ? order.items.map(i => i.name || i.title || 'Item').join(', ') : ''}</td>
+      <td>R${order.total_price ?? 0}</td>
+      <td class="order-status">${order.status || ''}</td>
+      <td>${order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</td>
+      <td>-</td>
     </tr>
   `).join('');
 }
 
 export function subscribeToOrderUpdates(studentId) {
+  if (!studentId) return;
+
   if (ordersChannel) {
     sb.removeChannel(ordersChannel);
   }
 
   ordersChannel = sb
-    .channel('orders-realtime')
+    .channel(`orders-realtime-${studentId}`)
     .on(
       'postgres_changes',
       {
@@ -62,18 +66,35 @@ export function subscribeToOrderUpdates(studentId) {
         filter: `student_id=eq.${studentId}`
       },
       (payload) => {
-        const newStatus = payload.new.status;
+        const oldOrder = payload.old;
+        const newOrder = payload.new;
 
-        toast(`Order update: ${newStatus}`);
+        if (!oldOrder || !newOrder) return;
 
-        if (Notification.permission === 'granted') {
+        // Only notify if the status really changed
+        if (oldOrder.status === newOrder.status) return;
+
+        const message = `Order #${newOrder.order_number || newOrder.id} is now: ${newOrder.status}`;
+
+        // In-app toast
+        toast(message);
+
+        // Browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
           new Notification('Order Update', {
-            body: `Your order is now: ${newStatus}`
+            body: message
           });
         }
 
+        // Refresh table so student sees the new status
         loadStudentOrderHistory();
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('Student order realtime status:', status);
+    });
 }
+
+
+
+
