@@ -50,7 +50,7 @@ export async function loadVendorOrders() {
       : order.items || '';
 
     return `
-      <tr>
+      <tr data-order-id="${order.id}">
         <td>#${order.order_number || order.id}</td>
         <td>${order.student_username || 'Unknown'}</td>
         <td>${itemsText}</td>
@@ -59,9 +59,8 @@ export async function loadVendorOrders() {
         <td>
           <select onchange="updateOrderStatus('${order.id}', this.value)">
             <option value="Order Placed" ${order.status === 'Order Placed' ? 'selected' : ''}>Order Placed</option>
-            <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
-            <option value="Ready" ${order.status === 'Ready' ? 'selected' : ''}>Ready</option>
-            <option value="Delivered" ${order.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+            <option value="Being Prepared" ${order.status === 'Being Prepared' ? 'selected' : ''}>Being Prepared</option>
+            <option value="Ready for Collection" ${order.status === 'Ready for Collection' ? 'selected' : ''}>Ready for Collection</option>
             <option value="Completed" ${order.status === 'Completed' ? 'selected' : ''}>Completed</option>
           </select>
         </td>
@@ -82,7 +81,7 @@ export async function updateOrderStatus(orderId, newStatus) {
 
   if (error) {
     console.error('Update order status error:', error);
-    toast('Failed to update order', 'error');
+    toast(error.message || 'Failed to update order', 'error');
     return;
   }
 
