@@ -1,15 +1,45 @@
-import { requireRole } from '../shared/guards.js';
-import { renderVendorName } from '../vendor/dashboard.js';
-import { loadVendorOrders, updateOrderStatus } from '../vendor/orders.js';
-import { logout } from '../shared/session.js';
+import { sb } from "../config/supabase.js";
 
-export function initVendorOrdersPage() {
-  requireRole('vendor');
+let orders = [];
+let reviews = [];
 
-  renderVendorName();
-  loadVendorOrders();
+export async function initVendorOrdersPage() {
+  await loadVendor();
+}
 
-  // expose for inline HTML
-  window.updateOrderStatus = updateOrderStatus;
-  window.logout = logout;
+// ===============================
+async function loadVendor() {
+  const { data: o } = await sb.from("orders").select("*");
+  const { data: r } = await sb.from("reviews").select("*");
+
+  orders = o || [];
+  reviews = r || [];
+
+  render();
+}
+
+// ===============================
+function render() {
+  const body = document.getElementById("vendorBody");
+  body.innerHTML = "";
+
+  orders.forEach(order => {
+
+    const review = reviews.find(
+      r => r.menu_id === order.menu_id && r.st_id === order.st_id
+    );
+
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${order.id}</td>
+      <td>${order.st_id}</td>
+      <td>${order.items}</td>
+      <td>${order.status}</td>
+      <td>${review ? review.rating + "⭐" : "-"}</td>
+      <td>${review ? review.review_text : "No review"}</td>
+    `;
+
+    body.appendChild(row);
+  });
 }
