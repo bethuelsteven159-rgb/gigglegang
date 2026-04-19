@@ -19,7 +19,7 @@
 
 <div class="page">
   <h2>Orders for <span id="vendorLabel"></span></h2>
-  <div class="panel" style="padding:0; overflow:hidden;">
+  <div class="panel table-wrapper" style="padding:0;">
     <table style="width:100%">
       <thead>
         <tr>
@@ -29,12 +29,12 @@
           <th>Total</th>
           <th>Status</th>
           <th>Action</th>
-          <th>Review</th> <!-- ✅ NEW COLUMN -->
+          <th>Review</th>
         </tr>
       </thead>
       <tbody id="ordersBody">
         <tr>
-          <td colspan="7" style="text-align:center;padding:1.5rem;color:var(--muted)">
+          <td colspan="7" style="text-align:center;padding:1.5rem;color:var(--text-muted)">
             Loading…
           </td>
         </tr>
@@ -43,7 +43,47 @@
   </div>
 </div>
 
+<!-- REVIEW MODAL -->
+<div id="vendorReviewModal" class="review-modal">
+  <div class="review-box">
+    <div class="review-header">
+      <div>
+        <h3>Customer Review</h3>
+        <p class="review-order-info">What the customer said about this order</p>
+      </div>
+      <button type="button" class="review-close" onclick="closeVendorReviewModal()">✕</button>
+    </div>
+
+    <div class="review-summary">
+      <div class="review-summary-row">
+        <span class="label">Order</span>
+        <span id="reviewModalOrderNumber">-</span>
+      </div>
+      <div class="review-summary-row">
+        <span class="label">Student</span>
+        <span id="reviewModalStudent">-</span>
+      </div>
+      <div class="review-summary-row">
+        <span class="label">Items</span>
+        <span id="reviewModalItems">-</span>
+      </div>
+      <div class="review-summary-row">
+        <span class="label">Rating</span>
+        <span id="reviewModalRating">-</span>
+      </div>
+    </div>
+
+    <label class="review-subtitle">Comment</label>
+    <div id="reviewModalText" class="vendor-review-text">No written comment.</div>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" onclick="closeVendorReviewModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <script type="module" src="js/main.js"></script>
 
 </body>
+</html>
