@@ -149,4 +149,77 @@ export const updateOrderStatus = async (req, res) => {
       error: error.message
     });
   }
+}
+//cancel order 
+export const cancelOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  // 1. Get order
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  // 2. Check time window
+  const createdTime = new Date(order.created_at).getTime();
+  const now = new Date().getTime();
+
+  const diff = now - createdTime;
+
+  if (diff > 180000) {
+    return res.status(400).json({ error: 'Cancel window expired' });
+  }
+
+  // 3. Delete order items first
+  await supabase.from('order_items').delete().eq('order_id', orderId);
+
+  // 4. Delete order
+  await supabase.from('orders').delete().eq('id', orderId);
+
+  res.json({ message: 'Order cancelled successfully' });
+};
+
+//edit order  
+  export const editOrder = async (req, res) => {
+  const { orderId } = req.params;
+
+  // 1. Get order
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', orderId)
+    .single();
+
+  if (error || !order) {
+    return res.status(404).json({ error: 'Order not found' });
+  }
+
+  // 2. Check time window
+  const createdTime = new Date(order.created_at).getTime();
+  const now = new Date().getTime();
+
+  const diff = now - createdTime;
+
+  if (diff > 180000) {
+    return res.status(400).json({ error: 'Edit window expired' });
+  }
+
+  // 3. Remove existing items
+  await supabase.from('order_items').delete().eq('order_id', orderId);
+
+  // 4. Keep order but reset total
+  await supabase
+    .from('orders')
+    .update({ total_price: 0 })
+    .eq('id', orderId);
+
+  res.json({
+    message: 'Order cleared. You can now edit it.',
+    order_id: orderId
+  });
 };
