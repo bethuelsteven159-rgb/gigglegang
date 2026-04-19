@@ -34,16 +34,6 @@
 
 <div id="toast"></div>
 <script type="module" src="js/main.js"></script>
-<script>
-  const username = sessionStorage.getItem('username') || 'Vendor';
-  document.getElementById('vendorName').textContent = username;
-  document.getElementById('vendorNameWelcome').textContent = username;
-
-  const role = sessionStorage.getItem('role');
-  if (role !== 'vendor') {
-    window.location.href = 'index.html';
-  }
-</script>
 
 </body>
 </html>
