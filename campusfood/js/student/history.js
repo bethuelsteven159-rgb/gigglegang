@@ -1,5 +1,4 @@
 import { sb } from '../config/supabase.js';
-import { getStudentId } from '../shared/auth-helpers.js';
 
 let orders = [];
 let reviews = [];
@@ -45,25 +44,39 @@ function getOrderMenuId(order) {
 
   return null;
 }
-function findReviewForOrder(order) {
-  const menuId = getOrderMenuId(order);
-  if (menuId == null) return null;
 
+function findReviewForOrder(order) {
   return reviews.find(
-    r =>
-      String(r.vendor_id) === String(order.vendor_id) &&
-      String(r.menu_id) === String(menuId)
+    review => String(review.order_id) === String(order.id)
   ) || null;
 }
+
 function updateStars(value) {
   document.querySelectorAll('.star').forEach(star => {
     star.textContent = Number(star.dataset.value) <= value ? '★' : '☆';
   });
 }
 
+async function getCurrentStudentId() {
+  const {
+    data: { user },
+    error
+  } = await sb.auth.getUser();
+
+  if (error || !user) {
+    console.error('Could not get logged in user:', error);
+    return null;
+  }
+
+  return user.id;
+}
+
 function bindEvents() {
   document.addEventListener('click', e => {
-    if (e.target.classList.contains('reviewBtn') || e.target.classList.contains('editBtn')) {
+    if (
+      e.target.classList.contains('reviewBtn') ||
+      e.target.classList.contains('editBtn')
+    ) {
       openModal(e.target.dataset.id);
     }
 
@@ -127,8 +140,7 @@ export async function loadStudentOrderHistory() {
   const tbody = document.getElementById('historyBody');
   if (!tbody) return;
 
-  const username = sessionStorage.getItem('username');
-  const studentId = await getStudentId(username);
+  const studentId = await getCurrentStudentId();
 
   if (!studentId) {
     tbody.innerHTML = "<tr><td colspan='7'>Student not found</td></tr>";
@@ -216,7 +228,10 @@ export function openModal(id) {
     reviewText.value = currentReview?.review_text || '';
   }
 
-  document.querySelectorAll('.tag').forEach(tag => tag.classList.remove('active'));
+  document.querySelectorAll('.tag').forEach(tag => {
+    tag.classList.remove('active');
+  });
+
   updateStars(rating);
 
   const modal = document.getElementById('reviewModal');
@@ -233,8 +248,7 @@ export function closeModal() {
 }
 
 export async function submitReview() {
-  const username = sessionStorage.getItem('username');
-  const studentId = await getStudentId(username);
+  const studentId = await getCurrentStudentId();
 
   if (!studentId || !currentOrder) {
     showToast('Could not submit review');
@@ -275,6 +289,7 @@ export async function submitReview() {
     const { error } = await sb
       .from('reviews')
       .insert([{
+        order_id: currentOrder.id,
         student_id: studentId,
         vendor_id: currentOrder.vendor_id,
         menu_id: menuId,
