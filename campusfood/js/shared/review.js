@@ -1,50 +1,31 @@
-// ===============================
-// SUPABASE CLIENT
-// ===============================
 const SUPABASE_URL = 'https://mslvqduxmkuusuyaewej.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zbHZxZHV4bWt1dXN1eWFld2VqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5ODkzNDcsImV4cCI6MjA5MTU2NTM0N30.VxvR39nI5lNK_JZ6fwctQJgAH06YhbCTd8bXuiLpJgs';
+const SUPABASE_ANON_KEY = 'YOUR_KEY_HERE';
 
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ===============================
-// STATE
-// ===============================
 let orders = [];
 let reviews = [];
+
 let selectedOrderId = null;
 let selectedRating = 0;
 
-// assume logged-in student
-const studentId = localStorage.getItem("user_id") || "demo-user";
-
 // ===============================
-// LOAD DATA
+// LOAD
 // ===============================
 async function loadData() {
 
-  // ORDERS
-  const { data: orderData } = await sb
-    .from("orders")
-    .select("*")
-    .eq("student_id", studentId);
+  const { data: o } = await sb.from("orders").select("*");
+  const { data: r } = await sb.from("reviews").select("*");
 
-  orders = orderData || [];
+  orders = o || [];
+  reviews = r || [];
 
-  // REVIEWS
-  const { data: reviewData } = await sb
-    .from("reviews")
-    .select("*")
-    .eq("student_id", studentId);
-
-  reviews = reviewData || [];
-
-  renderTable();
+  render();
 }
 
 // ===============================
-// RENDER TABLE
-// ===============================
-function renderTable() {
+function render() {
+
   const tbody = document.getElementById("historyBody");
   tbody.innerHTML = "";
 
@@ -61,13 +42,12 @@ function renderTable() {
       <td>${order.total}</td>
       <td>${order.status}</td>
       <td>${order.date}</td>
-
       <td>
         ${
           review
             ? `<span style="color:green;">★ ${review.rating}</span>`
             : order.status === "Delivered"
-              ? `<button onclick="openReview(${order.id})">Review</button>`
+              ? `<button onclick="openReviewModal(${order.id})">Review</button>`
               : `<span style="color:gray;">Locked</span>`
         }
       </td>
@@ -78,14 +58,18 @@ function renderTable() {
 }
 
 // ===============================
-// REVIEW MODAL
+// MODAL CONTROL (ONLY ON BUTTON CLICK)
 // ===============================
-window.openReview = (orderId) => {
+window.openReviewModal = (orderId) => {
+
   selectedOrderId = orderId;
   selectedRating = 0;
 
   document.getElementById("reviewModal").style.display = "flex";
+
   resetStars();
+  resetTags();
+  document.getElementById("reviewText").value = "";
 };
 
 window.closeReviewModal = () => {
@@ -93,23 +77,47 @@ window.closeReviewModal = () => {
 };
 
 // ===============================
-// STAR RATING
+// STAR SYSTEM
 // ===============================
-document.querySelectorAll(".star").forEach(star => {
-  star.addEventListener("click", () => {
-    selectedRating = parseInt(star.dataset.value);
+document.querySelectorAll(".star").forEach(s => {
+  s.addEventListener("click", () => {
+    selectedRating = parseInt(s.dataset.value);
     updateStars(selectedRating);
   });
 });
 
-function updateStars(rating) {
+function updateStars(r) {
   document.querySelectorAll(".star").forEach(s => {
-    s.textContent = s.dataset.value <= rating ? "★" : "☆";
+    s.textContent = s.dataset.value <= r ? "★" : "☆";
   });
 }
 
 function resetStars() {
   document.querySelectorAll(".star").forEach(s => s.textContent = "☆");
+}
+
+// ===============================
+// TAG SYSTEM (FIXED → inserts into textarea)
+// ===============================
+document.querySelectorAll(".tag").forEach(tag => {
+
+  tag.addEventListener("click", () => {
+
+    const text = tag.textContent;
+    const textarea = document.getElementById("reviewText");
+
+    // append tag into description (AUTO RESPONSE SYSTEM)
+    if (!textarea.value.includes(text)) {
+      textarea.value += (textarea.value ? ", " : "") + text;
+    }
+
+    // toggle active UI
+    tag.classList.toggle("active");
+  });
+});
+
+function resetTags() {
+  document.querySelectorAll(".tag").forEach(t => t.classList.remove("active"));
 }
 
 // ===============================
@@ -121,26 +129,16 @@ window.submitReview = async () => {
 
   const text = document.getElementById("reviewText").value;
 
-  // UPSERT = ensures ONLY ONE review per order per user
-  const { error } = await sb
-    .from("reviews")
-    .upsert({
-      order_id: selectedOrderId,
-      student_id: studentId,
-      rating: selectedRating,
-      text: text
-    });
-
-  if (error) {
-    console.error(error);
-    return;
-  }
+  await sb.from("reviews").upsert({
+    order_id: selectedOrderId,
+    student_id: "demo-user",
+    rating: selectedRating,
+    text: text
+  });
 
   closeReviewModal();
   loadData();
 };
 
-// ===============================
-// INIT
 // ===============================
 loadData();
