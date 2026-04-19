@@ -1,22 +1,11 @@
-import { sb } from "../config/supabase.js";
+import { sb } from '../config/supabase.js';
 
 function redirectToHome() {
-  const currentPath = window.location.pathname.toLowerCase();
-
-  if (
-    currentPath.includes("/pages/") ||
-    currentPath.includes("/admin/") ||
-    currentPath.includes("/vendor/") ||
-    currentPath.includes("/student/")
-  ) {
-    window.location.href = "../index.html";
-  } else {
-    window.location.href = "index.html";
-  }
+  window.location.href = 'index.html';
 }
 
 export function requireRole(expectedRole) {
-  const role = sessionStorage.getItem("role");
+  const role = sessionStorage.getItem('role');
 
   if (role !== expectedRole) {
     redirectToHome();
@@ -38,13 +27,13 @@ export async function requireAdmin() {
   }
 
   const { data, error } = await sb
-    .from("admins")
-    .select("email")
-    .eq("email", user.email)
+    .from('admins')
+    .select('email')
+    .eq('email', user.email)
     .maybeSingle();
 
   if (error || !data) {
-    alert("Access denied. Admins only.");
+    alert('Access denied. Admins only.');
     redirectToHome();
     return false;
   }
@@ -53,24 +42,21 @@ export async function requireAdmin() {
 }
 
 export async function requireVendor() {
-  const {
-    data: { user },
-    error: userError,
-  } = await sb.auth.getUser();
+  const userId = sessionStorage.getItem('userId');
 
-  if (userError || !user) {
+  if (!userId) {
     redirectToHome();
     return false;
   }
 
   const { data, error } = await sb
-    .from("vendors")
-    .select("id, username, status")
-    .eq("username", user.user_metadata?.username || user.email?.split("@")[0])
+    .from('vendors')
+    .select('id, username, status')
+    .eq('id', userId)
     .maybeSingle();
 
   if (error || !data) {
-    alert("Access denied. Vendors only.");
+    alert('Access denied. Vendors only.');
     redirectToHome();
     return false;
   }
@@ -79,24 +65,21 @@ export async function requireVendor() {
 }
 
 export async function requireStudent() {
-  const {
-    data: { user },
-    error: userError,
-  } = await sb.auth.getUser();
+  const userId = sessionStorage.getItem('userId');
 
-  if (userError || !user) {
+  if (!userId) {
     redirectToHome();
     return false;
   }
 
   const { data, error } = await sb
-    .from("students")
-    .select("id, username")
-    .eq("username", user.user_metadata?.username || user.email?.split("@")[0])
+    .from('students')
+    .select('id, username')
+    .eq('id', userId)
     .maybeSingle();
 
   if (error || !data) {
-    alert("Access denied. Students only.");
+    alert('Access denied. Students only.');
     redirectToHome();
     return false;
   }
