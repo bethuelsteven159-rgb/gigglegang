@@ -10,7 +10,7 @@ export async function loadVendorOrders() {
   const vendorId = await getVendorId(username);
 
   if (!vendorId) {
-    container.innerHTML = "<tr><td colspan='6'>Vendor not found</td></tr>";
+    container.innerHTML = "<tr><td colspan='7'>Vendor not found</td></tr>";
     return;
   }
 
@@ -21,46 +21,57 @@ export async function loadVendorOrders() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error(error);
-    container.innerHTML = "<tr><td colspan='6'>Failed to load orders</td></tr>";
+    console.error('Vendor orders load error:', error);
+    container.innerHTML = "<tr><td colspan='7'>Failed to load orders</td></tr>";
     return;
   }
 
   if (!data || data.length === 0) {
-    container.innerHTML = "<tr><td colspan='6'>No orders yet</td></tr>";
+    container.innerHTML = "<tr><td colspan='7'>No orders yet</td></tr>";
     return;
   }
 
-  container.innerHTML = data.map(order => `
-    <tr>
-      <td>#${order.order_number || order.id}</td>
-      <td>${order.student_username || 'Unknown'}</td>
-      <td>${Array.isArray(order.items) ? order.items.map(i => i.name).join(', ') : ''}</td>
-      <td>R${order.total_price}</td>
-      <td>${order.status}</td>
-      <td>
-        <select onchange="updateOrderStatus('${order.id}', this.value)">
-          <option value="Order Placed" ${order.status === 'Order Placed' ? 'selected' : ''}>Order Placed</option>
-          <option value="Preparing" ${order.status === 'Preparing' ? 'selected' : ''}>Preparing</option>
-          <option value="Ready" ${order.status === 'Ready' ? 'selected' : ''}>Ready</option>
-          <option value="Completed" ${order.status === 'Completed' ? 'selected' : ''}>Completed</option>
-        </select>
-      </td>
-    </tr>
-  `).join('');
+  container.innerHTML = data.map(order => {
+    const itemsText = Array.isArray(order.items)
+      ? order.items.map(i => i.name || i.title || 'Item').join(', ')
+      : order.items || '';
+
+    return `
+      <tr data-order-id="${order.id}">
+        <td>#${order.order_number || order.id}</td>
+        <td>${order.student_username || 'Unknown'}</td>
+        <td>${itemsText}</td>
+        <td>R${order.total_price ?? 0}</td>
+        <td>${order.status || ''}</td>
+        <td>
+          <select onchange="updateOrderStatus('${order.id}', this.value)">
+            <option value="Order Placed" ${order.status === 'Order Placed' ? 'selected' : ''}>Order Placed</option>
+            <option value="Being Prepared" ${order.status === 'Being Prepared' ? 'selected' : ''}>Being Prepared</option>
+            <option value="Ready for Collection" ${order.status === 'Ready for Collection' ? 'selected' : ''}>Ready for Collection</option>
+            <option value="Completed" ${order.status === 'Completed' ? 'selected' : ''}>Completed</option>
+          </select>
+        </td>
+        <td>${order.reviewed ? 'Reviewed' : '-'}</td>
+      </tr>
+    `;
+  }).join('');
 }
 
 export async function updateOrderStatus(orderId, newStatus) {
   const { error } = await sb
     .from('orders')
-    .update({ status: newStatus })
+    .update({
+      status: newStatus,
+      updated_at: new Date().toISOString()
+    })
     .eq('id', orderId);
 
   if (error) {
-    console.error(error);
-    toast('Failed to update order', 'error');
-  } else {
-    toast('Order updated');
-    loadVendorOrders();
+    console.error('Update order status error:', error);
+    toast(error.message || 'Failed to update order', 'error');
+    return;
   }
+
+  toast('Order updated');
+  await loadVendorOrders();
 }
