@@ -9,11 +9,23 @@ import { storeSessionUser } from '../shared/session.js';
 
 export async function getExistingRole(user) {
   const username = getUsernameFromUser(user);
+  const email = user.email?.toLowerCase();
 
-  if (user.email === 'admin123@campusfood.com') {
-    return { role: 'admin', username };
+  // Check admins table first
+  const { data: adminData, error: adminError } = await sb
+    .from('admins')
+    .select('email')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (!adminError && adminData) {
+    return {
+      role: 'admin',
+      username
+    };
   }
 
+  // Check vendors table
   const { data: vendorData, error: vendorError } = await sb
     .from('vendors')
     .select('id, username, status')
@@ -28,6 +40,7 @@ export async function getExistingRole(user) {
     };
   }
 
+  // Check students table
   const { data: studentData, error: studentError } = await sb
     .from('students')
     .select('id, username')
@@ -70,11 +83,14 @@ export async function saveRoleForFirstTimeUser() {
     if (role === 'vendor') {
       const { error: vendorError } = await sb
         .from('vendors')
-        .upsert([{
-          id: user.id,
-          username,
-          status: 'pending'
-        }], { onConflict: 'id' });
+        .upsert(
+          [{
+            id: user.id,
+            username,
+            status: 'pending'
+          }],
+          { onConflict: 'id' }
+        );
 
       if (vendorError) throw vendorError;
     }
@@ -82,10 +98,13 @@ export async function saveRoleForFirstTimeUser() {
     if (role === 'student') {
       const { error: studentError } = await sb
         .from('students')
-        .upsert([{
-          id: user.id,
-          username
-        }], { onConflict: 'id' });
+        .upsert(
+          [{
+            id: user.id,
+            username
+          }],
+          { onConflict: 'id' }
+        );
 
       if (studentError) throw studentError;
     }
