@@ -5,10 +5,10 @@ Our JavaScript is modular.
 If you edit code in the wrong place, you will break features.
 
 RULES
-.DO NOT put logic inside HTML files
-.DO NOT create random JS files
-.DO NOT edit main.js unless adding a new page
-.ALWAYS edit the correct folder based on responsibility
+1. DO NOT put logic inside HTML files
+2. DO NOT create random JS files
+3. DO NOT edit main.js unless adding a new page
+4. ALWAYS edit the correct folder based on responsibility
 
 🧠 PROJECT STRUCTURE
 js/
