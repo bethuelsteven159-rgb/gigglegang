@@ -28,6 +28,15 @@ async function getCurrentStudentId() {
   return user.id;
 }
 
+function normalizeStatus(status) {
+  return String(status || '').trim().toLowerCase();
+}
+
+function isActiveOrder(order) {
+  const status = normalizeStatus(order?.status);
+  return status !== 'completed' && status !== 'cancelled';
+}
+
 function formatElapsedTime(createdAt) {
   if (!createdAt) return 'Unknown time';
 
@@ -47,7 +56,7 @@ function formatElapsedTime(createdAt) {
 }
 
 function getStatusClass(status) {
-  const value = String(status || '').toLowerCase();
+  const value = normalizeStatus(status);
 
   if (value === 'order placed') return 'status-pending';
   if (value === 'being prepared') return 'status-confirmed';
@@ -59,7 +68,7 @@ function getStatusClass(status) {
 }
 
 function canCancelOrder(order) {
-  const status = String(order?.status || '').trim().toLowerCase();
+  const status = normalizeStatus(order?.status);
   return status === 'order placed' || status === 'being prepared';
 }
 
@@ -128,12 +137,10 @@ async function loadLiveOrders() {
   }
 
   const { data, error } = await sb
-  .from('orders')
-  .select('*, vendors(username)')
-  .eq('student_id', studentId)
-  .neq('status', 'Completed')
-  .neq('status', 'Cancelled')
-  .order('created_at', { ascending: false });
+    .from('orders')
+    .select('*, vendors(username)')
+    .eq('student_id', studentId)
+    .order('created_at', { ascending: false });
 
   if (error) {
     console.error('Load live orders error:', error);
@@ -143,7 +150,7 @@ async function loadLiveOrders() {
     return;
   }
 
-  activeOrders = data || [];
+  activeOrders = (data || []).filter(isActiveOrder);
   renderLiveOrders();
 }
 
@@ -182,7 +189,7 @@ function subscribeToDashboardOrders(studentId) {
               message = `Order #${newOrder.order_number || newOrder.id} was cancelled`;
             }
 
-            toast(message, newOrder.status === 'Completed' ? 'success' : 'success');
+            toast(message, 'success');
           }
         }
 
@@ -220,6 +227,9 @@ export async function cancelStudentOrder(orderId) {
     toast('Failed to cancel order', 'error');
     return;
   }
+
+  activeOrders = activeOrders.filter(o => String(o.id) !== String(orderId));
+  renderLiveOrders();
 
   toast('Order cancelled');
   await loadLiveOrders();
