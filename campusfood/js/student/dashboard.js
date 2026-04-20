@@ -150,7 +150,10 @@ async function loadLiveOrders() {
     return;
   }
 
-  activeOrders = (data || []).filter(isActiveOrder);
+  activeOrders = (data || []).filter(order => {
+  const status = String(order.status || '').trim().toLowerCase();
+  return status !== 'completed' && status !== 'cancelled';
+});
   console.log('All dashboard orders from DB:', data);
   console.log('Filtered active orders:', (data || []).filter(isActiveOrder));
   renderLiveOrders();
