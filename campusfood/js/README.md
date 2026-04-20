@@ -32,9 +32,9 @@ Flow:
 
 📦 FEATURES WE BUILT (THIS SESSION)
 1. LIVE ORDER TRACKING (Student Dashboard)
-1. shows active orders only
-2. .updates in real time
-.shows:
+- shows active orders only
+- updates in real time
+- shows:
 .status
 .time since ordered
 .items
