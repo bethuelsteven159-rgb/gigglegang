@@ -10,10 +10,6 @@ jobs:
   frontend-tests:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: Campusfood
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -24,10 +20,14 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          cd Campusfood
+          npm install
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: |
+          cd Campusfood
+          npm run test:coverage
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
