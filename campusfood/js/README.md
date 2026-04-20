@@ -63,10 +63,10 @@ OR
 
 - Order Placed → Cancelled (LOCKED)
 - Being Prepared → Cancelled (LOCKED)
-Rules:
-- cannot go backwards
-- completed cannot change
-- cancelled cannot change
+- Rules:
+  - cannot go backwards
+  - completed cannot change
+  - cancelled cannot change
 
 4. REVIEW SYSTEM (FIXED)
 Before:
