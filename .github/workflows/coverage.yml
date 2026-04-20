@@ -21,18 +21,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          cd Campusfood
+          cd campusfood
           npm install
 
       - name: Run tests with coverage
         run: |
-          cd Campusfood
+          cd campusfood
           npm run test:coverage
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: Campusfood/coverage/lcov.info
+          files: campusfood/coverage/lcov.info
           fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
