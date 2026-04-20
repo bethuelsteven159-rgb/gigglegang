@@ -151,6 +151,8 @@ async function loadLiveOrders() {
   }
 
   activeOrders = (data || []).filter(isActiveOrder);
+  console.log('All dashboard orders from DB:', data);
+  console.log('Filtered active orders:', (data || []).filter(isActiveOrder));
   renderLiveOrders();
 }
 
@@ -192,7 +194,6 @@ function subscribeToDashboardOrders(studentId) {
             toast(message, 'success');
           }
         }
-
         await loadLiveOrders();
       }
     )
