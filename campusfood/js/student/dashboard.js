@@ -215,7 +215,13 @@ export async function cancelStudentOrder(orderId) {
     return;
   }
 
-  console.log('Cancelling order:', orderId);
+  const studentId = await getCurrentStudentId();
+  if (!studentId) {
+    toast('Could not find logged in student', 'error');
+    return;
+  }
+
+  console.log('Cancelling order:', orderId, 'for student:', studentId);
 
   const { data, error } = await sb
     .from('orders')
@@ -224,6 +230,8 @@ export async function cancelStudentOrder(orderId) {
       updated_at: new Date().toISOString()
     })
     .eq('id', orderId)
+    .eq('student_id', studentId)
+    .in('status', ['Order Placed', 'Being Prepared'])
     .select();
 
   if (error) {
@@ -233,6 +241,11 @@ export async function cancelStudentOrder(orderId) {
   }
 
   console.log('Cancel result from DB:', data);
+
+  if (!data || data.length === 0) {
+    toast('Could not cancel order. It may be blocked by permissions or already changed.', 'error');
+    return;
+  }
 
   activeOrders = activeOrders.filter(o => String(o.id) !== String(orderId));
   renderLiveOrders();
