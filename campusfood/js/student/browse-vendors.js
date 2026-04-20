@@ -1,6 +1,6 @@
 import { sb } from '../config/supabase.js';
 import { updateCartDisplay, setCart } from './cart.js';
-import { loadStudentMenu, setupVendorFilters, clearVendorFilters } from './menu.js';
+import { loadStudentMenu, setupVendorFilters, clearVendorFilters, sortByMostOrderedForVendor } from './menu.js';
 
 export async function loadVendorsList() {
   const container = document.getElementById('vendorsContainer');
