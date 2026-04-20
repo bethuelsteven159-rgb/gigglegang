@@ -1,10 +1,16 @@
 import { sb } from '../config/supabase.js';
-import { updateCartDisplay, getCart, setCart } from './cart.js';
-import { loadStudentMenu } from './menu.js';
+import { updateCartDisplay, setCart } from './cart.js';
+import { loadStudentMenu, setupVendorFilters, clearVendorFilters } from './menu.js';
 
 export async function loadVendorsList() {
   const container = document.getElementById('vendorsContainer');
   if (!container) return;
+
+  // Hide search and filter when showing vendor list
+  const searchContainer = document.getElementById('searchContainer');
+  const filterPanel = document.getElementById('filterPanel');
+  if (searchContainer) searchContainer.style.display = 'none';
+  if (filterPanel) filterPanel.style.display = 'none';
 
   const { data: vendors, error } = await sb
     .from('vendors')
@@ -17,7 +23,7 @@ export async function loadVendorsList() {
   }
 
   container.innerHTML = vendors.map(vendor => `
-    <div class="menu-item" style="cursor: pointer;" onclick="showVendorMenu('${vendor.id}', '${vendor.username}')">
+    <div class="menu-item" style="cursor: pointer;" onclick="window.showVendorMenu('${vendor.id}', '${vendor.username}')">
       <div style="font-weight: bold; font-size: 1.2rem;">🏪 ${vendor.username}</div>
       <div style="color: var(--accent); margin-top: 0.5rem;">Click to view menu →</div>
     </div>
@@ -45,6 +51,10 @@ export async function showVendorMenu(vendorId, vendorName) {
     browseByVendorBtn.style.color = 'var(--text)';
   }
 
+  // Show search bar and filter panel for vendor view
+  const searchContainer = document.getElementById('searchContainer');
+  if (searchContainer) searchContainer.style.display = 'block';
+
   container.innerHTML = `<p style="color:var(--muted)">Loading ${vendorName}'s menu...</p>`;
 
   const { data: menu, error } = await sb
@@ -58,18 +68,30 @@ export async function showVendorMenu(vendorId, vendorName) {
     return;
   }
 
+  // Store menu data globally for filtering
+  window.currentVendorMenu = menu.map(item => ({
+    ...item,
+    vendor_name: vendorName,
+    vendor_id: vendorId
+  }));
+  window.currentVendorId = vendorId;
+
+  // Setup filters for this vendor
+  setupVendorFilters(vendorId);
+
   const menuHeading = document.querySelector('#menuView h2');
   if (menuHeading) {
-    menuHeading.innerHTML = `${vendorName} Menu <button onclick="resetToAllMenu()" style="margin-left: 1rem; padding: 0.25rem 0.75rem; font-size: 0.8rem;" class="btn">Back to All Menu</button>`;
+    menuHeading.innerHTML = `${vendorName} Menu <button onclick="window.resetToAllMenu()" style="margin-left: 1rem; padding: 0.25rem 0.75rem; font-size: 0.8rem;" class="btn">Back to All Menu</button>`;
   }
 
+  // Initial render without filters
   container.innerHTML = menu.map(item => `
     <div class="menu-item">
       <div style="font-weight: bold;">${item.name}</div>
       <div>R${item.price}</div>
       <div style="font-size: 12px; color: var(--text-muted);">${item.description || ''}</div>
       ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ''}
-      <button class="btn btn-primary btn-sm" onclick="addToCart('${item.id}', '${item.name}', ${item.price}, '${vendorId}')">
+      <button class="btn btn-primary btn-sm" onclick="window.addToCartFromVendor('${item.id}', '${item.name}', ${item.price}, '${vendorId}')">
         + Add to Cart
       </button>
     </div>
@@ -87,5 +109,27 @@ export function resetToAllMenu() {
   if (menuHeading) {
     menuHeading.innerHTML = 'Available Menu';
   }
+  
+  // Clear vendor filters and search
+  clearVendorFilters();
+  
+  // Reload the full menu
   loadStudentMenu();
 }
+
+// Make functions available globally
+window.showVendorMenu = showVendorMenu;
+window.resetToAllMenu = resetToAllMenu;
+window.addToCartFromVendor = (itemId, name, price, vendorId) => {
+  const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
+  cart.push({ id: itemId, name, price, vendor_id: vendorId });
+  sessionStorage.setItem('cart', JSON.stringify(cart));
+  updateCartDisplay();
+  
+  const toast = document.getElementById('toast');
+  if (toast) {
+    toast.textContent = `${name} added to cart`;
+    toast.className = 'show success';
+    setTimeout(() => toast.className = '', 3000);
+  }
+};
