@@ -20,11 +20,12 @@ async function getVendorAverageRating(vendorId) {
   return avg;
 }
 
-// Get most ordered counts
-async function getMostOrderedCounts() {
+// Get most ordered counts for a SPECIFIC vendor only
+async function getMostOrderedCountsForVendor(vendorId) {
   const { data: orders, error } = await sb
     .from('orders')
-    .select('items');
+    .select('items')
+    .eq('vendor_id', vendorId);
 
   if (error || !orders) return {};
 
@@ -92,11 +93,11 @@ async function applyFiltersAndRender() {
   `).join('');
 }
 
-// Sort by most ordered (vendor-specific view)
-export async function sortByMostOrdered() {
-  if (!currentVendorIdForFilters || !currentAllMenu.length) return;
+// Sort by most ordered for SPECIFIC vendor
+export async function sortByMostOrderedForVendor(vendorId) {
+  if (!vendorId || !currentAllMenu.length) return;
 
-  const itemCounts = await getMostOrderedCounts();
+  const itemCounts = await getMostOrderedCountsForVendor(vendorId);
   currentAllMenu.sort((a, b) => (itemCounts[b.id] || 0) - (itemCounts[a.id] || 0));
   await applyFiltersAndRender();
 }
@@ -151,7 +152,7 @@ export function setupVendorFilters(vendorId) {
   }
 
   if (mostOrderedBtn) {
-    mostOrderedBtn.onclick = () => sortByMostOrdered();
+    mostOrderedBtn.onclick = () => sortByMostOrderedForVendor(vendorId);
   }
 
   if (resetFiltersBtn) {
