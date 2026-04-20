@@ -34,27 +34,27 @@ Flow:
 1. LIVE ORDER TRACKING (Student Dashboard)
 - shows active orders only
 - updates in real time
-- shows:
-.status
-.time since ordered
-.items
-.allows cancellation
+2. shows:
+- status
+- time since ordered
+- items
+- allows cancellation
 
 3. ORDER CANCELLATION SYSTEM
-.Students can cancel only when:
-.Order Placed
-.Being Prepared
-.After cancelling:
-.status becomes "Cancelled"
-.removed from live dashboard
-.locked permanently
-.vendor can see but cannot edit
+- Students can cancel only when:
+- Order Placed
+- Being Prepared
+- After cancelling:
+- status becomes "Cancelled"
+- removed from live dashboard
+- locked permanently
+- vendor can see but cannot edit
 
 3. ORDER STATE FLOW
 Order Placed
-↓
+->
 Being Prepared
-↓
+->
 Ready for Collection
 ↓
 Completed (LOCKED)
