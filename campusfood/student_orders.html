@@ -24,6 +24,33 @@
     <button id="browseByVendorBtn" class="btn" style="background: var(--surface-alt); color: var(--text);">Browse by Vendor</button>
   </div>
 
+  <!-- Search Bar (visible in both views) -->
+  <div id="searchContainer" style="margin-bottom: 1.5rem; display: none;">
+    <input type="text" id="searchInput" placeholder="🔍 Search menu items..." style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border);">
+  </div>
+
+  <!-- Filter Panel (only visible after vendor selected) -->
+  <div id="filterPanel" style="margin-bottom: 1.5rem; display: none; background: var(--surface); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
+      <span style="font-weight: 600;">Filter by:</span>
+      <select id="priceFilter" style="padding: 0.5rem; border-radius: 6px;">
+        <option value="">Price: All</option>
+        <option value="low-high">Price: Low to High</option>
+        <option value="high-low">Price: High to Low</option>
+      </select>
+      <select id="ratingFilter" style="padding: 0.5rem; border-radius: 6px;">
+        <option value="">Rating: All</option>
+        <option value="1">★ 1 star & up</option>
+        <option value="2">★★ 2 stars & up</option>
+        <option value="3">★★★ 3 stars & up</option>
+        <option value="4">★★★★ 4 stars & up</option>
+        <option value="5">★★★★★ 5 stars only</option>
+      </select>
+      <button id="mostOrderedBtn" class="btn btn-sm" style="background: var(--accent); color: white;">🔥 Most Ordered</button>
+      <button id="resetFiltersBtn" class="btn btn-sm" style="background: var(--surface-alt);">Reset Filters</button>
+    </div>
+  </div>
+
   <!-- Menu Items View (default) -->
   <div id="menuView">
     <h2>Available Menu</h2>
