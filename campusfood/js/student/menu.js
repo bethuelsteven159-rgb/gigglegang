@@ -2,11 +2,12 @@ import { sb } from '../config/supabase.js';
 import { setCart, updateCartDisplay } from './cart.js';
 
 let currentAllMenu = [];
-let currentFilteredMenu = [];
+let currentVendorSpecificMenu = [];  // NEW: separate array for vendor menu
 let currentSearchText = '';
 let currentPriceFilter = '';
 let currentRatingFilter = '';
 let currentVendorIdForFilters = null;
+let isVendorMode = false;  // NEW: track if we're in vendor mode
 
 // Get average rating for a vendor
 async function getVendorAverageRating(vendorId) {
@@ -41,11 +42,14 @@ async function getMostOrderedCountsForVendor(vendorId) {
   return itemCounts;
 }
 
-// Apply all filters and search
+// Apply all filters and search (uses correct menu array based on mode)
 async function applyFiltersAndRender() {
-  if (!currentAllMenu.length) return;
+  // Use the correct menu array based on mode
+  const menuToUse = isVendorMode ? currentVendorSpecificMenu : currentAllMenu;
+  
+  if (!menuToUse.length) return;
 
-  let filtered = [...currentAllMenu];
+  let filtered = [...menuToUse];
 
   // Apply search
   if (currentSearchText) {
@@ -95,10 +99,10 @@ async function applyFiltersAndRender() {
 
 // Sort by most ordered for SPECIFIC vendor
 export async function sortByMostOrderedForVendor(vendorId) {
-  if (!vendorId || !currentAllMenu.length) return;
+  if (!vendorId || !currentVendorSpecificMenu.length) return;
 
   const itemCounts = await getMostOrderedCountsForVendor(vendorId);
-  currentAllMenu.sort((a, b) => (itemCounts[b.id] || 0) - (itemCounts[a.id] || 0));
+  currentVendorSpecificMenu.sort((a, b) => (itemCounts[b.id] || 0) - (itemCounts[a.id] || 0));
   await applyFiltersAndRender();
 }
 
@@ -118,8 +122,10 @@ export function resetFilters() {
 }
 
 // Setup search and filter listeners (for vendor view)
-export function setupVendorFilters(vendorId) {
+export function setupVendorFilters(vendorId, vendorMenu) {
   currentVendorIdForFilters = vendorId;
+  currentVendorSpecificMenu = [...vendorMenu];  // Store vendor-specific menu
+  isVendorMode = true;  // Enable vendor mode
   
   const searchInput = document.getElementById('searchInput');
   const priceFilter = document.getElementById('priceFilter');
@@ -161,14 +167,19 @@ export function setupVendorFilters(vendorId) {
       applyFiltersAndRender();
     };
   }
+  
+  // Initial render
+  applyFiltersAndRender();
 }
 
 // Clear vendor filters (when going back to all menu)
 export function clearVendorFilters() {
   currentVendorIdForFilters = null;
+  currentVendorSpecificMenu = [];
   currentSearchText = '';
   currentPriceFilter = '';
   currentRatingFilter = '';
+  isVendorMode = false;
   
   const searchInput = document.getElementById('searchInput');
   const priceFilter = document.getElementById('priceFilter');
@@ -176,9 +187,18 @@ export function clearVendorFilters() {
   const filterPanel = document.getElementById('filterPanel');
   const searchContainer = document.getElementById('searchContainer');
   
-  if (searchInput) searchInput.value = '';
-  if (priceFilter) priceFilter.value = '';
-  if (ratingFilter) ratingFilter.value = '';
+  if (searchInput) {
+    searchInput.value = '';
+    searchInput.oninput = null;  // Remove event listener
+  }
+  if (priceFilter) {
+    priceFilter.value = '';
+    priceFilter.onchange = null;
+  }
+  if (ratingFilter) {
+    ratingFilter.value = '';
+    ratingFilter.onchange = null;
+  }
   if (filterPanel) filterPanel.style.display = 'none';
   if (searchContainer) searchContainer.style.display = 'block';
 }
@@ -194,7 +214,8 @@ export async function loadStudentMenu() {
   if (searchContainer) searchContainer.style.display = 'block';
   if (filterPanel) filterPanel.style.display = 'none';
 
-  // Reset vendor filter context
+  // Reset vendor mode
+  isVendorMode = false;
   currentVendorIdForFilters = null;
   currentSearchText = '';
   currentPriceFilter = '';
