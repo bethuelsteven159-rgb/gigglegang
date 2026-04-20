@@ -1,6 +1,6 @@
 import { sb } from '../config/supabase.js';
 import { updateCartDisplay, setCart } from './cart.js';
-import { loadStudentMenu, setupVendorFilters, clearVendorFilters, sortByMostOrderedForVendor } from './menu.js';
+import { loadStudentMenu, setupVendorFilters, clearVendorFilters } from './menu.js';
 
 export async function loadVendorsList() {
   const container = document.getElementById('vendorsContainer');
@@ -51,7 +51,7 @@ export async function showVendorMenu(vendorId, vendorName) {
     browseByVendorBtn.style.color = 'var(--text)';
   }
 
-  // Show search bar and filter panel for vendor view
+  // Show search bar for vendor view
   const searchContainer = document.getElementById('searchContainer');
   if (searchContainer) searchContainer.style.display = 'block';
 
@@ -68,34 +68,20 @@ export async function showVendorMenu(vendorId, vendorName) {
     return;
   }
 
-  // Store menu data globally for filtering
-  window.currentVendorMenu = menu.map(item => ({
+  // Format menu items with vendor info
+  const formattedMenu = menu.map(item => ({
     ...item,
     vendor_name: vendorName,
     vendor_id: vendorId
   }));
-  window.currentVendorId = vendorId;
-
-  // Setup filters for this vendor
-  setupVendorFilters(vendorId);
 
   const menuHeading = document.querySelector('#menuView h2');
   if (menuHeading) {
     menuHeading.innerHTML = `${vendorName} Menu <button onclick="window.resetToAllMenu()" style="margin-left: 1rem; padding: 0.25rem 0.75rem; font-size: 0.8rem;" class="btn">Back to All Menu</button>`;
   }
 
-  // Initial render without filters
-  container.innerHTML = menu.map(item => `
-    <div class="menu-item">
-      <div style="font-weight: bold;">${item.name}</div>
-      <div>R${item.price}</div>
-      <div style="font-size: 12px; color: var(--text-muted);">${item.description || ''}</div>
-      ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ''}
-      <button class="btn btn-primary btn-sm" onclick="window.addToCartFromVendor('${item.id}', '${item.name}', ${item.price}, '${vendorId}')">
-        + Add to Cart
-      </button>
-    </div>
-  `).join('');
+  // Setup filters with the vendor-specific menu
+  setupVendorFilters(vendorId, formattedMenu);
 
   const savedCart = sessionStorage.getItem('cart');
   if (savedCart) {
