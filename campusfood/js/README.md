@@ -24,11 +24,11 @@ js/
 
 🧭 HOW THE SYSTEM WORKS
 Flow:
-.HTML → main.js → pages/... → feature modules → Supabase
-.HTML loads main.js
-.main.js detects page
-.Calls correct initializer in pages/
-.That loads logic from student/vendor/admin
+1. HTML → main.js → pages/... → feature modules → Supabase
+2. HTML loads main.js
+3. main.js detects page
+4. Calls correct initializer in pages/
+5. That loads logic from student/vendor/admin
 
 📦 FEATURES WE BUILT (THIS SESSION)
 1. LIVE ORDER TRACKING (Student Dashboard)
