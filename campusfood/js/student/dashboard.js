@@ -214,19 +214,24 @@ export async function cancelStudentOrder(orderId) {
     return;
   }
 
-  const { error } = await sb
+  console.log('Cancelling order:', orderId);
+
+  const { data, error } = await sb
     .from('orders')
     .update({
       status: 'Cancelled',
       updated_at: new Date().toISOString()
     })
-    .eq('id', orderId);
+    .eq('id', orderId)
+    .select();
 
   if (error) {
     console.error('Cancel order error:', error);
     toast('Failed to cancel order', 'error');
     return;
   }
+
+  console.log('Cancel result from DB:', data);
 
   activeOrders = activeOrders.filter(o => String(o.id) !== String(orderId));
   renderLiveOrders();
