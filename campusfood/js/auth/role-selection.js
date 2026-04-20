@@ -11,12 +11,21 @@ export async function getExistingRole(user) {
   const username = getUsernameFromUser(user);
   const email = user.email?.toLowerCase();
 
+  console.log('USER DEBUG:', {
+    id: user.id,
+    email: user.email,
+    loweredEmail: email,
+    username
+  });
+
   // Check admins table first
   const { data: adminData, error: adminError } = await sb
     .from('admins')
     .select('email')
     .eq('email', email)
     .maybeSingle();
+
+  console.log('ADMIN DEBUG:', { adminData, adminError });
 
   if (!adminError && adminData) {
     return {
@@ -31,6 +40,8 @@ export async function getExistingRole(user) {
     .select('id, username, status')
     .eq('id', user.id)
     .maybeSingle();
+
+  console.log('VENDOR DEBUG:', { vendorData, vendorError });
 
   if (!vendorError && vendorData) {
     return {
@@ -47,6 +58,8 @@ export async function getExistingRole(user) {
     .eq('id', user.id)
     .maybeSingle();
 
+  console.log('STUDENT DEBUG:', { studentData, studentError });
+
   if (!studentError && studentData) {
     return {
       role: 'student',
@@ -54,6 +67,7 @@ export async function getExistingRole(user) {
     };
   }
 
+  console.log('ROLE RESULT: null');
   return null;
 }
 
