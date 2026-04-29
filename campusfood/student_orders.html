@@ -24,12 +24,12 @@
     <button id="browseByVendorBtn" class="btn" style="background: var(--surface-alt); color: var(--text);">Browse by Vendor</button>
   </div>
 
-  <!-- Search Bar (visible in both views) -->
+  <!-- Search Bar -->
   <div id="searchContainer" style="margin-bottom: 1.5rem; display: none;">
     <input type="text" id="searchInput" placeholder="🔍 Search menu items..." style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border);">
   </div>
 
-  <!-- Filter Panel (only visible after vendor selected) -->
+  <!-- Filter Panel -->
   <div id="filterPanel" style="margin-bottom: 1.5rem; display: none; background: var(--surface); padding: 1rem; border-radius: 12px; border: 1px solid var(--border);">
     <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center;">
       <span style="font-weight: 600;">Filter by:</span>
@@ -46,12 +46,24 @@
         <option value="4">★★★★ 4 stars & up</option>
         <option value="5">★★★★★ 5 stars only</option>
       </select>
+      <!-- NEW: Allergen/Dietary Filter Dropdown -->
+      <select id="allergenFilter" style="padding: 0.5rem; border-radius: 6px;">
+        <option value="">Dietary: All</option>
+        <option value="halal">Halal</option>
+        <option value="vegan">Vegan</option>
+        <option value="vegetarian">Vegetarian</option>
+        <option value="gluten-free">Gluten-Free</option>
+        <option value="peanut-free">Peanut-Free</option>
+        <option value="nut-free">Nut-Free</option>
+        <option value="dairy-free">Dairy-Free</option>
+        <option value="egg-free">Egg-Free</option>
+      </select>
       <button id="mostOrderedBtn" class="btn btn-sm" style="background: var(--accent); color: white;">🔥 Most Ordered</button>
       <button id="resetFiltersBtn" class="btn btn-sm" style="background: var(--surface-alt);">Reset Filters</button>
     </div>
   </div>
 
-  <!-- Menu Items View (default) -->
+  <!-- Menu Items View -->
   <div id="menuView">
     <h2>Available Menu</h2>
     <div id="menuContainer" class="menu-grid">
@@ -59,7 +71,7 @@
     </div>
   </div>
 
-  <!-- Vendors View (hidden by default) -->
+  <!-- Vendors View -->
   <div id="vendorsView" style="display: none;">
     <h2>All Vendors</h2>
     <div id="vendorsContainer" class="menu-grid">
