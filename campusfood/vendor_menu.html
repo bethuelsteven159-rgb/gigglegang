@@ -25,24 +25,48 @@
         <label for="itemName">Item Name</label>
         <input id="itemName" type="text" placeholder="e.g. Burger">
       </div>
-
       <div class="form-group">
         <label for="itemPrice">Price (R)</label>
         <input id="itemPrice" type="number" min="0" placeholder="e.g. 50">
       </div>
-
       <div class="form-group">
         <label for="itemDescription">Description</label>
         <input id="itemDescription" type="text" placeholder="e.g. Juicy beef burger with cheese">
       </div>
-
       <div class="form-group">
         <label for="itemImage">Image</label>
         <input id="itemImage" type="file" accept="image/*">
       </div>
-
-      <button class="btn btn-primary" onclick="addMenuItem()">+ Add Item</button>
     </div>
+
+    <!-- Allergen Information Section -->
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+      <h3>Allergen Information</h3>
+      <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Based on South African R146/2010 regulations</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.5rem;">
+        <label><input type="checkbox" id="containsPeanuts"> 🥜 Contains Peanuts</label>
+        <label><input type="checkbox" id="containsTreeNuts"> 🌰 Contains Tree Nuts</label>
+        <label><input type="checkbox" id="containsDairy"> 🥛 Contains Milk/Dairy</label>
+        <label><input type="checkbox" id="containsEggs"> 🥚 Contains Eggs</label>
+        <label><input type="checkbox" id="containsSoy"> 🌱 Contains Soy</label>
+        <label><input type="checkbox" id="containsFish"> 🐟 Contains Fish</label>
+        <label><input type="checkbox" id="containsShellfish"> 🦐 Contains Shellfish</label>
+        <label><input type="checkbox" id="containsGluten"> 🌾 Contains Gluten</label>
+      </div>
+    </div>
+
+    <!-- Dietary Information Section -->
+    <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+      <h3>Dietary Information</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
+        <label><input type="checkbox" id="isHalal"> ✓ Halal</label>
+        <label><input type="checkbox" id="isVegan"> ✓ Vegan</label>
+        <label><input type="checkbox" id="isVegetarian"> ✓ Vegetarian</label>
+        <label><input type="checkbox" id="isGlutenFree"> ✓ Gluten-Free</label>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="margin-top: 1rem;" onclick="addMenuItem()">+ Add Item</button>
   </div>
 
   <h2>Your Current Menu</h2>
@@ -51,7 +75,59 @@
   </div>
 </div>
 
+<!-- Edit Modal -->
+<div id="editModal" class="modal" style="display: none;">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="modal-header">
+      <h3>Edit Menu Item</h3>
+      <span class="close" onclick="closeEditModal()">&times;</span>
+    </div>
+    <div class="form-group">
+      <label>Item Name</label>
+      <input id="editItemName" type="text">
+    </div>
+    <div class="form-group">
+      <label>Price (R)</label>
+      <input id="editItemPrice" type="number" step="0.01" min="0">
+    </div>
+    <div class="form-group">
+      <label>Description</label>
+      <input id="editItemDescription" type="text">
+    </div>
+    
+    <div style="margin-top: 1rem;">
+      <h4>Allergen Information</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem;">
+        <label><input type="checkbox" id="editContainsPeanuts"> 🥜 Peanuts</label>
+        <label><input type="checkbox" id="editContainsTreeNuts"> 🌰 Tree Nuts</label>
+        <label><input type="checkbox" id="editContainsDairy"> 🥛 Dairy</label>
+        <label><input type="checkbox" id="editContainsEggs"> 🥚 Eggs</label>
+        <label><input type="checkbox" id="editContainsSoy"> 🌱 Soy</label>
+        <label><input type="checkbox" id="editContainsFish"> 🐟 Fish</label>
+        <label><input type="checkbox" id="editContainsShellfish"> 🦐 Shellfish</label>
+        <label><input type="checkbox" id="editContainsGluten"> 🌾 Gluten</label>
+      </div>
+    </div>
+    
+    <div style="margin-top: 1rem;">
+      <h4>Dietary Information</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem;">
+        <label><input type="checkbox" id="editIsHalal"> Halal</label>
+        <label><input type="checkbox" id="editIsVegan"> Vegan</label>
+        <label><input type="checkbox" id="editIsVegetarian"> Vegetarian</label>
+        <label><input type="checkbox" id="editIsGlutenFree"> Gluten-Free</label>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+      <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 <script type="module" src="js/main.js"></script>
+
 </body>
 </html>
