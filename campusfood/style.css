@@ -988,3 +988,44 @@ tr:hover td {
   font-weight: 600;
 }
 
+
+/* Allergen & Dietary Badges */
+.badge-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+}
+
+.allergen-badge, .dietary-badge {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+.allergen-badge {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.allergen-badge.peanut { background: #fef3c7; color: #d97706; }
+.allergen-badge.tree-nuts { background: #fef3c7; color: #d97706; }
+.allergen-badge.dairy { background: #e0f2fe; color: #0284c7; }
+.allergen-badge.eggs { background: #fce7f3; color: #db2777; }
+.allergen-badge.soy { background: #dcfce7; color: #16a34a; }
+.allergen-badge.fish { background: #e0e7ff; color: #4f46e5; }
+.allergen-badge.shellfish { background: #e0e7ff; color: #4f46e5; }
+.allergen-badge.gluten { background: #fef3c7; color: #d97706; }
+
+.dietary-badge {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.dietary-badge.halal { background: #e0f2fe; color: #0284c7; }
+.dietary-badge.vegan { background: #dcfce7; color: #16a34a; }
+.dietary-badge.vegetarian { background: #dcfce7; color: #16a34a; }
+.dietary-badge.gluten-free { background: #fef3c7; color: #d97706; }
+
