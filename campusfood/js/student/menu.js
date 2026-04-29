@@ -3,8 +3,54 @@ import { setCart, updateCartDisplay } from './cart.js';
 
 let currentAllMenu = [];
 let currentSearchText = '';
+let currentAllergenFilter = '';
 
-// Render menu with search filter only
+// Helper function to get allergen/dietary badges HTML
+function getAllergenBadges(item) {
+  const badges = [];
+  
+  // Allergen badges (based on SA R146/2010)
+  if (item.contains_peanuts) badges.push('<span class="allergen-badge peanut">🥜 Peanuts</span>');
+  if (item.contains_tree_nuts) badges.push('<span class="allergen-badge tree-nuts">🌰 Tree Nuts</span>');
+  if (item.contains_dairy) badges.push('<span class="allergen-badge dairy">🥛 Dairy</span>');
+  if (item.contains_eggs) badges.push('<span class="allergen-badge eggs">🥚 Eggs</span>');
+  if (item.contains_soy) badges.push('<span class="allergen-badge soy">🌱 Soy</span>');
+  if (item.contains_fish) badges.push('<span class="allergen-badge fish">🐟 Fish</span>');
+  if (item.contains_shellfish) badges.push('<span class="allergen-badge shellfish">🦐 Shellfish</span>');
+  if (item.contains_gluten) badges.push('<span class="allergen-badge gluten">🌾 Gluten</span>');
+  
+  // Dietary badges
+  if (item.is_halal) badges.push('<span class="dietary-badge halal">✓ Halal</span>');
+  if (item.is_vegan) badges.push('<span class="dietary-badge vegan">✓ Vegan</span>');
+  if (item.is_vegetarian) badges.push('<span class="dietary-badge vegetarian">✓ Vegetarian</span>');
+  if (item.is_gluten_free) badges.push('<span class="dietary-badge gluten-free">✓ Gluten-Free</span>');
+  
+  return badges.length ? `<div class="badge-container">${badges.join('')}</div>` : '';
+}
+
+// Filter items by allergen/dietary preference
+function filterByAllergen(items, filter) {
+  if (!filter) return items;
+  
+  return items.filter(item => {
+    switch(filter) {
+      case 'peanut-free': return !item.contains_peanuts;
+      case 'nut-free': return !item.contains_tree_nuts;
+      case 'dairy-free': return !item.contains_dairy;
+      case 'egg-free': return !item.contains_eggs;
+      case 'soy-free': return !item.contains_soy;
+      case 'fish-free': return !item.contains_fish;
+      case 'shellfish-free': return !item.contains_shellfish;
+      case 'gluten-free': return !item.contains_gluten && !item.is_gluten_free;
+      case 'halal': return item.is_halal;
+      case 'vegan': return item.is_vegan;
+      case 'vegetarian': return item.is_vegetarian;
+      default: return true;
+    }
+  });
+}
+
+// Render menu with search and allergen filters
 async function renderMenu() {
   const container = document.getElementById('menuContainer');
   if (!container) return;
@@ -16,26 +62,30 @@ async function renderMenu() {
 
   let filtered = [...currentAllMenu];
 
-  // Apply search only
+  // Apply search filter
   if (currentSearchText) {
     filtered = filtered.filter(item =>
       item.name.toLowerCase().includes(currentSearchText.toLowerCase())
     );
   }
 
+  // Apply allergen/dietary filter
+  filtered = filterByAllergen(filtered, currentAllergenFilter);
+
   if (filtered.length === 0) {
-    container.innerHTML = '<p style="color:var(--muted)">No items match your search.</p>';
+    container.innerHTML = '<p style="color:var(--muted)">No items match your search or dietary preferences.</p>';
     return;
   }
 
   container.innerHTML = filtered.map(item => `
     <div class="menu-item">
-      <div style="font-weight: bold;">${item.name}</div>
+      <div style="font-weight: bold;">${escapeHtml(item.name)}</div>
       <div>R${item.price}</div>
-      <div style="font-size: 12px; color: var(--text-muted);">${item.vendor_name}</div>
-      <div style="font-size: 12px; color: var(--text-muted);">${item.description || ''}</div>
+      <div style="font-size: 12px; color: var(--text-muted);">${escapeHtml(item.vendor_name)}</div>
+      <div style="font-size: 12px; color: var(--text-muted);">${escapeHtml(item.description || '')}</div>
       ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ''}
-      <button class="btn btn-primary btn-sm" onclick="window.addToCartFromMenu('${item.id}', '${item.name}', ${item.price}, '${item.vendor_id}')">
+      ${getAllergenBadges(item)}
+      <button class="btn btn-primary btn-sm" onclick="window.addToCartFromMenu('${item.id}', '${escapeHtml(item.name)}', ${item.price}, '${item.vendor_id}')">
         + Add to Cart
       </button>
     </div>
@@ -53,10 +103,13 @@ export async function loadStudentMenu() {
   if (searchContainer) searchContainer.style.display = 'block';
   if (filterPanel) filterPanel.style.display = 'none';
 
-  // Reset search
+  // Reset filters
   currentSearchText = '';
+  currentAllergenFilter = '';
   const searchInput = document.getElementById('searchInput');
+  const allergenFilter = document.getElementById('allergenFilter');
   if (searchInput) searchInput.value = '';
+  if (allergenFilter) allergenFilter.value = '';
 
   const { data: vendors, error: vendorError } = await sb
     .from('vendors')
@@ -95,6 +148,14 @@ export async function loadStudentMenu() {
       renderMenu();
     };
   }
+  
+  // Setup allergen filter dropdown
+  if (allergenFilter) {
+    allergenFilter.onchange = (e) => {
+      currentAllergenFilter = e.target.value;
+      renderMenu();
+    };
+  }
 
   await renderMenu();
 
@@ -103,6 +164,16 @@ export async function loadStudentMenu() {
     setCart(JSON.parse(savedCart));
     updateCartDisplay();
   }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
 
 // Global add to cart
