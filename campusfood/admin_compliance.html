@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compliance Report – Campus Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">✅ Compliance Report</span>
+  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
+    <span>👤 <span id="adminName"></span></span>
+    <button onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <h2>Allergen & Dietary Compliance Report</h2>
+  <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.875rem;">
