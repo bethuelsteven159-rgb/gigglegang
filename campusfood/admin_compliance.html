@@ -19,4 +19,40 @@
 
 <div class="page">
   <h2>Allergen & Dietary Compliance Report</h2>
-  <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.875rem;">
+  <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.875rem;">Based on SA R146/2010 Food Labelling Regulations</p>
+  
+  <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;">
+    <button id="exportCsvBtn" class="btn btn-secondary">📊 Export CSV</button>
+    <button id="exportPdfBtn" class="btn btn-secondary">📄 Export PDF</button>
+  </div>
+  
+  <div class="panel" style="padding: 0; overflow-x: auto;">
+    <table style="width: 100%; min-width: 800px;">
+      <thead>
+        <tr>
+          <th>Vendor</th>
+          <th>Total Items</th>
+          <th>Items with Allergen Info</th>
+          <th>Compliance %</th>
+          <th>Status</th>
+          <th>Missing Info</th>
+        </tr>
+      </thead>
+      <tbody id="complianceBody">
+        <tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading compliance data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div style="margin-top: 1rem; padding: 1rem; background: var(--surface-alt); border-radius: 8px;">
+    <h3>Compliance Guidelines</h3>
+    <p style="font-size: 0.875rem; color: var(--text-muted);">Based on South African R146/2010 regulations, vendors must declare the following allergens: Peanuts, Tree Nuts, Milk/Dairy, Eggs, Soy, Fish, Shellfish, and Gluten. Dietary information (Halal, Vegan, Vegetarian, Gluten-Free) is also recommended for student safety.</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module" src="js/admin/compliance.js"></script>
+
+</body>
+</html>
