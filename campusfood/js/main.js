@@ -8,6 +8,8 @@ import { initAdminOrdersPage } from './pages/admin-orders-page.js';
 import { initVendorDashboardPage } from './pages/vendor-dashboard-page.js';
 import { initVendorMenuPage } from './pages/vendor-menu-page.js';
 import { initVendorOrdersPage } from './pages/vendor-orders-page.js';
+import { initVendorAnalyticsPage} from './pages/vendor-analytics-page.js';
+
 
 import { initStudentDashboardPage } from './pages/student-dashboard-page.js';
 import { initStudentOrdersPage } from './pages/student-orders-page.js';
@@ -26,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'dashboard_vendor.html': initVendorDashboardPage,
     'vendor_menu.html': initVendorMenuPage,
     'vendor_orders.html': initVendorOrdersPage,
+    'vendor_analytics.html' : initVendorAnalyticsPage,
 
     'dashboard_student.html': initStudentDashboardPage,
     'student_orders.html': initStudentOrdersPage,
