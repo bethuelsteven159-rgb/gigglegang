@@ -3,36 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Dashboard – Campus Food</title>
+  <title>Vendor Analytics – Campus Food</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <nav class="navbar">
-  <span class="brand">🍔 Campus Food — Vendor</span>
+  <span class="brand">📊 Campus Food — Vendor Analytics</span>
+
   <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
     <span>👤 <span id="vendorName"></span></span>
+    <a href="vendor_dashboard.html" class="nav-link">Dashboard</a>
     <button onclick="logout()">Logout</button>
   </div>
 </nav>
 
 <div class="page">
-  <h2>Welcome, <span id="vendorNameWelcome"></span></h2>
+  <h2>Analytics for <span id="vendorNameWelcome"></span></h2>
 
-  <div class="cards">
-    <a class="card" href="vendor_menu.html">
-      <div class="icon">🍽️</div>
-      <div class="label">Manage Menu</div>
-    </a>
-    <a class="card" href="vendor_orders.html">
-      <div class="icon">📦</div>
-      <div class="label">My Orders</div>
-    </a>
+  <p class="page-subtitle">
+    Track your sales, completed orders, average order value, and peak ordering hours.
+  </p>
+
+  <div id="analyticsStatus" class="analytics-status">
+    Loading analytics...
+  </div>
+
+  <div class="analytics-actions">
+    <button id="refreshAnalyticsBtn">Refresh Analytics</button>
+    <button id="exportAnalyticsBtn">Export CSV</button>
+  </div>
+
+  <div class="analytics-summary">
+    <div class="analytics-card">
+      <h3>Total Sales</h3>
+      <p id="totalSales">R0.00</p>
+      <span>From completed orders</span>
+    </div>
+
+    <div class="analytics-card">
+      <h3>Completed Orders</h3>
+      <p id="completedOrders">0</p>
+      <span>Orders counted as sales</span>
+    </div>
+
+    <div class="analytics-card">
+      <h3>Average Order</h3>
+      <p id="averageOrder">R0.00</p>
+      <span>Average completed order value</span>
+    </div>
+
+    <div class="analytics-card">
+      <h3>Peak Hour</h3>
+      <p id="peakHour">--:00</p>
+      <span>Busiest ordering time</span>
+    </div>
+  </div>
+
+  <div class="analytics-grid">
+    <section class="analytics-panel">
+      <h3>Sales Over Time</h3>
+      <p class="analytics-note">
+        Completed sales grouped by order date.
+      </p>
+
+      <div id="salesOverTimeChart" class="bar-chart"></div>
+    </section>
+
+    <section class="analytics-panel">
+      <h3>Peak Ordering Hours</h3>
+      <p class="analytics-note">
+        All vendor orders grouped by hour.
+      </p>
+
+      <div id="peakHoursChart" class="bar-chart"></div>
+    </section>
   </div>
 </div>
 
 <div id="toast"></div>
+
 <script type="module" src="js/main.js"></script>
 
 </body>
