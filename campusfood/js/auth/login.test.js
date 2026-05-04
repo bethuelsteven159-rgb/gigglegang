@@ -64,10 +64,11 @@ describe('login.js', () => {
     await signInWithGoogle();
 
     expect(mockSetLoadingMessage).toHaveBeenCalledWith('Redirecting to Google...');
+    
     expect(mockSignInWithOAuth).toHaveBeenCalledWith({
       provider: 'google',
       options: {
-        redirectTo: 'https://bethuelsteven159-rgb.github.io/gigglegang/'
+        redirectTo: new URL("index.html", window.location.href).href
       }
     });
   });

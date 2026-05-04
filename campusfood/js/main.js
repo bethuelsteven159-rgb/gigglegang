@@ -12,6 +12,7 @@ import { initVendorOrdersPage } from './pages/vendor-orders-page.js';
 import { initStudentDashboardPage } from './pages/student-dashboard-page.js';
 import { initStudentOrdersPage } from './pages/student-orders-page.js';
 import { initStudentHistoryPage } from './pages/student-history-page.js';
+import { initPaymentSuccessPage } from "./pages/payment-success-page.js";
 
 document.addEventListener('DOMContentLoaded', async () => {
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'dashboard_student.html': initStudentDashboardPage,
     'student_orders.html': initStudentOrdersPage,
     'student_history.html': initStudentHistoryPage,
+    'payment_success.html': initPaymentSuccessPage,
   };
 
   const init = routes[currentPage];

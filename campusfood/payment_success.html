@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Success – Campus Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">💳 Payment</span>
+</nav>
+
+<div class="page">
+  <div class="panel">
+    <h2>Payment Verification</h2>
+    <p id="paymentStatus">Please wait while we confirm your payment...</p>
+
+    <a href="dashboard_student.html" id="continueBtn" class="btn btn-primary" hidden>
+  	Go to dashboard
+    </a>
+    </a>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script type="module" src="js/main.js"></script>
+
+</body>
+</html>
