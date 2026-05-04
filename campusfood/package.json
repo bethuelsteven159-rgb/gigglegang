@@ -14,5 +14,10 @@
   "devDependencies": {
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
   }
 }

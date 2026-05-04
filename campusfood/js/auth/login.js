@@ -12,11 +12,16 @@ import { getExistingRole } from './role-selection.js';
 export async function signInWithGoogle() {
   try {
     setLoadingMessage('Redirecting to Google...');
+    console.log(
+      "Google redirect URL:",
+      new URL("index.html", window.location.href).href
+    );
+
 
     const { error } = await sb.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://bethuelsteven159-rgb.github.io/gigglegang/'
+        redirectTo: new URL("index.html", window.location.href).href
       }
     });
 
