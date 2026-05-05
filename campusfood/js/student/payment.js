@@ -1,5 +1,14 @@
 import { API_BASE_URL } from "../config/api.js";
+
+console.log("[PAYMENT] payment.js loaded");
+
 export async function startPaystackPayment({ email, amount, orderId }) {
+  console.log("[PAYMENT] startPaystackPayment called", {
+    email,
+    amount,
+    orderId,
+    API_BASE_URL
+  });
   try {
     const callbackUrl = new URL("payment_success.html", window.location.href).href;
 
