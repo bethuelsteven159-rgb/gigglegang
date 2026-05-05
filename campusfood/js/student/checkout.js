@@ -117,6 +117,7 @@ async function buildOrderDataFromCart() {
 }
 
 export async function placeOrder() {
+  console.log("[CHECKOUT] Paystack version of placeOrder is running");
   console.log("🔥 PAYSTACK VERSION OF placeOrder IS RUNNING");
   const orderData = await buildOrderDataFromCart();
 
