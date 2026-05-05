@@ -1,5 +1,5 @@
 const LOCAL_API_URL = "http://localhost:5000";
-const LIVE_API_URL = "https://YOUR_RENDER_BACKEND_URL.onrender.com";
+const LIVE_API_URL = "https://gigglegang-yi6v.onrender.com";
 
 export const API_BASE_URL =
   window.location.hostname === "localhost" ||
