@@ -1,5 +1,5 @@
 import { sb } from "../config/supabase.js";
-import { getVendorId } from 'page/shared/auth-helpers.js';
+import { getVendorId } from '../shared/auth-helpers.js';
 
 let latestAnalyticsRows = [];
 
