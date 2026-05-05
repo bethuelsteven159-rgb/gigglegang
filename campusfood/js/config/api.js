@@ -6,3 +6,6 @@ export const API_BASE_URL =
   window.location.hostname === "127.0.0.1"
     ? LOCAL_API_URL
     : LIVE_API_URL;
+
+console.log("[API] hostname:", window.location.hostname);
+console.log("[API] API_BASE_URL:", API_BASE_URL);
