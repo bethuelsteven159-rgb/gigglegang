@@ -134,12 +134,7 @@ app.get("/api/paystack/verify/:reference", async (req, res) => {
 });
 
 
-app.get("/", (req, res) => {
-  res.json({
-    status: true,
-    message: "Campus Food Paystack backend is running"
-  });
-});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
