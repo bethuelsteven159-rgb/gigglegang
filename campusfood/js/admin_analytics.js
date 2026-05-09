@@ -75,7 +75,7 @@ window.loadAnalytics = async () => {
 
   let query = supabase
     .from('orders')
-    .select('id, vendor_id, total_price, created_at, vendors(name)')
+    .select('id, vendor_id, total_price, created_at, vendors(username)')
     .eq('status', 'Completed')
     .gte('created_at', from + 'T00:00:00')
     .lte('created_at', to   + 'T23:59:59');
@@ -120,7 +120,7 @@ function buildSalesByVendorDate(orders, groupBy) {
   const raw = [];
 
   orders.forEach(o => {
-    const vendor = o.vendors?.name ?? o.vendor_id;
+    const vendor = o.vendors?.username ?? o.vendor_id;
     const key    = dateKey(o.created_at, groupBy);
     if (!map[vendor]) map[vendor] = {};
     map[vendor][key] = (map[vendor][key] ?? 0) + (o.total_price ?? 0);
@@ -168,14 +168,14 @@ function buildPeakHours(orders) {
 function buildRevenueShare(orders) {
   const map = {};
   orders.forEach(o => {
-    const v = o.vendors?.name ?? o.vendor_id;
+    const v = o.vendors?.username ?? o.vendor_id;
     map[v]  = (map[v] ?? 0) + (o.total_price ?? 0);
   });
 
   const raw    = Object.entries(map).map(([vendor, total]) => ({
     vendor,
     total,
-    orders: orders.filter(o => (o.vendors?.name ?? o.vendor_id) === vendor).length,
+    orders: orders.filter(o => (o.vendors?.username ?? o.vendor_id) === vendor).length,
   }));
   const labels = raw.map(r => r.vendor);
   const data   = raw.map(r => r.total);
