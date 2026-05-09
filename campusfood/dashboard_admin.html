@@ -8,7 +8,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
 <nav class="navbar">
   <span class="brand">🍔 Campus Food — Admin</span>
   <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
@@ -16,10 +15,8 @@
     <button onclick="logout()">Logout</button>
   </div>
 </nav>
-
 <div class="page">
   <h2>Welcome, <span id="adminNameWelcome"></span></h2>
-
   <div class="cards">
     <a class="card" href="admin_vendor_control.html">
       <div class="icon">🏪</div>
@@ -29,9 +26,12 @@
       <div class="icon">📋</div>
       <div class="label">All Orders</div>
     </a>
+    <a class="card" href="admin_analytics.html">
+      <div class="icon">📊</div>
+      <div class="label">Analytics</div>
+    </a>
   </div>
 </div>
-
 <div id="toast"></div>
 <script type="module" src="js/main.js"></script>
 </body>
