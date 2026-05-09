@@ -8,7 +8,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
-    /* ── Analytics-specific styles ── */
     .analytics-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -22,9 +21,7 @@
       padding: 1.5rem;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
-    .analytics-card.full-width {
-      grid-column: 1 / -1;
-    }
+    .analytics-card.full-width { grid-column: 1 / -1; }
     .analytics-card h3 {
       margin: 0 0 1rem 0;
       font-size: 1rem;
@@ -35,7 +32,6 @@
       position: relative;
       height: 260px;
     }
-    /* Filters bar */
     .filters {
       display: flex;
       flex-wrap: wrap;
@@ -87,7 +83,6 @@
       transition: background 0.15s;
     }
     .btn-apply:hover { background: #ea6b0f; }
-    /* Export buttons */
     .export-row {
       display: flex;
       gap: 0.5rem;
@@ -109,7 +104,6 @@
       transition: background 0.15s, border-color 0.15s;
     }
     .btn-export:hover { background: #f3f4f6; border-color: #9ca3af; }
-    /* Summary stat cards */
     .stat-chips {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -141,7 +135,6 @@
       color: #6b7280;
       margin-top: 0.1rem;
     }
-    /* Table */
     .data-table {
       width: 100%;
       border-collapse: collapse;
@@ -165,14 +158,12 @@
     }
     .data-table tr:last-child td { border-bottom: none; }
     .data-table tr:hover td { background: #f9fafb; }
-    /* Loading state */
     .loading-msg {
       text-align: center;
       color: #9ca3af;
       padding: 2rem;
       font-size: 0.9rem;
     }
-    /* Section title row */
     .section-header {
       display: flex;
       align-items: center;
@@ -195,7 +186,6 @@
 <div class="page">
   <h2>📊 Analytics Dashboard</h2>
 
-  <!-- ── Filters ── -->
   <div class="filters">
     <div class="filter-group">
       <label>From</label>
@@ -222,7 +212,6 @@
     <button class="btn-apply" onclick="loadAnalytics()">Apply</button>
   </div>
 
-  <!-- ── Summary stats ── -->
   <div class="stat-chips">
     <div class="stat-chip">
       <div class="stat-label">Total revenue</div>
@@ -241,10 +230,8 @@
     </div>
   </div>
 
-  <!-- ── Charts grid ── -->
   <div class="analytics-grid">
 
-    <!-- Sales per vendor over time -->
     <div class="analytics-card full-width">
       <div class="section-header">
         <h3>Sales per vendor over time</h3>
@@ -258,7 +245,6 @@
       </div>
     </div>
 
-    <!-- Peak ordering hours -->
     <div class="analytics-card">
       <div class="section-header">
         <h3>Peak ordering hours</h3>
@@ -272,7 +258,6 @@
       </div>
     </div>
 
-    <!-- Custom view: revenue by vendor (pie) -->
     <div class="analytics-card">
       <div class="section-header">
         <h3>Revenue share by vendor</h3>
@@ -288,7 +273,6 @@
 
   </div>
 
-  <!-- ── Vendor breakdown table ── -->
   <div class="analytics-card" style="margin-top:1.5rem;">
     <div class="section-header">
       <h3>Vendor breakdown</h3>
