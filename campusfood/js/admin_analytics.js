@@ -54,15 +54,15 @@ function initDateDefaults() {
 async function loadVendorOptions() {
   const { data, error } = await supabase
     .from('vendors')
-    .select('id, name')
-    .order('name');
+    .select('id, username')
+    .order('username');
   if (error) { console.error(error); return; }
 
   const sel = document.getElementById('filterVendor');
   data.forEach(v => {
     const opt = document.createElement('option');
     opt.value = v.id;
-    opt.textContent = v.name;
+    opt.textContent = v.username;
     sel.appendChild(opt);
   });
 }
