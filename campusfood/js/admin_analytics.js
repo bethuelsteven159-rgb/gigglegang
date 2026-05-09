@@ -7,27 +7,27 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function requireAdmin() {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { window.location.href = 'index.html'; return null; }
+  if (!session) { window.location.href = '../index.html'; return null; }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, name')
-    .eq('id', session.user.id)
+  const { data: admin, error } = await supabase
+    .from('admins')
+    .select('email')
+    .eq('email', session.user.email)
     .single();
 
-  if (!profile || profile.role !== 'admin') {
+  if (error || !admin) {
     showToast('Access denied — admin only', 'error');
-    window.location.href = 'index.html';
+    window.location.href = '../index.html';
     return null;
   }
 
-  document.getElementById('adminName').textContent = profile.name ?? session.user.email;
+  document.getElementById('adminName').textContent = session.user.email;
   return session;
 }
 
 window.logout = async () => {
   await supabase.auth.signOut();
-  window.location.href = 'index.html';
+  window.location.href = '../index.html';
 };
 
 let chartSales = null;
@@ -76,7 +76,7 @@ window.loadAnalytics = async () => {
   let query = supabase
     .from('orders')
     .select('id, vendor_id, total_price, created_at, vendors(name)')
-    .eq('status', 'completed')
+    .eq('status', 'Completed')
     .gte('created_at', from + 'T00:00:00')
     .lte('created_at', to   + 'T23:59:59');
 
