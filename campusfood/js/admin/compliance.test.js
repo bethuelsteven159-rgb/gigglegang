@@ -1,16 +1,19 @@
 import { jest } from '@jest/globals';
 
-// Mock Supabase
-const mockEqSecond = jest.fn();
-const mockEqFirst = jest.fn(() => ({
-  eq: mockEqSecond
-}));
-const mockSelect = jest.fn(() => ({
-  eq: mockEqFirst
-}));
-const mockFrom = jest.fn(() => ({
-  select: mockSelect
-}));
+// Create a chainable mock for Supabase
+const createChainableMock = () => {
+  const mock = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    then: jest.fn(),
+    catch: jest.fn()
+  };
+  mock.select.mockReturnValue(mock);
+  mock.eq.mockReturnValue(mock);
+  return mock;
+};
+
+const mockFrom = jest.fn(() => createChainableMock());
 
 const mockSb = {
   from: mockFrom
@@ -28,7 +31,7 @@ jest.unstable_mockModule('../../js/shared/utils.js', () => ({
   escapeHtml: (str) => str || ''
 }));
 
-// Mock sessionStorage with proper Jest spies
+// Mock sessionStorage
 const sessionStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
@@ -50,7 +53,7 @@ global.localStorage = localStorageMock;
 delete window.location;
 window.location = { href: '' };
 
-// Set up DOM elements BEFORE importing the module
+// Set up DOM elements
 document.body.innerHTML = `
   <div id="adminName"></div>
   <div id="complianceBody"></div>
@@ -90,14 +93,18 @@ describe('admin/compliance.js', () => {
       return null;
     });
 
-    mockEqSecond.mockReset();
-    mockEqFirst.mockReset();
-    mockSelect.mockReset();
+    // Reset mockFrom
     mockFrom.mockReset();
   });
 
   test('shows no vendors message when vendors table is empty', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    // Get the chainable mock from the last call
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock the response for .select() chain - vendors query
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValue({
       data: [],
       error: null
     });
@@ -109,13 +116,13 @@ describe('admin/compliance.js', () => {
   });
 
   test('displays vendor with no menu items correctly', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock vendors query response
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Test Vendor' }],
-      error: null
-    });
-
-    mockEqSecond.mockResolvedValueOnce({
-      data: [],
       error: null
     });
 
@@ -127,12 +134,21 @@ describe('admin/compliance.js', () => {
   });
 
   test('calculates 100% compliance when all items have both arrays', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock vendors query
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Full Compliance Vendor' }],
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
+    // Mock menu query for this vendor
+    const menuChainableMock = createChainableMock();
+    mockFrom.mockReturnValue(menuChainableMock);
+    menuChainableMock.select.mockReturnThis();
+    menuChainableMock.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: ['halal'] },
         { allergens: ['gluten'], dietary_labels: ['vegetarian'] },
@@ -150,12 +166,21 @@ describe('admin/compliance.js', () => {
   });
 
   test('calculates 0% compliance when no items have both arrays', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock vendors query
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Non Compliant Vendor' }],
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
+    // Mock menu query
+    const menuChainableMock = createChainableMock();
+    mockFrom.mockReturnValue(menuChainableMock);
+    menuChainableMock.select.mockReturnThis();
+    menuChainableMock.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: [] },
         { allergens: [], dietary_labels: ['halal'] },
@@ -173,12 +198,21 @@ describe('admin/compliance.js', () => {
   });
 
   test('counts items with allergen info correctly', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock vendors query
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Allergen Test Vendor' }],
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
+    // Mock menu query
+    const menuChainableMock = createChainableMock();
+    mockFrom.mockReturnValue(menuChainableMock);
+    menuChainableMock.select.mockReturnThis();
+    menuChainableMock.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: [] },
         { allergens: ['gluten'], dietary_labels: [] },
@@ -197,7 +231,12 @@ describe('admin/compliance.js', () => {
   });
 
   test('handles multiple vendors correctly', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock vendors query - multiple vendors
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValueOnce({
       data: [
         { id: 'v1', username: 'Vendor A' },
         { id: 'v2', username: 'Vendor B' }
@@ -205,14 +244,22 @@ describe('admin/compliance.js', () => {
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
+    // First vendor menu query
+    const menuChainableMock1 = createChainableMock();
+    mockFrom.mockReturnValue(menuChainableMock1);
+    menuChainableMock1.select.mockReturnThis();
+    menuChainableMock1.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: ['halal'] }
       ],
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
+    // Second vendor menu query
+    const menuChainableMock2 = createChainableMock();
+    mockFrom.mockReturnValue(menuChainableMock2);
+    menuChainableMock2.select.mockReturnThis();
+    menuChainableMock2.eq.mockResolvedValueOnce({
       data: [
         { allergens: [], dietary_labels: [] }
       ],
@@ -229,12 +276,21 @@ describe('admin/compliance.js', () => {
   });
 
   test('handles null or undefined arrays gracefully', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock vendors query
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Null Vendor' }],
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
+    // Mock menu query with null/undefined values
+    const menuChainableMock = createChainableMock();
+    mockFrom.mockReturnValue(menuChainableMock);
+    menuChainableMock.select.mockReturnThis();
+    menuChainableMock.eq.mockResolvedValueOnce({
       data: [
         { },
         { allergens: null, dietary_labels: null },
@@ -252,12 +308,21 @@ describe('admin/compliance.js', () => {
   });
 
   test('shows progress bar with correct width and color for 100%', async () => {
-    mockEqFirst.mockResolvedValueOnce({
+    const chainableMock = createChainableMock();
+    mockFrom.mockReturnValue(chainableMock);
+    
+    // Mock vendors query
+    chainableMock.select.mockReturnThis();
+    chainableMock.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Green Vendor' }],
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
+    // Mock menu query
+    const menuChainableMock = createChainableMock();
+    mockFrom.mockReturnValue(menuChainableMock);
+    menuChainableMock.select.mockReturnThis();
+    menuChainableMock.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: ['halal'] }
       ],
