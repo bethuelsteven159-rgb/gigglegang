@@ -1,88 +1,37 @@
 import { sb } from '../config/supabase.js';
+import { checkAuth, logout } from '../shared/utils.js';
 
-// Helper functions (self-contained)
-function checkAuth(requiredRole) {
-  const role = sessionStorage.getItem('role');
-  const userId = sessionStorage.getItem('userId');
-  
-  if (!userId) {
-    window.location.href = 'index.html';
-    return false;
-  }
-  
-  if (requiredRole && role !== requiredRole) {
-    window.location.href = 'index.html';
-    return false;
-  }
-  
-  return true;
-}
-
-function toast(msg, type = 'success') {
-  const el = document.getElementById('toast');
-  if (!el) return;
-  el.textContent = msg;
-  el.className = `show ${type}`;
-  setTimeout(() => el.className = '', 3000);
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
-}
-
-window.logout = async function() {
-  await sb.auth.signOut();
-  sessionStorage.clear();
-  window.location.href = 'index.html';
-};
-
-// Check if user is admin
 checkAuth('admin');
 
-const adminName = sessionStorage.getItem('username');
-document.getElementById('adminName').textContent = adminName;
+document.getElementById('adminName').textContent = sessionStorage.getItem('username');
+document.getElementById('logoutBtn').addEventListener('click', logout);
 
-async function loadComplianceReport() {
+async function loadCompliance() {
   const tbody = document.getElementById('complianceBody');
-  if (!tbody) return;
+  const { data: vendors, error } = await sb.from('vendors').select('id, username').eq('status', 'approved');
 
-  tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading compliance data...<\/td><\/tr>';
-
-  // Get all vendors
-  const { data: vendors, error: vendorError } = await sb
-    .from('vendors')
-    .select('id, username, status')
-    .order('username');
-
-  if (vendorError || !vendors || vendors.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No vendors found<\/td><\/tr>';
+  if (error || !vendors || vendors.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7">No vendors found<\/td><\/tr>';
     return;
   }
 
   const complianceData = [];
 
   for (const vendor of vendors) {
-    // Get vendor's menu items
-    const { data: menuItems, error: menuError } = await sb
+    // Get vendor's menu items with new columns (allergens and dietary_labels arrays)
+    const { data: menuItems } = await sb
       .from('menu')
       .select('allergens, dietary_labels')
       .eq('vendor_id', vendor.id);
 
-    if (menuError || !menuItems || menuItems.length === 0) {
+    if (!menuItems || menuItems.length === 0) {
       complianceData.push({
         vendor: vendor.username,
-        status: vendor.status,
         totalItems: 0,
         itemsWithAllergens: 0,
         itemsWithDietary: 0,
         percentage: 0,
-        level: 'No Items'
+        status: 'No Items'
       });
       continue;
     }
@@ -91,6 +40,7 @@ async function loadComplianceReport() {
     let itemsWithDietary = 0;
 
     for (const item of menuItems) {
+      // Check if item has any allergens declared
       const hasAllergens = item.allergens && Array.isArray(item.allergens) && item.allergens.length > 0;
       const hasDietary = item.dietary_labels && Array.isArray(item.dietary_labels) && item.dietary_labels.length > 0;
       
@@ -107,40 +57,31 @@ async function loadComplianceReport() {
 
     const percentage = Math.round((itemsWithBoth / menuItems.length) * 100);
     
-    let complianceLevel = '';
-    let badgeClass = '';
-    
+    let complianceStatus = '';
     if (percentage === 100) {
-      complianceLevel = '✅ Fully Compliant';
-      badgeClass = 'status-approved';
+      complianceStatus = '✅ Fully Compliant';
     } else if (percentage >= 75) {
-      complianceLevel = '⚠️ Partially Compliant';
-      badgeClass = 'status-pending';
+      complianceStatus = '⚠️ Partially Compliant';
     } else if (percentage > 0) {
-      complianceLevel = '❌ Low Compliance';
-      badgeClass = 'status-suspended';
+      complianceStatus = '❌ Low Compliance';
     } else {
-      complianceLevel = '❌ Non-Compliant';
-      badgeClass = 'status-suspended';
+      complianceStatus = '❌ Non-Compliant';
     }
 
     complianceData.push({
       vendor: vendor.username,
-      status: vendor.status,
       totalItems: menuItems.length,
       itemsWithAllergens: itemsWithAllergens,
       itemsWithDietary: itemsWithDietary,
       percentage: percentage,
-      level: complianceLevel,
-      badgeClass: badgeClass
+      status: complianceStatus
     });
   }
 
-  // Render table
+  // Render table with 7 columns
   tbody.innerHTML = complianceData.map(v => `
     <tr>
       <td style="font-weight: 500;">${escapeHtml(v.vendor)}<\/td>
-      <td><span class="status status-${v.status === 'approved' ? 'approved' : 'suspended'}">${v.status}<\/span><\/td>
       <td>${v.totalItems}<\/td>
       <td>${v.itemsWithAllergens} / ${v.totalItems}<\/td>
       <td>${v.itemsWithDietary} / ${v.totalItems}<\/td>
@@ -152,10 +93,19 @@ async function loadComplianceReport() {
           <span>${v.percentage}%<\/span>
         <\/div>
       <\/td>
-      <td><span class="${v.badgeClass}" style="padding: 0.2rem 0.6rem; border-radius: 20px;">${v.level}<\/span><\/td>
+      <td>${v.status}<\/td>
     <\/tr>
   `).join('');
 }
 
-// Load compliance report when page loads
-document.addEventListener('DOMContentLoaded', loadComplianceReport);
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+loadCompliance();
