@@ -3,17 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <title>Student Dashboard – Campus Food</title>
 
   <link rel="stylesheet" href="style.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <nav class="navbar">
-  <span class="brand">🍔 Campus Food — Student</span>
+
+  <span class="brand">
+    🍔 Campus Food — Student
+  </span>
 
   <div class="user-info" style="display:flex;gap:1rem;align-items:center;">
+
     <span>
       👤
       <span id="studentName"></span>
@@ -22,7 +28,9 @@
     <button onclick="logout()">
       Logout
     </button>
+
   </div>
+
 </nav>
 
 <div class="page">
@@ -36,19 +44,40 @@
   <div class="cards">
 
     <a class="card" href="student_orders.html">
-      <div class="icon">🛒</div>
-      <div class="label">Browse &amp; Order</div>
+
+      <div class="icon">
+        🛒
+      </div>
+
+      <div class="label">
+        Browse &amp; Order
+      </div>
+
     </a>
 
     <a class="card" href="student_history.html">
-      <div class="icon">🕐</div>
-      <div class="label">Order History</div>
+
+      <div class="icon">
+        🕐
+      </div>
+
+      <div class="label">
+        Order History
+      </div>
+
     </a>
 
-    <!-- NEW TOP VENDORS CARD -->
-    <a class="card" href="student_top_vendors.html">
-      <div class="icon">⭐</div>
-      <div class="label">Top Vendors</div>
+    <!-- TOP VENDORS CARD -->
+    <a class="card" href="student_analytics.html">
+
+      <div class="icon">
+        ⭐
+      </div>
+
+      <div class="label">
+        Top Vendors
+      </div>
+
     </a>
 
   </div>
@@ -70,7 +99,7 @@
 
       </div>
 
-      <a href="student_top_vendors.html" class="btn-top-vendors">
+      <a href="student_analytics.html" class="btn-top-vendors">
         View Analytics
       </a>
 
