@@ -1,12 +1,52 @@
 import { sb } from '../config/supabase.js';
-import { checkAuth, toast, logout, escapeHtml } from '../shared/utils.js';
 
+// Helper functions (self-contained)
+function checkAuth(requiredRole) {
+  const role = sessionStorage.getItem('role');
+  const userId = sessionStorage.getItem('userId');
+  
+  if (!userId) {
+    window.location.href = 'index.html';
+    return false;
+  }
+  
+  if (requiredRole && role !== requiredRole) {
+    window.location.href = 'index.html';
+    return false;
+  }
+  
+  return true;
+}
+
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  setTimeout(() => el.className = '', 3000);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
+
+window.logout = async function() {
+  await sb.auth.signOut();
+  sessionStorage.clear();
+  window.location.href = 'index.html';
+};
+
+// Check if user is admin
 checkAuth('admin');
 
 const adminName = sessionStorage.getItem('username');
 document.getElementById('adminName').textContent = adminName;
-
-window.logout = logout;
 
 async function loadComplianceReport() {
   const tbody = document.getElementById('complianceBody');
@@ -14,7 +54,7 @@ async function loadComplianceReport() {
 
   tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading compliance data...<\/td><\/tr>';
 
-  // Get all approved vendors
+  // Get all vendors
   const { data: vendors, error: vendorError } = await sb
     .from('vendors')
     .select('id, username, status')
@@ -51,7 +91,6 @@ async function loadComplianceReport() {
     let itemsWithDietary = 0;
 
     for (const item of menuItems) {
-      // Check if item has any allergens declared
       const hasAllergens = item.allergens && Array.isArray(item.allergens) && item.allergens.length > 0;
       const hasDietary = item.dietary_labels && Array.isArray(item.dietary_labels) && item.dietary_labels.length > 0;
       
@@ -59,7 +98,7 @@ async function loadComplianceReport() {
       if (hasDietary) itemsWithDietary++;
     }
 
-    // Calculate compliance (items with BOTH allergen AND dietary info)
+    // Items with BOTH allergen AND dietary info
     const itemsWithBoth = menuItems.filter(item => {
       const hasAllergens = item.allergens && Array.isArray(item.allergens) && item.allergens.length > 0;
       const hasDietary = item.dietary_labels && Array.isArray(item.dietary_labels) && item.dietary_labels.length > 0;
