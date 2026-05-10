@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compliance Report – Campus Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">✅ Compliance Report</span>
+  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
+    <span>👤 <span id="adminName"></span></span>
+    <button onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <h2>Allergen & Dietary Compliance Report</h2>
+  <p style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.875rem;">
+    Based on SA R146/2010 Food Labelling Regulations
+  </p>
+
+  <div class="panel" style="padding: 0; overflow-x: auto;">
+    <table style="width: 100%; min-width: 700px;">
+      <thead>
+        <tr>
+          <th>Vendor</th>
+          <th>Status</th>
+          <th>Total Items</th>
+          <th>Items with Allergen Info</th>
+          <th>Items with Dietary Info</th>
+          <th>Compliance %</th>
+          <th>Compliance Level</th>
+        </tr>
+      </thead>
+      <tbody id="complianceBody">
+        <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading compliance data...<\/td><\/tr>
+      </tbody>
+    <\/table>
+  <\/div>
+
+  <div style="margin-top: 1.5rem; padding: 1rem; background: var(--surface-alt); border-radius: 8px;">
+    <h3>Compliance Guidelines</h3>
+    <p style="font-size: 0.875rem; color: var(--text-muted);">
+      Based on South African R146\/2010 regulations, vendors must declare the following allergens: 
+      Peanuts, Tree Nuts, Milk\/Dairy, Eggs, Soy, Fish, Shellfish, and Gluten. 
+      Dietary information (Halal, Vegan, Vegetarian, Gluten-Free) is also recommended for student safety.
+    <\/p>
+  <\/div>
+<\/div>
+
+<div id="toast"><\/div>
+
+<script type="module" src="js\/admin\/compliance.js"><\/script>
+
+<\/body>
+<\/html>
