@@ -1,52 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <title>Student Dashboard – Campus Food</title>
+
   <link rel="stylesheet" href="style.css">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <nav class="navbar">
-  <span class="brand">🍔 Campus Food — Student</span>
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
-    <span>👤 <span id="studentName"></span></span>
-    <button onclick="logout()">Logout</button>
+
+  <span class="brand">
+    🍔 Campus Food — Student
+  </span>
+
+  <div class="user-info" style="display:flex;gap:1rem;align-items:center;">
+
+    <span>
+      👤
+      <span id="studentName"></span>
+    </span>
+
+    <button onclick="logout()">
+      Logout
+    </button>
+
   </div>
+
 </nav>
 
 <div class="page">
-  <h2>Welcome, <span id="studentNameWelcome"></span></h2>
 
+  <h2>
+    Welcome,
+    <span id="studentNameWelcome"></span>
+  </h2>
+
+  <!-- DASHBOARD CARDS -->
   <div class="cards">
+
     <a class="card" href="student_orders.html">
-      <div class="icon">🛒</div>
-      <div class="label">Browse &amp; Order</div>
+
+      <div class="icon">
+        🛒
+      </div>
+
+      <div class="label">
+        Browse &amp; Order
+      </div>
+
     </a>
+
     <a class="card" href="student_history.html">
-      <div class="icon">🕐</div>
-      <div class="label">Order History</div>
+
+      <div class="icon">
+        🕐
+      </div>
+
+      <div class="label">
+        Order History
+      </div>
+
     </a>
+
+    <!-- TOP VENDORS CARD -->
+    <a class="card" href="student_analytics.html">
+
+      <div class="icon">
+        ⭐
+      </div>
+
+      <div class="label">
+        Top Vendors
+      </div>
+
+    </a>
+
+  </div>
+
+  <!-- TOP VENDORS PANEL -->
+  <div class="panel top-vendors-panel">
+
+    <div class="top-vendors-header">
+
+      <div>
+
+        <h3 style="margin-bottom:0.25rem;">
+          ⭐ Top Rated Vendors
+        </h3>
+
+        <p class="top-vendors-subtext">
+          Highest rated food vendors on campus.
+        </p>
+
+      </div>
+
+      <a href="student_analytics.html" class="btn-top-vendors">
+        View Analytics
+      </a>
+
+    </div>
+
+    <div id="topVendorsContainer">
+
+      <p class="top-vendors-empty">
+        Loading top vendors...
+      </p>
+
+    </div>
+
   </div>
 
   <!-- LIVE ORDERS -->
   <div class="panel live-orders-panel">
+
     <div class="live-orders-header">
+
       <div>
-        <h3 style="margin-bottom:0.25rem;">Live Orders</h3>
-        <p class="live-orders-subtext">Track your active orders in real time.</p>
+
+        <h3 style="margin-bottom:0.25rem;">
+          Live Orders
+        </h3>
+
+        <p class="live-orders-subtext">
+          Track your active orders in real time.
+        </p>
+
       </div>
+
     </div>
 
     <div id="liveOrdersContainer">
-      <p class="live-orders-empty">Loading active orders...</p>
+
+      <p class="live-orders-empty">
+        Loading active orders...
+      </p>
+
     </div>
+
   </div>
+
 </div>
 
 <div id="toast"></div>
+
 <script type="module" src="js/main.js"></script>
 
 </body>

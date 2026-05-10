@@ -132,6 +132,12 @@ function getRefundStatusClass(status) {
   }
 
   if (value === 'failed') {
+
+  if (value === 'completed') {
+    return 'status-completed';
+  }
+
+  if (value === 'cancelled') {
     return 'status-cancelled';
   }
 
@@ -231,6 +237,11 @@ function setOrderRefundStatus(orderId, refundStatus) {
       ? { ...order, refund_status: refundStatus }
       : order
   ));
+}
+
+    status === 'order placed' ||
+    status === 'being prepared'
+  );
 }
 
 /* ======================================================
@@ -342,6 +353,7 @@ function renderLiveOrders() {
               </button>
             `
             : '';
+          : '';
 
       return `
         <div class="live-order-card">
@@ -367,6 +379,18 @@ function renderLiveOrders() {
               </span>
               ${refundBadge}
             </div>
+
+          </div>
+
+          <div class="live-order-items">
+            ${itemsText || 'No items listed'}
+          </div>
+
+          <div class="live-order-meta">
+
+            <span class="status ${getStatusClass(order.status)}">
+              ${order.status || 'Unknown'}
+            </span>
 
           </div>
 
@@ -720,6 +744,13 @@ export async function cancelStudentOrder(orderId) {
   if (!paymentId) {
     toast(
       'Payment reference is missing. Please contact support before cancelling.',
+  const studentId =
+    await getCurrentStudentId();
+
+  if (!studentId) {
+
+    toast(
+      'Could not find logged in student',
       'error'
     );
 
