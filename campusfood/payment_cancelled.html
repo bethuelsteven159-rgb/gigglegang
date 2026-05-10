@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment Cancelled – Campus Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">💳 Payment</span>
+</nav>
+
+<div class="page">
+  <div class="panel">
+    <h2>Payment Cancelled</h2>
+
+    <p id="paymentCancelStatus">
+      Cancelling your payment...
+    </p>
+
+    <div class="actions" style="margin-top: 1rem;">
+      <a href="dashboard_student.html" id="retryPaymentBtn" class="btn btn-primary" hidden>
+        Back to cart
+      </a>
+
+      <a href="dashboard_student.html" id="dashboardBtn" class="btn" hidden>
+        Go to dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<script type="module" src="js/main.js"></script>
+
+</body>
+</html>

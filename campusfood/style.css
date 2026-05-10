@@ -1260,3 +1260,27 @@ tr:hover td {
   padding: 1rem 0;
   text-align: center;
 }
+
+
+/* =========================
+   REFUND STATUS HELPERS
+
+.live-order-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btn[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .live-order-statuses {
+    justify-content: flex-start;
+  }
+}

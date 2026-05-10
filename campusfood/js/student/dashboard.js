@@ -1,5 +1,6 @@
 import { sb } from '../config/supabase.js';
 import { toast } from '../shared/notifications.js';
+import { requestPaystackRefund } from './payment.js';
 
 let dashboardOrdersChannel = null;
 let dashboardRefreshInterval = null;
@@ -66,6 +67,13 @@ function normalizeStatus(status) {
     .toLowerCase();
 }
 
+function normalizeRefundStatus(status) {
+
+  return String(status || 'none')
+    .trim()
+    .toLowerCase();
+}
+
 function isActiveOrder(order) {
 
   const status =
@@ -105,12 +113,132 @@ function getStatusClass(status) {
   return 'status-pending';
 }
 
+function getRefundStatusClass(status) {
+
+  const value =
+    normalizeRefundStatus(status);
+
+  if (value === 'refunded' || value === 'processed') {
+    return 'status-completed';
+  }
+
+  if (
+    value === 'refund_requested' ||
+    value === 'requested' ||
+    value === 'pending' ||
+    value === 'processing'
+  ) {
+    return 'status-confirmed';
+  }
+
+  if (value === 'failed') {
+
+  if (value === 'completed') {
+    return 'status-completed';
+  }
+
+  if (value === 'cancelled') {
+    return 'status-cancelled';
+  }
+
+  return 'status-pending';
+}
+
+function getRefundStatusLabel(status) {
+
+  const value =
+    normalizeRefundStatus(status);
+
+  if (!value || value === 'none' || value === 'null') {
+    return '';
+  }
+
+  if (
+    value === 'refund_requested' ||
+    value === 'requested' ||
+    value === 'pending'
+  ) {
+    return 'Refund requested';
+  }
+
+  if (value === 'processing') {
+    return 'Refund processing';
+  }
+
+  if (value === 'processed' || value === 'refunded') {
+    return 'Refunded';
+  }
+
+  if (value === 'failed') {
+    return 'Refund failed';
+  }
+
+  return value.replace(/_/g, ' ');
+}
+
+function isRefundBusy(order) {
+
+  const refundStatus =
+    normalizeRefundStatus(order?.refund_status);
+
+  return [
+    'processing',
+    'refund_requested',
+    'requested',
+    'pending',
+    'refunded',
+    'processed'
+  ].includes(refundStatus);
+}
+
 function canCancelOrder(order) {
 
   const status =
     normalizeStatus(order?.status);
 
   return (
+    (
+      status === 'order placed' ||
+      status === 'being prepared'
+    ) &&
+    !isRefundBusy(order)
+  );
+}
+
+function getPaymentReference(order) {
+
+  return (
+    order?.payment_id ||
+    order?.payment_reference ||
+    order?.paystack_reference ||
+    ''
+  );
+}
+
+function getFinalRefundStatus(refundResponse) {
+
+  const paystackStatus =
+    normalizeRefundStatus(refundResponse?.data?.status);
+
+  if (
+    paystackStatus === 'processed' ||
+    paystackStatus === 'refunded'
+  ) {
+    return 'refunded';
+  }
+
+  return 'refund_requested';
+}
+
+function setOrderRefundStatus(orderId, refundStatus) {
+
+  activeOrders = activeOrders.map(order => (
+    String(order.id) === String(orderId)
+      ? { ...order, refund_status: refundStatus }
+      : order
+  ));
+}
+
     status === 'order placed' ||
     status === 'being prepared'
   );
@@ -196,6 +324,18 @@ function renderLiveOrders() {
               .join(', ')
           : '';
 
+      const refundLabel =
+        getRefundStatusLabel(order.refund_status);
+
+      const refundBadge =
+        refundLabel
+          ? `
+            <span class="status ${getRefundStatusClass(order.refund_status)}">
+              ${refundLabel}
+            </span>
+          `
+          : '';
+
       const cancelButton =
         canCancelOrder(order)
           ? `
@@ -206,6 +346,13 @@ function renderLiveOrders() {
               Cancel Order
             </button>
           `
+          : isRefundBusy(order)
+            ? `
+              <button class="btn btn-sm" disabled>
+                Refund in progress
+              </button>
+            `
+            : '';
           : '';
 
       return `
@@ -225,6 +372,21 @@ function renderLiveOrders() {
               </div>
 
             </div>
+
+            <div class="live-order-statuses">
+              <span class="status ${getStatusClass(order.status)}">
+                ${order.status || 'Unknown'}
+              </span>
+              ${refundBadge}
+            </div>
+
+          </div>
+
+          <div class="live-order-items">
+            ${itemsText || 'No items listed'}
+          </div>
+
+          <div class="live-order-meta">
 
             <span class="status ${getStatusClass(order.status)}">
               ${order.status || 'Unknown'}
@@ -493,8 +655,8 @@ function subscribeToDashboardOrders(studentId) {
         ) {
 
           if (
-            newOrder.status !==
-            oldOrder.status
+            newOrder.status !== oldOrder.status ||
+            newOrder.refund_status !== oldOrder.refund_status
           ) {
 
             let message =
@@ -527,8 +689,13 @@ function subscribeToDashboardOrders(studentId) {
               newOrder.status ===
               'Cancelled'
             ) {
-              message =
-                `Order #${newOrder.order_number || newOrder.id} was cancelled`;
+
+              const refundLabel =
+                getRefundStatusLabel(newOrder.refund_status);
+
+              message = refundLabel
+                ? `Order #${newOrder.order_number || newOrder.id} was cancelled. ${refundLabel}.`
+                : `Order #${newOrder.order_number || newOrder.id} was cancelled`;
             }
 
             toast(message, 'success');
@@ -571,6 +738,12 @@ export async function cancelStudentOrder(orderId) {
     return;
   }
 
+  const paymentId =
+    getPaymentReference(order);
+
+  if (!paymentId) {
+    toast(
+      'Payment reference is missing. Please contact support before cancelling.',
   const studentId =
     await getCurrentStudentId();
 
@@ -584,56 +757,143 @@ export async function cancelStudentOrder(orderId) {
     return;
   }
 
-  const { data, error } = await sb
-    .from('orders')
-    .update({
-      status: 'Cancelled',
-      updated_at:
-        new Date().toISOString()
-    })
-    .eq('id', orderId)
-    .eq('student_id', studentId)
-    .in('status', [
-      'Order Placed',
-      'Being Prepared'
-    ])
-    .select();
+  const studentId =
+    await getCurrentStudentId();
 
-  if (error) {
+  if (!studentId) {
+
+    toast(
+      'Could not find logged in student',
+      'error'
+    );
+
+    return;
+  }
+
+  const shouldCancel =
+    typeof window.confirm === 'function'
+      ? window.confirm(
+          'Cancel this order and request a refund?'
+        )
+      : true;
+
+  if (!shouldCancel) {
+    return;
+  }
+
+  console.log(
+    'Cancelling order with refund:',
+    orderId,
+    'for student:',
+    studentId
+  );
+
+  setOrderRefundStatus(orderId, 'processing');
+  renderLiveOrders();
+
+  try {
+
+    const refundResponse =
+      await requestPaystackRefund({
+        orderId,
+        paymentId,
+        amount: order.total_price,
+        reason:
+          `Cancelled order ${order.order_number || order.id}`
+      });
+
+    const finalRefundStatus =
+      getFinalRefundStatus(refundResponse);
+
+    const { data, error } = await sb
+      .from('orders')
+      .update({
+        status: 'Cancelled',
+        refund_status: finalRefundStatus,
+        updated_at:
+          new Date().toISOString()
+      })
+      .eq('id', orderId)
+      .eq('student_id', studentId)
+      .in('status', [
+        'Order Placed',
+        'Being Prepared'
+      ])
+      .select();
+
+    if (error) {
+
+      console.error(
+        'Cancel order database update error:',
+        error
+      );
+
+      toast(
+        'Refund was requested, but the order could not be marked cancelled. Contact support.',
+        'error'
+      );
+
+      await loadLiveOrders();
+      return;
+    }
+
+    if (!data || data.length === 0) {
+
+      toast(
+        'Refund was requested, but this order may have already changed. Contact support.',
+        'error'
+      );
+
+      await loadLiveOrders();
+      return;
+    }
+
+    activeOrders =
+      activeOrders.filter(
+        o => String(o.id) !== String(orderId)
+      );
+
+    renderLiveOrders();
+
+    toast(
+      finalRefundStatus === 'refunded'
+        ? 'Order cancelled and refund processed'
+        : 'Order cancelled and refund requested',
+      'success'
+    );
+
+    await loadLiveOrders();
+  }
+
+  catch (error) {
 
     console.error(
-      'Cancel order error:',
+      'Cancel order refund error:',
       error
     );
 
+    await sb
+      .from('orders')
+      .update({
+        refund_status: 'failed',
+        updated_at:
+          new Date().toISOString()
+      })
+      .eq('id', orderId)
+      .eq('student_id', studentId)
+      .in('status', [
+        'Order Placed',
+        'Being Prepared'
+      ]);
+
     toast(
-      'Failed to cancel order',
+      error.message ||
+      'Refund request failed. Order was not cancelled.',
       'error'
     );
 
-    return;
+    await loadLiveOrders();
   }
-
-  if (!data || data.length === 0) {
-
-    toast(
-      'Could not cancel order. It may already be updated.',
-      'error'
-    );
-
-    return;
-  }
-
-  activeOrders =
-    activeOrders.filter(
-      o => String(o.id) !== String(orderId)
-    );
-
-  renderLiveOrders();
-
-  toast('Order cancelled');
-
-  await loadLiveOrders();
 }
 
 /* ======================================================
