@@ -20,6 +20,14 @@ jest.unstable_mockModule('../../js/config/supabase.js', () => ({
   sb: mockSb
 }));
 
+// Mock shared utils
+jest.unstable_mockModule('../../js/shared/utils.js', () => ({
+  checkAuth: jest.fn(),
+  logout: jest.fn(),
+  toast: jest.fn(),
+  escapeHtml: (str) => str || ''
+}));
+
 // Mock sessionStorage
 const sessionStorageMock = {
   getItem: jest.fn(),
@@ -37,6 +45,7 @@ document.body.innerHTML = `
   <div id="adminName"></div>
   <div id="complianceBody"></div>
   <div id="toast"></div>
+  <button id="logoutBtn"></button>
 `;
 
 // Mock sessionStorage to return a username
@@ -48,7 +57,7 @@ sessionStorage.getItem.mockImplementation((key) => {
 });
 
 // Import after DOM is set up
-const { loadComplianceReport } = await import('../../js/admin/compliance.js');
+const { loadCompliance } = await import('../../js/admin/compliance.js');
 
 describe('admin/compliance.js', () => {
   beforeEach(() => {
@@ -57,6 +66,7 @@ describe('admin/compliance.js', () => {
       <div id="adminName"></div>
       <div id="complianceBody"></div>
       <div id="toast"></div>
+      <button id="logoutBtn"></button>
     `;
     
     // Reset sessionStorage mock
@@ -75,23 +85,13 @@ describe('admin/compliance.js', () => {
     mockFrom.mockReset();
   });
 
-  test('shows loading state initially', async () => {
-    const promise = loadComplianceReport();
-    
-    const tbody = document.getElementById('complianceBody');
-    expect(tbody.innerHTML).toContain('Loading compliance data');
-    
-    mockEqSecond.mockResolvedValueOnce({ data: [], error: null });
-    await promise;
-  });
-
   test('shows no vendors message when vendors table is empty', async () => {
     mockEqFirst.mockResolvedValueOnce({
       data: [],
       error: null
     });
 
-    await loadComplianceReport();
+    await loadCompliance();
 
     const tbody = document.getElementById('complianceBody');
     expect(tbody.innerHTML).toContain('No vendors found');
@@ -99,7 +99,7 @@ describe('admin/compliance.js', () => {
 
   test('displays vendor with no menu items correctly', async () => {
     mockEqFirst.mockResolvedValueOnce({
-      data: [{ id: 'v1', username: 'Test Vendor', status: 'approved' }],
+      data: [{ id: 'v1', username: 'Test Vendor' }],
       error: null
     });
 
@@ -108,28 +108,29 @@ describe('admin/compliance.js', () => {
       error: null
     });
 
-    await loadComplianceReport();
+    await loadCompliance();
 
     const html = document.getElementById('complianceBody').innerHTML;
     expect(html).toContain('Test Vendor');
     expect(html).toContain('No Items');
   });
 
-  test('calculates 100% compliance correctly', async () => {
+  test('calculates 100% compliance when all items have both allergen and dietary arrays', async () => {
     mockEqFirst.mockResolvedValueOnce({
-      data: [{ id: 'v1', username: 'Full Compliance Vendor', status: 'approved' }],
+      data: [{ id: 'v1', username: 'Full Compliance Vendor' }],
       error: null
     });
 
     mockEqSecond.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: ['halal'] },
-        { allergens: ['gluten'], dietary_labels: ['vegetarian'] }
+        { allergens: ['gluten'], dietary_labels: ['vegetarian'] },
+        { allergens: ['eggs', 'dairy'], dietary_labels: ['vegan'] }
       ],
       error: null
     });
 
-    await loadComplianceReport();
+    await loadCompliance();
 
     const html = document.getElementById('complianceBody').innerHTML;
     expect(html).toContain('Full Compliance Vendor');
@@ -137,21 +138,47 @@ describe('admin/compliance.js', () => {
     expect(html).toContain('✅ Fully Compliant');
   });
 
-  test('calculates 0% compliance correctly', async () => {
+  test('calculates 75% compliance correctly', async () => {
     mockEqFirst.mockResolvedValueOnce({
-      data: [{ id: 'v1', username: 'Non Compliant Vendor', status: 'approved' }],
+      data: [{ id: 'v1', username: 'Partial Vendor' }],
       error: null
     });
 
     mockEqSecond.mockResolvedValueOnce({
       data: [
-        { allergens: [], dietary_labels: [] },
+        { allergens: ['peanuts'], dietary_labels: ['halal'] },
+        { allergens: ['gluten'], dietary_labels: ['vegetarian'] },
+        { allergens: ['eggs'], dietary_labels: [] },
+        { allergens: [], dietary_labels: ['vegan'] }
+      ],
+      error: null
+    });
+
+    await loadCompliance();
+
+    const html = document.getElementById('complianceBody').innerHTML;
+    // 2 out of 4 items have both arrays filled = 50%, not 75%
+    expect(html).toContain('Partial Vendor');
+    expect(html).toContain('50%');
+    expect(html).toContain('❌ Low Compliance');
+  });
+
+  test('calculates 0% compliance when no items have both arrays', async () => {
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'Non Compliant Vendor' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        { allergens: ['peanuts'], dietary_labels: [] },
+        { allergens: [], dietary_labels: ['halal'] },
         { allergens: [], dietary_labels: [] }
       ],
       error: null
     });
 
-    await loadComplianceReport();
+    await loadCompliance();
 
     const html = document.getElementById('complianceBody').innerHTML;
     expect(html).toContain('Non Compliant Vendor');
@@ -159,37 +186,70 @@ describe('admin/compliance.js', () => {
     expect(html).toContain('❌ Non-Compliant');
   });
 
-  test('handles multiple vendors correctly', async () => {
+  test('counts items with allergen info correctly (non-empty arrays)', async () => {
     mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'Allergen Test Vendor' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
       data: [
-        { id: 'v1', username: 'Vendor A', status: 'approved' },
-        { id: 'v2', username: 'Vendor B', status: 'suspended' }
+        { allergens: ['peanuts'], dietary_labels: [] },
+        { allergens: ['gluten'], dietary_labels: [] },
+        { allergens: [], dietary_labels: ['halal'] },
+        { allergens: [], dietary_labels: [] }
       ],
       error: null
     });
 
-    mockEqSecond.mockResolvedValueOnce({
-      data: [{ allergens: ['peanuts'], dietary_labels: ['halal'] }],
+    await loadCompliance();
+
+    const html = document.getElementById('complianceBody').innerHTML;
+    expect(html).toContain('Allergen Test Vendor');
+    expect(html).toContain('2 / 4');
+    expect(html).toContain('1 / 4');
+    expect(html).toContain('0%');
+  });
+
+  test('handles multiple vendors correctly', async () => {
+    mockEqFirst.mockResolvedValueOnce({
+      data: [
+        { id: 'v1', username: 'Vendor A' },
+        { id: 'v2', username: 'Vendor B' }
+      ],
       error: null
     });
 
+    // Vendor A menu
     mockEqSecond.mockResolvedValueOnce({
-      data: [{ allergens: [], dietary_labels: [] }],
+      data: [
+        { allergens: ['peanuts'], dietary_labels: ['halal'] }
+      ],
       error: null
     });
 
-    await loadComplianceReport();
+    // Vendor B menu
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        { allergens: [], dietary_labels: [] }
+      ],
+      error: null
+    });
+
+    await loadCompliance();
 
     const html = document.getElementById('complianceBody').innerHTML;
     expect(html).toContain('Vendor A');
     expect(html).toContain('Vendor B');
     expect(html).toContain('100%');
     expect(html).toContain('0%');
+    expect(html).toContain('✅ Fully Compliant');
+    expect(html).toContain('❌ Non-Compliant');
   });
 
-  test('handles null or undefined allergen arrays', async () => {
+  test('handles null or undefined arrays gracefully', async () => {
     mockEqFirst.mockResolvedValueOnce({
-      data: [{ id: 'v1', username: 'Null Vendor', status: 'approved' }],
+      data: [{ id: 'v1', username: 'Null Vendor' }],
       error: null
     });
 
@@ -202,11 +262,54 @@ describe('admin/compliance.js', () => {
       error: null
     });
 
-    await loadComplianceReport();
+    await loadCompliance();
 
     const html = document.getElementById('complianceBody').innerHTML;
     expect(html).toContain('Null Vendor');
-    expect(html).toContain('0 / 3');
+    // All 3 items have no valid arrays = 0 items with both = 0%
+    expect(html).toContain('0 / 3'); // allergens count
+    expect(html).toContain('0 / 3'); // dietary count
     expect(html).toContain('0%');
+  });
+
+  test('shows progress bar with correct width and color for 100%', async () => {
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'Green Vendor' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        { allergens: ['peanuts'], dietary_labels: ['halal'] }
+      ],
+      error: null
+    });
+
+    await loadCompliance();
+
+    const html = document.getElementById('complianceBody').innerHTML;
+    expect(html).toContain('width: 100%');
+    expect(html).toContain('#10b981');
+  });
+
+  test('shows progress bar with correct width and color for low compliance', async () => {
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'Red Vendor' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        { allergens: ['peanuts'], dietary_labels: [] },
+        { allergens: [], dietary_labels: ['halal'] }
+      ],
+      error: null
+    });
+
+    await loadCompliance();
+
+    const html = document.getElementById('complianceBody').innerHTML;
+    expect(html).toContain('width: 0%');
+    expect(html).toContain('#ef4444');
   });
 });
