@@ -1,121 +1,451 @@
-import { sb } from '../config/supabase.js';
-import { setCart, updateCartDisplay } from './cart.js';
+import { jest } from '@jest/globals';
 
-let currentAllMenu = [];
-let currentSearchText = '';
+const mockEqSecond = jest.fn();
+const mockEqFirst = jest.fn(() => ({
+  eq: mockEqSecond
+}));
+const mockSelect = jest.fn(() => ({
+  eq: mockEqFirst
+}));
+const mockFrom = jest.fn(() => ({
+  select: mockSelect
+}));
 
-// Render menu with search filter only
-async function renderMenu() {
-  const container = document.getElementById('menuContainer');
-  if (!container) return;
+const mockSetCart = jest.fn();
+const mockUpdateCartDisplay = jest.fn();
 
-  if (!currentAllMenu.length) {
-    container.innerHTML = '<p style="color:var(--muted)">No menu available yet.</p>';
-    return;
+jest.unstable_mockModule('../config/supabase.js', () => ({
+  sb: {
+    from: mockFrom
   }
+}));
 
-  let filtered = [...currentAllMenu];
+jest.unstable_mockModule('./cart.js', () => ({
+  setCart: mockSetCart,
+  updateCartDisplay: mockUpdateCartDisplay
+}));
 
-  // Apply search only
-  if (currentSearchText) {
-    filtered = filtered.filter(item =>
-      item.name.toLowerCase().includes(currentSearchText.toLowerCase())
-    );
-  }
+const { loadStudentMenu } = await import('./menu.js');
 
-  if (filtered.length === 0) {
-    container.innerHTML = '<p style="color:var(--muted)">No items match your search.</p>';
-    return;
-  }
+describe('student/menu.js', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    sessionStorage.clear();
 
-  container.innerHTML = filtered.map(item => `
-    <div class="menu-item">
-      <div style="font-weight: bold;">${item.name}</div>
-      <div>R${item.price}</div>
-      <div style="font-size: 12px; color: var(--text-muted);">${item.vendor_name}</div>
-      <div style="font-size: 12px; color: var(--text-muted);">${item.description || ''}</div>
-      ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ''}
-      <button class="btn btn-primary btn-sm" onclick="window.addToCartFromMenu('${item.id}', '${item.name}', ${item.price}, '${item.vendor_id}')">
-        + Add to Cart
-      </button>
-    </div>
-  `).join('');
-}
+    mockEqSecond.mockClear();
+    mockEqFirst.mockClear();
+    mockSelect.mockClear();
+    mockFrom.mockClear();
+    mockSetCart.mockReset();
+    mockUpdateCartDisplay.mockReset();
+  });
 
-// Load all menu items (Browse by Menu mode)
-export async function loadStudentMenu() {
-  const container = document.getElementById('menuContainer');
-  if (!container) return;
+  test('returns early if menu container is missing', async () => {
+    await loadStudentMenu();
 
-  // Show search bar, hide filter panel
-  const searchContainer = document.getElementById('searchContainer');
-  const filterPanel = document.getElementById('filterPanel');
-  if (searchContainer) searchContainer.style.display = 'block';
-  if (filterPanel) filterPanel.style.display = 'none';
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
 
-  // Reset search
-  currentSearchText = '';
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) searchInput.value = '';
+  test('shows search and hides filter panel', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <div id="searchContainer" style="display:none"></div>
+      <div id="filterPanel" style="display:block"></div>
+      <input id="searchInput" value="old">
+      <select id="allergenFilter"></select>
+    `;
 
-  const { data: vendors, error: vendorError } = await sb
-    .from('vendors')
-    .select('id, username')
-    .eq('status', 'approved');
+    mockEqFirst.mockResolvedValueOnce({
+      data: [],
+      error: null
+    });
 
-  if (vendorError || !vendors) {
-    container.innerHTML = '<p>Failed to load menu</p>';
-    return;
-  }
+    await loadStudentMenu();
 
-  let allMenu = [];
+    expect(document.getElementById('searchContainer').style.display).toBe('block');
+    expect(document.getElementById('filterPanel').style.display).toBe('none');
+    expect(document.getElementById('searchInput').value).toBe('');
+  });
 
-  for (const vendor of vendors) {
-    const { data: menu, error: menuError } = await sb
-      .from('menu')
-      .select('*')
-      .eq('vendor_id', vendor.id)
-      .eq('status', 'available');
+  test('shows failure message if vendors fail to load', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
 
-    if (!menuError && menu) {
-      allMenu.push(...menu.map(item => ({
-        ...item,
-        vendor_name: vendor.username,
-        vendor_id: vendor.id
-      })));
-    }
-  }
+    mockEqFirst.mockResolvedValueOnce({
+      data: null,
+      error: { message: 'failed' }
+    });
 
-  currentAllMenu = allMenu;
+    await loadStudentMenu();
 
-  // Setup search input
-  if (searchInput) {
-    searchInput.oninput = (e) => {
-      currentSearchText = e.target.value;
-      renderMenu();
-    };
-  }
+    expect(document.getElementById('menuContainer').innerHTML).toContain('Failed to load menu');
+  });
 
-  await renderMenu();
+  test('shows empty message when there is no menu available', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
 
-  const savedCart = sessionStorage.getItem('cart');
-  if (savedCart) {
-    setCart(JSON.parse(savedCart));
-    updateCartDisplay();
-  }
-}
+    mockEqFirst.mockResolvedValueOnce({
+      data: [],
+      error: null
+    });
 
-// Global add to cart
-window.addToCartFromMenu = (itemId, name, price, vendorId) => {
-  const cart = JSON.parse(sessionStorage.getItem('cart') || '[]');
-  cart.push({ id: itemId, name, price, vendor_id: vendorId });
-  sessionStorage.setItem('cart', JSON.stringify(cart));
-  updateCartDisplay();
-  
-  const toast = document.getElementById('toast');
-  if (toast) {
-    toast.textContent = `${name} added to cart`;
-    toast.className = 'show success';
-    setTimeout(() => toast.className = '', 3000);
-  }
-};
+    await loadStudentMenu();
+
+    expect(document.getElementById('menuContainer').innerHTML).toContain('No menu available yet.');
+  });
+
+  test('renders menu items from approved vendors', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Burger',
+          price: 50,
+          description: 'Tasty',
+          image_url: '',
+          allergens: [],
+          dietary_labels: []
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('Burger');
+    expect(html).toContain('R50');
+    expect(html).toContain('shop1');
+    expect(html).toContain('Tasty');
+  });
+
+  test('displays allergen badges when allergens array has values', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Burger',
+          price: 50,
+          description: 'Tasty',
+          image_url: '',
+          allergens: ['peanuts', 'gluten'],
+          dietary_labels: []
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('🥜 Peanuts');
+    expect(html).toContain('🌾 Gluten');
+    expect(html).not.toContain('✓ Halal');
+  });
+
+  test('displays dietary badges when dietary_labels array has values', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Burger',
+          price: 50,
+          description: 'Tasty',
+          image_url: '',
+          allergens: [],
+          dietary_labels: ['halal', 'vegetarian']
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('✓ Halal');
+    expect(html).toContain('✓ Vegetarian');
+    expect(html).not.toContain('🥜 Peanuts');
+  });
+
+  test('displays both allergen and dietary badges when both arrays have values', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Burger',
+          price: 50,
+          description: 'Tasty',
+          image_url: '',
+          allergens: ['eggs', 'dairy'],
+          dietary_labels: ['halal']
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('🥚 Eggs');
+    expect(html).toContain('🥛 Dairy');
+    expect(html).toContain('✓ Halal');
+  });
+
+  test('shows no badges when both arrays are empty', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Burger',
+          price: 50,
+          description: 'Tasty',
+          image_url: '',
+          allergens: [],
+          dietary_labels: []
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).not.toContain('allergen-badge');
+    expect(html).not.toContain('dietary-badge');
+  });
+
+  test('shows no badges when arrays are null or undefined', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Burger',
+          price: 50,
+          description: 'Tasty',
+          image_url: ''
+          // no allergens or dietary_labels fields
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).not.toContain('allergen-badge');
+    expect(html).not.toContain('dietary-badge');
+  });
+
+  test('filters menu items by allergen-free selection', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+      <select id="allergenFilter">
+        <option value="">All</option>
+        <option value="peanut-free">Peanut-Free</option>
+      </select>
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Item with Peanuts',
+          price: 50,
+          description: '',
+          image_url: '',
+          allergens: ['peanuts'],
+          dietary_labels: []
+        },
+        {
+          id: 'm2',
+          name: 'Item without Peanuts',
+          price: 50,
+          description: '',
+          image_url: '',
+          allergens: [],
+          dietary_labels: []
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const allergenFilter = document.getElementById('allergenFilter');
+    allergenFilter.value = 'peanut-free';
+    allergenFilter.onchange({ target: { value: 'peanut-free' } });
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('Item without Peanuts');
+    expect(html).not.toContain('Item with Peanuts');
+  });
+
+  test('filters menu items by dietary preference (halal)', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+      <select id="allergenFilter">
+        <option value="">All</option>
+        <option value="halal">Halal</option>
+      </select>
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        {
+          id: 'm1',
+          name: 'Halal Item',
+          price: 50,
+          description: '',
+          image_url: '',
+          allergens: [],
+          dietary_labels: ['halal']
+        },
+        {
+          id: 'm2',
+          name: 'Non-Halal Item',
+          price: 50,
+          description: '',
+          image_url: '',
+          allergens: [],
+          dietary_labels: []
+        }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const allergenFilter = document.getElementById('allergenFilter');
+    allergenFilter.value = 'halal';
+    allergenFilter.onchange({ target: { value: 'halal' } });
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('Halal Item');
+    expect(html).not.toContain('Non-Halal Item');
+  });
+
+  test('restores saved cart after loading menu', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    sessionStorage.setItem('cart', JSON.stringify([{ id: '1', name: 'Burger', price: 50 }]));
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    expect(mockSetCart).toHaveBeenCalledWith([{ id: '1', name: 'Burger', price: 50 }]);
+    expect(mockUpdateCartDisplay).toHaveBeenCalled();
+  });
+
+  test('search input filters rendered menu', async () => {
+    document.body.innerHTML = `
+      <div id="menuContainer"></div>
+      <input id="searchInput">
+    `;
+
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'shop1' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        { id: 'm1', name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [] },
+        { id: 'm2', name: 'Pizza', price: 80, description: '', image_url: '', allergens: [], dietary_labels: [] }
+      ],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const searchInput = document.getElementById('searchInput');
+    searchInput.oninput({ target: { value: 'bur' } });
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('Burger');
+    expect(html).not.toContain('Pizza');
+  });
+});
