@@ -1,110 +1,38 @@
-import { jest } from '@jest/globals';
+import { loadCompliance } from './compliance.js';
+import { sb } from '../config/supabase.js';
 
-// Create a proper chainable mock for Supabase
-const createChainableMock = () => {
-  const mock = {
-    select: jest.fn(),
-    eq: jest.fn(),
-    then: jest.fn(),
-    catch: jest.fn()
-  };
-  
-  // Make methods return the mock object for chaining
-  mock.select.mockReturnValue(mock);
-  mock.eq.mockReturnValue(mock);
-  
-  return mock;
-};
-
-const mockFrom = jest.fn(() => createChainableMock());
-
-const mockSb = {
-  from: mockFrom
-};
-
-jest.unstable_mockModule('../../js/config/supabase.js', () => ({
-  sb: mockSb
+// Mock Supabase
+jest.mock('../config/supabase.js', () => ({
+  sb: {
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn()
+  }
 }));
 
-// Mock shared utils
-jest.unstable_mockModule('../../js/shared/utils.js', () => ({
-  checkAuth: jest.fn(),
-  logout: jest.fn(),
-  toast: jest.fn(),
-  escapeHtml: (str) => str || ''
-}));
-
-// Mock sessionStorage
-const sessionStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn()
-};
-global.sessionStorage = sessionStorageMock;
-
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn()
-};
-global.localStorage = localStorageMock;
-
-// Mock window.location
-delete window.location;
-window.location = { href: '' };
-
-// Set up DOM elements
-document.body.innerHTML = `
-  <div id="adminName"></div>
-  <div id="complianceBody"></div>
-  <div id="toast"></div>
-  <button id="logoutBtn"></button>
-`;
-
-// Set up sessionStorage mock return values
-sessionStorageMock.getItem.mockImplementation((key) => {
-  if (key === 'username') return 'Admin User';
-  if (key === 'role') return 'admin';
-  if (key === 'userId') return 'user-123';
-  return null;
-});
-
-// Import after DOM is set up
-const { loadCompliance } = await import('../../js/admin/compliance.js');
-
-describe('admin/compliance.js', () => {
+describe('loadCompliance', () => {
   beforeEach(() => {
-    // Reset DOM
     document.body.innerHTML = `
-      <div id="adminName"></div>
       <div id="complianceBody"></div>
+      <div id="adminName"></div>
       <div id="toast"></div>
       <button id="logoutBtn"></button>
     `;
-    
-    // Reset all mocks
-    jest.clearAllMocks();
-    
-    // Re-setup sessionStorage mock return values
-    sessionStorageMock.getItem.mockImplementation((key) => {
-      if (key === 'username') return 'Admin User';
-      if (key === 'role') return 'admin';
-      if (key === 'userId') return 'user-123';
-      return null;
-    });
 
-    // Reset mockFrom
-    mockFrom.mockReset();
+    sessionStorage.setItem('username', 'AdminUser');
+    sessionStorage.setItem('role', 'admin');
+    sessionStorage.setItem('userId', 'user-123');
+
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    sessionStorage.clear();
+    document.body.innerHTML = '';
   });
 
   test('shows no vendors message when vendors table is empty', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValue({
+    sb.eq.mockResolvedValueOnce({
       data: [],
       error: null
     });
@@ -116,11 +44,13 @@ describe('admin/compliance.js', () => {
   });
 
   test('displays vendor with no menu items correctly', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Test Vendor' }],
+      error: null
+    });
+
+    sb.eq.mockResolvedValueOnce({
+      data: [],
       error: null
     });
 
@@ -132,18 +62,12 @@ describe('admin/compliance.js', () => {
   });
 
   test('calculates 100% compliance when all items have both arrays', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Full Compliance Vendor' }],
       error: null
     });
 
-    // Mock menu query
-    const menuChainableMock = createChainableMock();
-    mockFrom.mockReturnValueOnce(menuChainableMock);
-    menuChainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: ['halal'] },
         { allergens: ['gluten'], dietary_labels: ['vegetarian'] },
@@ -161,17 +85,12 @@ describe('admin/compliance.js', () => {
   });
 
   test('calculates 0% compliance when no items have both arrays', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Non Compliant Vendor' }],
       error: null
     });
 
-    const menuChainableMock = createChainableMock();
-    mockFrom.mockReturnValueOnce(menuChainableMock);
-    menuChainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: [] },
         { allergens: [], dietary_labels: ['halal'] },
@@ -189,17 +108,12 @@ describe('admin/compliance.js', () => {
   });
 
   test('counts items with allergen info correctly', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Allergen Test Vendor' }],
       error: null
     });
 
-    const menuChainableMock = createChainableMock();
-    mockFrom.mockReturnValueOnce(menuChainableMock);
-    menuChainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: [] },
         { allergens: ['gluten'], dietary_labels: [] },
@@ -218,10 +132,7 @@ describe('admin/compliance.js', () => {
   });
 
   test('handles multiple vendors correctly', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { id: 'v1', username: 'Vendor A' },
         { id: 'v2', username: 'Vendor B' }
@@ -229,18 +140,14 @@ describe('admin/compliance.js', () => {
       error: null
     });
 
-    const menuChainableMock1 = createChainableMock();
-    mockFrom.mockReturnValueOnce(menuChainableMock1);
-    menuChainableMock1.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: ['halal'] }
       ],
       error: null
     });
 
-    const menuChainableMock2 = createChainableMock();
-    mockFrom.mockReturnValueOnce(menuChainableMock2);
-    menuChainableMock2.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { allergens: [], dietary_labels: [] }
       ],
@@ -257,17 +164,12 @@ describe('admin/compliance.js', () => {
   });
 
   test('handles null or undefined arrays gracefully', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Null Vendor' }],
       error: null
     });
 
-    const menuChainableMock = createChainableMock();
-    mockFrom.mockReturnValueOnce(menuChainableMock);
-    menuChainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { },
         { allergens: null, dietary_labels: null },
@@ -285,17 +187,12 @@ describe('admin/compliance.js', () => {
   });
 
   test('shows progress bar with correct width and color for 100%', async () => {
-    const chainableMock = createChainableMock();
-    mockFrom.mockReturnValue(chainableMock);
-    
-    chainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Green Vendor' }],
       error: null
     });
 
-    const menuChainableMock = createChainableMock();
-    mockFrom.mockReturnValueOnce(menuChainableMock);
-    menuChainableMock.eq.mockResolvedValueOnce({
+    sb.eq.mockResolvedValueOnce({
       data: [
         { allergens: ['peanuts'], dietary_labels: ['halal'] }
       ],
