@@ -4,35 +4,44 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="css/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
 <nav class="navbar">
-  <span class="brand">🍔 Campus Food — Admin</span>
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
+  <span class="brand">👑 Campus Food — Admin</span>
+  <div class="user-info">
     <span>👤 <span id="adminName"></span></span>
-    <button onclick="logout()">Logout</button>
+    <button id="logoutBtn">Logout</button>
   </div>
 </nav>
+
 <div class="page">
-  <h2>Welcome, <span id="adminNameWelcome"></span></h2>
+  <h2>Admin Dashboard</h2>
+
   <div class="cards">
-    <a class="card" href="admin_vendor_control.html">
+    <a class="card" href="admin_vendors.html">
       <div class="icon">🏪</div>
-      <div class="label">Vendor Control</div>
+      <div class="label">Vendor Management</div>
+      <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">Approve, suspend, or remove vendors</p>
     </a>
     <a class="card" href="admin_orders.html">
       <div class="icon">📋</div>
       <div class="label">All Orders</div>
+      <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">View all orders across the platform</p>
     </a>
-    <a class="card" href="admin_analytics.html">
-      <div class="icon">📊</div>
-      <div class="label">Analytics</div>
+    <a class="card" href="admin_compliance.html">
+      <div class="icon">✅</div>
+      <div class="label">Compliance Report</div>
+      <p style="font-size: 0.75rem; color: var(--gray-500); margin-top: 0.5rem;">Allergen & dietary compliance by vendor</p>
     </a>
   </div>
 </div>
+
 <div id="toast"></div>
-<script type="module" src="js/main.js"></script>
+
+<script type="module" src="js/admin/dashboard.js"></script>
+
 </body>
 </html>
