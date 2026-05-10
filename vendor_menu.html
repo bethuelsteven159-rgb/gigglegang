@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Management – Campus Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">🍽️ Menu Management</span>
+  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
+    <span>👤 <span id="vendorName"></span></span>
+    <button onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="panel">
+    <h2>Add Menu Item</h2>
+
+    <div class="form-row">
+
+      <div class="form-group">
+        <label for="itemName">Item Name</label>
+        <input id="itemName" type="text" placeholder="e.g. Burger">
+      </div>
+
+      <div class="form-group">
+        <label for="itemPrice">Price (R)</label>
+        <input id="itemPrice" type="number" min="0" placeholder="e.g. 50">
+      </div>
+
+      <div class="form-group">
+        <label for="itemDescription">Description</label>
+        <input id="itemDescription" type="text" placeholder="e.g. Juicy beef burger with cheese">
+      </div>
+
+      <div class="form-group">
+        <label for="itemImage">Image</label>
+        <input id="itemImage" type="file" accept="image/*">
+      </div>
+
+      <!-- ALLERGENS -->
+      <div class="form-group full-width">
+        <label>Allergens</label>
+
+        <div class="checkbox-group">
+          <label><input type="checkbox" value="gluten" class="allergen-checkbox"> Gluten</label>
+
+          <label><input type="checkbox" value="crustaceans" class="allergen-checkbox"> Crustaceans</label>
+
+          <label><input type="checkbox" value="eggs" class="allergen-checkbox"> Eggs</label>
+
+          <label><input type="checkbox" value="fish" class="allergen-checkbox"> Fish</label>
+
+          <label><input type="checkbox" value="peanuts" class="allergen-checkbox"> Peanuts</label>
+
+          <label><input type="checkbox" value="soy" class="allergen-checkbox"> Soy</label>
+
+          <label><input type="checkbox" value="milk" class="allergen-checkbox"> Milk</label>
+
+          <label><input type="checkbox" value="nuts" class="allergen-checkbox"> Nuts</label>
+        </div>
+      </div>
+
+      <!-- DIETARY -->
+      <div class="form-group full-width">
+        <label>Dietary</label>
+
+        <div class="checkbox-group">
+          <label><input type="checkbox" value="halaal" class="dietary-checkbox"> Halaal</label>
+
+          <label><input type="checkbox" value="vegan" class="dietary-checkbox"> Vegan</label>
+
+          <label><input type="checkbox" value="vegetarian" class="dietary-checkbox"> Vegetarian</label>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="addMenuItem()">
+        + Add Item
+      </button>
+
+    </div>
+  </div>
+
+  <h2>Your Current Menu</h2>
+
+  <div id="vendorMenu" class="menu-grid">
+    <p style="color:var(--muted)">Loading…</p>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
