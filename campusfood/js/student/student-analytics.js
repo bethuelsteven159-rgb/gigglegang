@@ -1,4 +1,4 @@
-import { sb } from '../config/supabase.js';
+import { sb } from './config/supabase.js';
 
 let topVendors = [];
 
@@ -67,11 +67,15 @@ async function loadTopVendorsPage() {
     if (!vendorMap[vendorId]) {
 
       vendorMap[vendorId] = {
+
         vendor_id: vendorId,
+
         username:
           review.vendors?.username ||
           'Unknown Vendor',
+
         totalRating: 0,
+
         reviewCount: 0
       };
     }
@@ -88,6 +92,7 @@ async function loadTopVendorsPage() {
 
   const rankedVendors =
     Object.values(vendorMap)
+
       .map(vendor => {
 
         const averageRating =
@@ -99,10 +104,12 @@ async function loadTopVendorsPage() {
           averageRating
         };
       })
+
       .sort(
         (a, b) =>
           b.averageRating - a.averageRating
       )
+
       .slice(0, 3);
 
   topVendors = rankedVendors;
@@ -134,9 +141,13 @@ async function loadTopVendorsPage() {
           <div class="top-vendor-info">
 
             <div class="top-vendor-name">
+
               #${index + 1}
+
               —
+
               ${vendor.username}
+
             </div>
 
             <div class="top-vendor-rating">
