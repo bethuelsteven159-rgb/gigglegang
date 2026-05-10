@@ -6,6 +6,7 @@ module.exports = {
     'server.js',
     'js/**/*.js',
     '!**/*.test.js',
+    '!**/*.spec.js',
     '!node_modules/**'
   ],
 
@@ -16,15 +17,17 @@ module.exports = {
     {
       displayName: 'backend',
       testEnvironment: 'node',
-      testMatch: ['<rootDir>/__tests__/server.test.js']
+      testMatch: [
+        '<rootDir>/server.test.js',
+        '<rootDir>/**/*.server.test.js'
+      ]
     },
     {
       displayName: 'frontend',
       testEnvironment: 'jsdom',
       testMatch: [
-        '<rootDir>/__tests__/payment.test.js',
-        '<rootDir>/__tests__/checkout-payment.test.js',
-        '<rootDir>/__tests__/student-cancel-refund.test.js'
+        '<rootDir>/js/**/*.test.js',
+        '<rootDir>/js/**/*.spec.js'
       ]
     }
   ]

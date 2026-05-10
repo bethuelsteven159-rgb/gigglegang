@@ -338,7 +338,7 @@ describe('vendor/menu.js', () => {
         allergens: ['peanuts', 'dairy'],
         dietary_labels: ['vegan']
       }));
-      expect(mockUpdateEq).toHaveBeenCalledWith('id', '1');
+      expect(mockUpdateEq).toHaveBeenCalledWith('id', 1);
       expect(mockToast).toHaveBeenCalledWith('Item updated successfully');
     });
 
