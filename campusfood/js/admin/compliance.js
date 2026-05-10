@@ -1,5 +1,5 @@
 import { sb } from '../config/supabase.js';
-import { checkAuth, logout } from '../shared/utils.js';
+import { checkAuth, logout, escapeHtml } from '../shared/utils.js';
 
 checkAuth('admin');
 
@@ -8,17 +8,19 @@ document.getElementById('logoutBtn').addEventListener('click', logout);
 
 async function loadCompliance() {
   const tbody = document.getElementById('complianceBody');
-  const { data: vendors, error } = await sb.from('vendors').select('id, username').eq('status', 'approved');
+  const { data: vendors, error } = await sb
+    .from('vendors')
+    .select('id, username')
+    .eq('status', 'approved');
 
   if (error || !vendors || vendors.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7">No vendors found<\/td><\/tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No vendors found<\/td><\/tr>';
     return;
   }
 
   const complianceData = [];
 
   for (const vendor of vendors) {
-    // Get vendor's menu items with new columns (allergens and dietary_labels arrays)
     const { data: menuItems } = await sb
       .from('menu')
       .select('allergens, dietary_labels')
@@ -40,7 +42,6 @@ async function loadCompliance() {
     let itemsWithDietary = 0;
 
     for (const item of menuItems) {
-      // Check if item has any allergens declared
       const hasAllergens = item.allergens && Array.isArray(item.allergens) && item.allergens.length > 0;
       const hasDietary = item.dietary_labels && Array.isArray(item.dietary_labels) && item.dietary_labels.length > 0;
       
@@ -78,7 +79,7 @@ async function loadCompliance() {
     });
   }
 
-  // Render table with 7 columns
+  // Render table
   tbody.innerHTML = complianceData.map(v => `
     <tr>
       <td style="font-weight: 500;">${escapeHtml(v.vendor)}<\/td>
@@ -98,14 +99,10 @@ async function loadCompliance() {
   `).join('');
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/[&<>]/g, function(m) {
-    if (m === '&') return '&amp;';
-    if (m === '<') return '&lt;';
-    if (m === '>') return '&gt;';
-    return m;
-  });
-}
+// Export for testing
+export { loadCompliance };
 
-loadCompliance();
+// Load compliance report when page loads
+if (typeof document !== 'undefined') {
+  loadCompliance();
+}
