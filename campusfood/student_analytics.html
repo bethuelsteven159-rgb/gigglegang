@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>
+    Top Vendors – Campus Food
+  </title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<nav class="navbar">
+
+  <span class="brand">
+    🍔 Campus Food — Top Vendors
+  </span>
+
+  <div
+    class="user-info"
+    style="display:flex;gap:1rem;align-items:center;"
+  >
+
+    <a
+      href="student_dashboard.html"
+      class="btn-top-vendors"
+    >
+      ← Dashboard
+    </a>
+
+  </div>
+
+</nav>
+
+<div class="page">
+
+  <div class="top-vendors-page-header">
+
+    <h2>
+      ⭐ Top Rated Vendors
+    </h2>
+
+    <p class="top-vendors-page-subtext">
+      Vendors ranked by average student review ratings.
+    </p>
+
+  </div>
+
+  <div id="topVendorsPageContainer">
+
+    <p class="top-vendors-empty">
+      Loading vendor rankings...
+    </p>
+
+  </div>
+
+</div>
+
+<script
+  type="module"
+  src="js/student-analytics.js"
+></script>
+
+</body>
+</html>
