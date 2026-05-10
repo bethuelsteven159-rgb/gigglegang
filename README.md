@@ -18,13 +18,13 @@ The application uses **Supabase** for authentication, database, and security pol
 
 ## Live Demo
 
-🔗 [https://k4n3k1-dev.github.io/sd/](https://k4n3k1-dev.github.io/sd/)
+🔗 https://k4n3k1-dev.github.io/lastt/
 
 ### Test Accounts
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | `admin123@campusfood.com` | `admin123` |
+| Admin | | |
 | Vendor | Create your own via signup | – |
 | Student | Create your own via signup | – |
 
