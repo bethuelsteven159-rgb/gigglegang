@@ -20,7 +20,7 @@ jest.unstable_mockModule('../../js/config/supabase.js', () => ({
   sb: mockSb
 }));
 
-// Mock shared utils - NOW THE PATH IS CORRECT
+// Mock shared utils
 jest.unstable_mockModule('../../js/shared/utils.js', () => ({
   checkAuth: jest.fn(),
   logout: jest.fn(),
@@ -28,13 +28,23 @@ jest.unstable_mockModule('../../js/shared/utils.js', () => ({
   escapeHtml: (str) => str || ''
 }));
 
-// Mock sessionStorage
+// Mock sessionStorage with proper Jest spies
 const sessionStorageMock = {
   getItem: jest.fn(),
   setItem: jest.fn(),
+  removeItem: jest.fn(),
   clear: jest.fn()
 };
 global.sessionStorage = sessionStorageMock;
+
+// Mock localStorage
+const localStorageMock = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+  removeItem: jest.fn(),
+  clear: jest.fn()
+};
+global.localStorage = localStorageMock;
 
 // Mock window.location
 delete window.location;
@@ -48,8 +58,8 @@ document.body.innerHTML = `
   <button id="logoutBtn"></button>
 `;
 
-// Mock sessionStorage to return a username
-sessionStorage.getItem.mockImplementation((key) => {
+// Set up sessionStorage mock return values
+sessionStorageMock.getItem.mockImplementation((key) => {
   if (key === 'username') return 'Admin User';
   if (key === 'role') return 'admin';
   if (key === 'userId') return 'user-123';
@@ -69,15 +79,16 @@ describe('admin/compliance.js', () => {
       <button id="logoutBtn"></button>
     `;
     
-    // Reset sessionStorage mock
-    sessionStorage.getItem.mockImplementation((key) => {
+    // Reset all mocks
+    jest.clearAllMocks();
+    
+    // Re-setup sessionStorage mock return values
+    sessionStorageMock.getItem.mockImplementation((key) => {
       if (key === 'username') return 'Admin User';
       if (key === 'role') return 'admin';
       if (key === 'userId') return 'user-123';
       return null;
     });
-    
-    jest.clearAllMocks();
 
     mockEqSecond.mockReset();
     mockEqFirst.mockReset();
