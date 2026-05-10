@@ -32,13 +32,41 @@ global.sessionStorage = sessionStorageMock;
 delete window.location;
 window.location = { href: '' };
 
-// Import after mocks
+// Set up DOM elements BEFORE importing the module
+document.body.innerHTML = `
+  <div id="adminName"></div>
+  <div id="complianceBody"></div>
+  <div id="toast"></div>
+`;
+
+// Mock sessionStorage to return a username
+sessionStorage.getItem.mockImplementation((key) => {
+  if (key === 'username') return 'Admin User';
+  if (key === 'role') return 'admin';
+  if (key === 'userId') return 'user-123';
+  return null;
+});
+
+// Import after DOM is set up
 const { loadComplianceReport } = await import('../../js/admin/compliance.js');
 
 describe('admin/compliance.js', () => {
   beforeEach(() => {
-    document.body.innerHTML = '';
-    sessionStorage.clear();
+    // Reset DOM
+    document.body.innerHTML = `
+      <div id="adminName"></div>
+      <div id="complianceBody"></div>
+      <div id="toast"></div>
+    `;
+    
+    // Reset sessionStorage mock
+    sessionStorage.getItem.mockImplementation((key) => {
+      if (key === 'username') return 'Admin User';
+      if (key === 'role') return 'admin';
+      if (key === 'userId') return 'user-123';
+      return null;
+    });
+    
     jest.clearAllMocks();
 
     mockEqSecond.mockReset();
@@ -48,10 +76,6 @@ describe('admin/compliance.js', () => {
   });
 
   test('shows loading state initially', async () => {
-    document.body.innerHTML = `
-      <div id="complianceBody">Loading...</div>
-    `;
-
     const promise = loadComplianceReport();
     
     const tbody = document.getElementById('complianceBody');
@@ -62,10 +86,6 @@ describe('admin/compliance.js', () => {
   });
 
   test('shows no vendors message when vendors table is empty', async () => {
-    document.body.innerHTML = `
-      <div id="complianceBody"></div>
-    `;
-
     mockEqFirst.mockResolvedValueOnce({
       data: [],
       error: null
@@ -78,10 +98,6 @@ describe('admin/compliance.js', () => {
   });
 
   test('displays vendor with no menu items correctly', async () => {
-    document.body.innerHTML = `
-      <div id="complianceBody"></div>
-    `;
-
     mockEqFirst.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Test Vendor', status: 'approved' }],
       error: null
@@ -100,10 +116,6 @@ describe('admin/compliance.js', () => {
   });
 
   test('calculates 100% compliance correctly', async () => {
-    document.body.innerHTML = `
-      <div id="complianceBody"></div>
-    `;
-
     mockEqFirst.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Full Compliance Vendor', status: 'approved' }],
       error: null
@@ -126,10 +138,6 @@ describe('admin/compliance.js', () => {
   });
 
   test('calculates 0% compliance correctly', async () => {
-    document.body.innerHTML = `
-      <div id="complianceBody"></div>
-    `;
-
     mockEqFirst.mockResolvedValueOnce({
       data: [{ id: 'v1', username: 'Non Compliant Vendor', status: 'approved' }],
       error: null
@@ -152,10 +160,6 @@ describe('admin/compliance.js', () => {
   });
 
   test('handles multiple vendors correctly', async () => {
-    document.body.innerHTML = `
-      <div id="complianceBody"></div>
-    `;
-
     mockEqFirst.mockResolvedValueOnce({
       data: [
         { id: 'v1', username: 'Vendor A', status: 'approved' },
@@ -180,6 +184,29 @@ describe('admin/compliance.js', () => {
     expect(html).toContain('Vendor A');
     expect(html).toContain('Vendor B');
     expect(html).toContain('100%');
+    expect(html).toContain('0%');
+  });
+
+  test('handles null or undefined allergen arrays', async () => {
+    mockEqFirst.mockResolvedValueOnce({
+      data: [{ id: 'v1', username: 'Null Vendor', status: 'approved' }],
+      error: null
+    });
+
+    mockEqSecond.mockResolvedValueOnce({
+      data: [
+        { },
+        { allergens: null, dietary_labels: null },
+        { allergens: undefined, dietary_labels: undefined }
+      ],
+      error: null
+    });
+
+    await loadComplianceReport();
+
+    const html = document.getElementById('complianceBody').innerHTML;
+    expect(html).toContain('Null Vendor');
+    expect(html).toContain('0 / 3');
     expect(html).toContain('0%');
   });
 });
