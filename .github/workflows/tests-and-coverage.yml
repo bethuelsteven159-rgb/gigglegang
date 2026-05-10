@@ -3,7 +3,11 @@ name: Tests and Coverage
 on:
   push:
   pull_request:
-    branches: [main]
+    branches:
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   frontend-tests:
@@ -17,13 +21,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-          cache-dependency-path: campusfood/package-lock.json
+
+      - name: Clean old coverage reports
+        run: |
+          rm -rf coverage
+          rm -rf Backend/coverage
+          rm -rf campusfood/coverage
 
       - name: Install dependencies
         run: |
           cd campusfood
-          npm ci
+          npm install
 
       - name: Run tests with coverage
         run: |
@@ -39,5 +47,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: campusfood/coverage/lcov.info
+          disable_search: true
           fail_ci_if_error: true
           verbose: true
