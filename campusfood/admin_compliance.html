@@ -13,7 +13,7 @@
   <span class="brand">✅ Compliance Report</span>
   <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
     <span>👤 <span id="adminName"></span></span>
-    <button onclick="logout()">Logout</button>
+    <button id="logoutBtn">Logout</button>
   </div>
 </nav>
 
@@ -24,11 +24,10 @@
   </p>
 
   <div class="panel" style="padding: 0; overflow-x: auto;">
-    <table style="width: 100%; min-width: 700px;">
+    <table style="width: 100%; min-width: 800px;">
       <thead>
         <tr>
           <th>Vendor</th>
-          <th>Status</th>
           <th>Total Items</th>
           <th>Items with Allergen Info</th>
           <th>Items with Dietary Info</th>
@@ -37,7 +36,7 @@
         </tr>
       </thead>
       <tbody id="complianceBody">
-        <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading compliance data...<\/td><\/tr>
+        <tr><td colspan="6" style="text-align: center; padding: 2rem;">Loading compliance data...<\/td><\/tr>
       </tbody>
     <\/table>
   <\/div>
