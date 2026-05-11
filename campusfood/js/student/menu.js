@@ -195,6 +195,8 @@ export async function loadStudentMenu() {
   }
 }
 
+
+
 function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/[&<>]/g, function(m) {
@@ -204,6 +206,8 @@ function escapeHtml(str) {
     return m;
   });
 }
+
+
 
 // Global add to cart
 window.addToCartFromMenu = (itemId, name, price, vendorId) => {
