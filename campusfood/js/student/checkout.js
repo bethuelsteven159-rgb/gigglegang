@@ -2,6 +2,7 @@ import { sb } from '../config/supabase.js';
 import { toast } from '../shared/notifications.js';
 import { getCart, setCart } from './cart.js';
 import { startPaystackPayment, verifyPaystackReference } from './payment.js';
+
 const PENDING_ORDER_KEY = 'pending_paystack_order';
 
 async function buildOrderDataFromCart() {
@@ -112,13 +113,23 @@ async function buildOrderDataFromCart() {
     })),
     total_price: totalPrice,
     status: 'Order Placed',
-    created_at: new Date().toISOString()
+    payment_status: 'pending',
+    refund_status: 'none',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
 }
 
+function getVerifiedPaymentReference(paymentData, fallbackReference) {
+  return String(
+    paymentData?.data?.reference ||
+    paymentData?.data?.id ||
+    fallbackReference ||
+    ''
+  );
+}
+
 export async function placeOrder() {
-  console.log("[CHECKOUT] Paystack version of placeOrder is running");
-  console.log("🔥 PAYSTACK VERSION OF placeOrder IS RUNNING");
   const orderData = await buildOrderDataFromCart();
 
   if (!orderData) {
@@ -133,7 +144,24 @@ export async function placeOrder() {
     orderId: orderData.order_number
   });
 }
+export function cancelPendingPayment() {
+  const statusText =
+    document.getElementById('paymentStatus') ||
+    document.getElementById('paymentCancelledStatus') ||
+    document.getElementById('cancelledStatus');
 
+  const continueBtn = document.getElementById('continueBtn');
+
+  sessionStorage.removeItem(PENDING_ORDER_KEY);
+
+  if (statusText) {
+    statusText.textContent = 'Payment was cancelled. No order was placed.';
+  }
+
+  if (continueBtn) {
+    continueBtn.hidden = false;
+  }
+}
 export async function completePaidOrderAfterPayment() {
   const statusText = document.getElementById('paymentStatus');
   const continueBtn = document.getElementById('continueBtn');
@@ -179,9 +207,17 @@ export async function completePaidOrderAfterPayment() {
       return;
     }
 
+    const paidOrderData = {
+      ...orderData,
+      payment_status: 'paid',
+      payment_id: getVerifiedPaymentReference(paymentData, reference),
+      refund_status: orderData.refund_status || 'none',
+      updated_at: new Date().toISOString()
+    };
+
     const { error: insertError } = await sb
       .from('orders')
-      .insert([orderData]);
+      .insert([paidOrderData]);
 
     if (insertError) {
       console.error('Order insertion error:', insertError);

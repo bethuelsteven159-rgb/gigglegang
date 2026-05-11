@@ -29,6 +29,34 @@ function sortOrdersByStatus(orders) {
   });
 }
 
+function normalizeRefundStatus(status) {
+  return String(status || 'none').trim().toLowerCase();
+}
+
+function getRefundStatusClass(status) {
+  const value = normalizeRefundStatus(status);
+
+  if (value === 'refunded' || value === 'processed') return 'status-completed';
+  if (value === 'refund_requested' || value === 'requested' || value === 'pending' || value === 'processing') {
+    return 'status-confirmed';
+  }
+  if (value === 'failed') return 'status-cancelled';
+
+  return 'status-pending';
+}
+
+function getRefundStatusLabel(status) {
+  const value = normalizeRefundStatus(status);
+
+  if (!value || value === 'none' || value === 'null') return '-';
+  if (value === 'refund_requested' || value === 'requested' || value === 'pending') return 'Refund requested';
+  if (value === 'processing') return 'Refund processing';
+  if (value === 'processed' || value === 'refunded') return 'Refunded';
+  if (value === 'failed') return 'Refund failed';
+
+  return value.replace(/_/g, ' ');
+}
+
 function findReviewForOrder(order) {
   return vendorReviews.find(
     review => String(review.order_id) === String(order.id)
@@ -96,7 +124,7 @@ function renderOrders() {
   if (!container) return;
 
   if (!vendorOrders.length) {
-    container.innerHTML = "<tr><td colspan='7'>No orders yet</td></tr>";
+    container.innerHTML = "<tr><td colspan='8'>No orders yet</td></tr>";
     return;
   }
 
@@ -139,6 +167,14 @@ function renderOrders() {
         </select>
       `;
 
+    const refundCell = order.status === 'Cancelled' || normalizeRefundStatus(order.refund_status) !== 'none'
+      ? `
+        <span class="status ${getRefundStatusClass(order.refund_status)}">
+          ${getRefundStatusLabel(order.refund_status)}
+        </span>
+      `
+      : '<span style="color: var(--text-muted);">-</span>';
+
     return `
       <tr data-order-id="${order.id}">
         <td>#${order.order_number || order.id}</td>
@@ -146,6 +182,7 @@ function renderOrders() {
         <td>${itemsText}</td>
         <td>R${order.total_price ?? 0}</td>
         <td>${order.status || ''}</td>
+        <td>${refundCell}</td>
         <td>${actionCell}</td>
         <td>${reviewCell}</td>
       </tr>
@@ -161,7 +198,7 @@ export async function loadVendorOrders() {
   const vendorId = await getVendorId(username);
 
   if (!vendorId) {
-    container.innerHTML = "<tr><td colspan='7'>Vendor not found</td></tr>";
+    container.innerHTML = "<tr><td colspan='8'>Vendor not found</td></tr>";
     return;
   }
 
@@ -172,7 +209,7 @@ export async function loadVendorOrders() {
 
   if (ordersError) {
     console.error('Vendor orders load error:', ordersError);
-    container.innerHTML = "<tr><td colspan='7'>Failed to load orders</td></tr>";
+    container.innerHTML = "<tr><td colspan='8'>Failed to load orders</td></tr>";
     return;
   }
 

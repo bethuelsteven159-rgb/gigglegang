@@ -1171,3 +1171,116 @@ tr:hover td {
   }
 }
 
+/* =========================
+   TOP VENDORS
+========================= */
+
+.top-vendors-panel {
+  margin-top: 2rem;
+}
+
+.top-vendors-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.top-vendors-subtext {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.btn-top-vendors {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  background: #f97316;
+  color: white;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.btn-top-vendors:hover {
+  background: #ea580c;
+}
+
+.top-vendor-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: white;
+  margin-bottom: 0.85rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.top-vendor-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.top-vendor-rank {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #fff7ed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.top-vendor-info {
+  flex: 1;
+}
+
+.top-vendor-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.top-vendor-rating {
+  margin-top: 0.25rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.top-vendors-empty {
+  color: #9ca3af;
+  padding: 1rem 0;
+  text-align: center;
+}
+
+
+/* =========================
+   REFUND STATUS HELPERS
+
+.live-order-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.btn[disabled] {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .live-order-statuses {
+    justify-content: flex-start;
+  }
+}

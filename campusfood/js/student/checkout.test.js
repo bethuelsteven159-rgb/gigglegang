@@ -528,7 +528,15 @@ describe('student/checkout.js', () => {
     await completePaidOrderAfterPayment();
 
     expect(mockVerifyPaystackReference).toHaveBeenCalledWith('test-ref-123');
-    expect(mockOrdersInsert).toHaveBeenCalledWith([pendingOrder]);
+   expect(mockOrdersInsert).toHaveBeenCalledWith([
+       expect.objectContaining({
+          ...pendingOrder,
+          payment_id: 'test-ref-123',
+           payment_status: 'paid',
+          refund_status: 'none',
+          updated_at: expect.any(String)
+    })
+]);
 
     expect(sessionStorage.getItem('pending_paystack_order')).toBeNull();
     expect(sessionStorage.getItem('cart')).toBeNull();
