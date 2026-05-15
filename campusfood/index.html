@@ -3,46 +3,473 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Campus Food - Login</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Campus Food – Login</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(145deg, #f5f7fc 0%, #eef2f6 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    .login-card {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(0px);
+      border-radius: 2rem;
+      box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 2rem 1.8rem 2.2rem;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .logo {
+      font-size: 3.2rem;
+      text-align: center;
+      margin-bottom: 0.6rem;
+    }
+
+    h2 {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, #1e2a3e, #2c3e50);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      letter-spacing: -0.3px;
+    }
+
+    .sub {
+      text-align: center;
+      color: #5b6e8c;
+      font-size: 0.9rem;
+      margin-top: 0.4rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 0.85rem 1rem;
+      font-size: 1rem;
+      font-weight: 500;
+      border-radius: 60px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: white;
+      color: #2c3e50;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.03);
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: white;
+      border: 1px solid #e2e8f0;
+      font-weight: 500;
+    }
+
+    .btn-primary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+    }
+
+    .btn-full {
+      width: 100%;
+    }
+
+    .google-icon {
+      width: 20px;
+      height: 20px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath fill='%23FFC107' d='M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z'/%3E%3Cpath fill='%23FF3D00' d='M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z'/%3E%3Cpath fill='%234CAF50' d='M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z'/%3E%3Cpath fill='%231976D2' d='M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+      display: inline-block;
+    }
+
+    .role-panel {
+      margin-top: 1.8rem;
+      padding-top: 1rem;
+      border-top: 1px solid #edf2f7;
+    }
+
+    .role-title {
+      font-weight: 600;
+      font-size: 1.1rem;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+      text-align: center;
+    }
+
+    .role-desc {
+      font-size: 0.8rem;
+      color: #5b6e8c;
+      text-align: center;
+      margin-bottom: 1.2rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: #334155;
+      margin-bottom: 0.4rem;
+    }
+
+    select {
+      width: 100%;
+      padding: 0.7rem 1rem;
+      border-radius: 60px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      font-size: 0.9rem;
+      color: #0f172a;
+      font-family: inherit;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #94a3b8;
+      box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.2);
+    }
+
+    .role-btn {
+      margin-top: 0.5rem;
+    }
+
+    .loading-message {
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 1rem;
+      color: #54708f;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      background: #1e293b;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 60px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+      z-index: 1000;
+      white-space: nowrap;
+      backdrop-filter: blur(4px);
+      background: rgba(30, 41, 59, 0.95);
+      pointer-events: none;
+    }
+
+    #toast.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateX(-50%) scale(1);
+    }
+
+    .footer-note {
+      text-align: center;
+      font-size: 0.7rem;
+      color: #8ba0bc;
+      margin-top: 1.5rem;
+    }
+
+    @keyframes fadeSlide {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .login-card, .role-panel {
+      animation: fadeSlide 0.3s ease;
+    }
+  </style>
 </head>
 <body>
-  <div class="login-wrapper">
-    <div class="login-card">
-      <div class="logo">🍔</div>
-      <h2>Campus Food</h2>
-      <p class="sub">Sign in with Google to continue</p>
+<div class="login-wrapper">
+  <div class="login-card">
+    <div class="logo">🍔</div>
+    <h2>Campus Food</h2>
+    <p class="sub">Login to continue</p>
 
-      <button class="btn btn-primary btn-full" id="googleLoginBtn">
-        Continue with Google
-      </button>
+    <button class="btn btn-primary btn-full" id="googleLoginBtn">
+      <span class="google-icon"></span>
+      <span class="btn-text">Continue with Google</span>
+    </button>
 
-      <p id="loadingText" class="sub" style="margin-top: 1rem; display: none;"></p>
+    <div id="loadingMessage" class="loading-message" style="display: none;"></div>
 
-      <div id="roleSection" style="display: none; margin-top: 1.5rem;">
-        <h3 style="margin-bottom: 0.5rem;">Choose your account type</h3>
-        <p class="sub" style="margin-bottom: 1rem;">
-          First time here? Select your role.
-        </p>
-
+    <div id="roleSection" style="display: none;">
+      <div class="role-panel">
+        <div class="role-title">👋 Welcome to Campus Food</div>
+        <div class="role-desc">First time? Let us know how you'll use the platform</div>
         <div class="form-group">
           <label for="roleSelect">I am a...</label>
           <select id="roleSelect">
-            <option value="student">Student (Buy Food)</option>
+            <option value="student">Student (Order Food)</option>
             <option value="vendor">Vendor (Sell Food)</option>
           </select>
         </div>
-
-        <button class="btn btn-primary btn-full" id="saveRoleBtn">
+        <button class="btn btn-primary btn-full role-btn" id="saveRoleBtn">
           Continue
         </button>
       </div>
     </div>
+
+    <div class="footer-note">
+      Secure • Campus exclusive
+    </div>
   </div>
+</div>
 
-  <div id="toast"></div>
+<div id="toast"></div>
 
-  <script type="module" src="js/main.js"></script>
+<script type="module">
+  // Import your existing sb client
+  import { sb } from './js/main.js';
+  
+  // DOM elements
+  const googleBtn = document.getElementById('googleLoginBtn');
+  const roleSection = document.getElementById('roleSection');
+  const roleSelect = document.getElementById('roleSelect');
+  const saveRoleBtn = document.getElementById('saveRoleBtn');
+  const loadingMsgDiv = document.getElementById('loadingMessage');
+  const toastEl = document.getElementById('toast');
+
+  function showToast(message, duration = 3000) {
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, duration);
+  }
+
+  function setLoading(isLoading, customText = '') {
+    if (isLoading) {
+      googleBtn.disabled = true;
+      googleBtn.style.opacity = '0.7';
+      googleBtn.innerHTML = `<span class="google-icon"></span><span class="btn-text">${customText || 'Please wait...'}</span>`;
+      loadingMsgDiv.style.display = 'block';
+      loadingMsgDiv.textContent = customText || 'Connecting...';
+    } else {
+      googleBtn.disabled = false;
+      googleBtn.style.opacity = '1';
+      googleBtn.innerHTML = `<span class="google-icon"></span><span class="btn-text">Continue with Google</span>`;
+      loadingMsgDiv.style.display = 'none';
+      loadingMsgDiv.textContent = '';
+    }
+  }
+
+  async function checkUserRole(userId) {
+    try {
+      const { data, error } = await sb
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') {
+        console.warn("Error fetching role:", error);
+        return null;
+      }
+      return data?.role || null;
+    } catch (err) {
+      console.warn("role fetch error", err);
+      return null;
+    }
+  }
+
+  async function saveUserRole(userId, role, email, name) {
+    try {
+      const { error } = await sb
+        .from('profiles')
+        .upsert({
+          id: userId,
+          role: role,
+          email: email,
+          full_name: name || email.split('@')[0],
+          updated_at: new Date(),
+        }, { onConflict: 'id' });
+      if (error) {
+        console.error("Error saving role:", error);
+        showToast("Could not save role. Please try again.", 3000);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error(err);
+      showToast("Unexpected error saving role", 3000);
+      return false;
+    }
+  }
+
+  function redirectToDashboard(role) {
+    if (role === 'student') {
+      window.location.href = '/student-dashboard.html';
+    } else if (role === 'vendor') {
+      window.location.href = '/vendor-dashboard.html';
+    } else {
+      window.location.href = '/';
+    }
+  }
+
+  async function handleUserSession(session) {
+    if (!session || !session.user) {
+      showToast("Authentication failed, please try again.", 3000);
+      setLoading(false);
+      return;
+    }
+
+    const user = session.user;
+    const userId = user.id;
+    const userEmail = user.email;
+    const userName = user.user_metadata?.full_name || userEmail.split('@')[0];
+
+    const existingRole = await checkUserRole(userId);
+    if (existingRole) {
+      showToast(`Welcome back! Redirecting to ${existingRole} area...`, 2000);
+      setTimeout(() => {
+        redirectToDashboard(existingRole);
+      }, 800);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
+    loadingMsgDiv.style.display = 'none';
+    roleSection.style.display = 'block';
+    window.__tempCampusUser = { id: userId, email: userEmail, name: userName };
+    showToast("Please select your account type to continue", 3000);
+  }
+
+  async function signInWithGoogle() {
+    setLoading(true, "Connecting to Google...");
+    try {
+      const { data, error } = await sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + window.location.pathname,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
+      });
+      if (error) {
+        console.error("Google sign-in error:", error);
+        showToast(error.message || "Google sign-in failed", 4000);
+        setLoading(false);
+      } else {
+        setLoading(true, "Redirecting...");
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Unable to connect to authentication service", 4000);
+      setLoading(false);
+    }
+  }
+
+  async function onSaveRole() {
+    if (!window.__tempCampusUser) {
+      showToast("Session expired, please sign in again.", 3000);
+      roleSection.style.display = 'none';
+      return;
+    }
+
+    const selectedRole = roleSelect.value;
+    if (!selectedRole) {
+      showToast("Please select a role", 2000);
+      return;
+    }
+
+    saveRoleBtn.disabled = true;
+    saveRoleBtn.textContent = "Saving...";
+    const { id, email, name } = window.__tempCampusUser;
+
+    const success = await saveUserRole(id, selectedRole, email, name);
+    saveRoleBtn.disabled = false;
+    saveRoleBtn.textContent = "Continue";
+
+    if (success) {
+      showToast(`Role saved! Redirecting to ${selectedRole} dashboard...`, 2000);
+      setTimeout(() => {
+        redirectToDashboard(selectedRole);
+      }, 1000);
+    } else {
+      showToast("Failed to save role. Please try again.", 3000);
+    }
+  }
+
+  async function initAuthListener() {
+    const { data: { subscription } } = sb.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event);
+      if (event === 'SIGNED_IN' && session) {
+        setLoading(true, "Verifying account...");
+        await handleUserSession(session);
+      } else if (event === 'SIGNED_OUT') {
+        roleSection.style.display = 'none';
+        setLoading(false);
+        window.__tempCampusUser = null;
+      }
+    });
+
+    const { data: { session: currentSession } } = await sb.auth.getSession();
+    if (currentSession && currentSession.user) {
+      setLoading(true, "Restoring session...");
+      await handleUserSession(currentSession);
+    } else {
+      setLoading(false);
+    }
+  }
+
+  googleBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    signInWithGoogle();
+  });
+
+  saveRoleBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    onSaveRole();
+  });
+
+  roleSection.style.display = 'none';
+  initAuthListener().catch(err => console.warn(err));
+</script>
 </body>
 </html>
