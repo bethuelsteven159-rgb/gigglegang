@@ -4,6 +4,7 @@ import { initIndexPage } from './pages/index-page.js';
 import { initAdminDashboardPage } from './pages/admin-dashboard-page.js';
 import { initAdminVendorsPage } from './pages/admin-vendors-page.js';
 import { initAdminOrdersPage } from './pages/admin-orders-page.js';
+import { initAdminCompliancePage } from './pages/admin-compliance-page.js';
 
 import { initVendorDashboardPage } from './pages/vendor-dashboard-page.js';
 import { initVendorMenuPage } from './pages/vendor-menu-page.js';
@@ -25,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'dashboard_admin.html': initAdminDashboardPage,
     'admin_vendor_control.html': initAdminVendorsPage,
     'admin_orders.html': initAdminOrdersPage,
+    'admin_compliance.html': initAdminCompliancePage,
 
     'dashboard_vendor.html': initVendorDashboardPage,
     'vendor_menu.html': initVendorMenuPage,
