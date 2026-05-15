@@ -4,7 +4,7 @@
 
 A complete web-based food ordering platform where students can order from multiple vendors, vendors manage their menus and orders, and administrators control the entire system.
 
-## 📋 Table of Contents
+## 📋 Table of Contents....
 
 ---
 
