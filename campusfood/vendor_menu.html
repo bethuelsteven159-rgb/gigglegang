@@ -6,21 +6,71 @@
   <title>Menu Management – Campus Food</title>
   <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0.4rem 0 1rem;
+    }
+    .checkbox-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.875rem;
+      cursor: pointer;
+      background: #f3f4f6;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+    .section-label {
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: #374151;
+      margin-bottom: 0.25rem;
+    }
+    #editModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 500;
+      align-items: center;
+      justify-content: center;
+    }
+    #editModal:not([hidden]) { display: flex; }
+    .modal-box {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      width: 90%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .modal-box h3 { margin: 0 0 1.25rem; font-size: 1.2rem; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
+  </style>
 </head>
 <body>
 
 <nav class="navbar">
   <span class="brand">🍽️ Menu Management</span>
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
+  <div class="user-info" style="display:flex;gap:1rem;align-items:center;">
     <span>👤 <span id="vendorName"></span></span>
     <button onclick="logout()">Logout</button>
   </div>
 </nav>
 
 <div class="page">
+
+  <!-- Add Item Form -->
   <div class="panel">
     <h2>Add Menu Item</h2>
     <div class="form-row">
+
       <div class="form-group">
         <label for="itemName">Item Name</label>
         <input id="itemName" type="text" placeholder="e.g. Burger">
@@ -41,13 +91,76 @@
         <input id="itemImage" type="file" accept="image/*">
       </div>
 
+      <div>
+        <p class="section-label">⚠️ Contains Allergens</p>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="containsPeanuts"> 🥜 Peanuts</label>
+          <label><input type="checkbox" id="containsGluten"> 🌾 Gluten</label>
+          <label><input type="checkbox" id="containsDairy"> 🥛 Dairy</label>
+          <label><input type="checkbox" id="containsEggs"> 🥚 Eggs</label>
+          <label><input type="checkbox" id="containsSoy"> 🌱 Soy</label>
+          <label><input type="checkbox" id="containsShellfish"> 🦐 Shellfish</label>
+        </div>
+      </div>
+
+      <div>
+        <p class="section-label">✅ Dietary Labels</p>
+        <div class="checkbox-group">
+          <label><input type="checkbox" id="isHalal"> Halal</label>
+          <label><input type="checkbox" id="isVegetarian"> Vegetarian</label>
+          <label><input type="checkbox" id="isVegan"> Vegan</label>
+        </div>
+      </div>
+
       <button class="btn btn-primary" onclick="addMenuItem()">+ Add Item</button>
     </div>
   </div>
 
-  <h2>Your Current Menu</h2>
+  <h2 style="margin-top:1.5rem;">Your Current Menu</h2>
   <div id="vendorMenu" class="menu-grid">
     <p style="color:var(--muted)">Loading…</p>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" hidden>
+  <div class="modal-box">
+    <h3>✏️ Edit Menu Item</h3>
+
+    <div class="form-group">
+      <label for="editItemName">Item Name</label>
+      <input id="editItemName" type="text">
+    </div>
+    <div class="form-group">
+      <label for="editItemPrice">Price (R)</label>
+      <input id="editItemPrice" type="number" min="0">
+    </div>
+    <div class="form-group">
+      <label for="editItemDescription">Description</label>
+      <input id="editItemDescription" type="text">
+    </div>
+
+    <p class="section-label">⚠️ Contains Allergens</p>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="editContainsPeanuts"> 🥜 Peanuts</label>
+      <label><input type="checkbox" id="editContainsGluten"> 🌾 Gluten</label>
+      <label><input type="checkbox" id="editContainsDairy"> 🥛 Dairy</label>
+      <label><input type="checkbox" id="editContainsEggs"> 🥚 Eggs</label>
+      <label><input type="checkbox" id="editContainsSoy"> 🌱 Soy</label>
+      <label><input type="checkbox" id="editContainsShellfish"> 🦐 Shellfish</label>
+    </div>
+
+    <p class="section-label">✅ Dietary Labels</p>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="editIsHalal"> Halal</label>
+      <label><input type="checkbox" id="editIsVegetarian"> Vegetarian</label>
+      <label><input type="checkbox" id="editIsVegan"> Vegan</label>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeEditModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
   </div>
 </div>
 
