@@ -1,22 +1,19 @@
 import { sb } from '../config/supabase.js';
-import { toast } from '../shared/notifications.js';
-import { getVendorId } from '../shared/auth-helpers.js';
-
-let currentEditItemId = null;
+import { setCart, updateCartDisplay } from './cart.js';
 
 const ALLERGENS = [
-  { id: 'peanuts', label: 'Peanuts', emoji: '🥜', addId: 'containsPeanuts', editId: 'editContainsPeanuts' },
-  { id: 'gluten', label: 'Gluten', emoji: '🌾', addId: 'containsGluten', editId: 'editContainsGluten' },
-  { id: 'dairy', label: 'Dairy', emoji: '🥛', addId: 'containsDairy', editId: 'editContainsDairy' },
-  { id: 'eggs', label: 'Eggs', emoji: '🥚', addId: 'containsEggs', editId: 'editContainsEggs' },
-  { id: 'soy', label: 'Soy', emoji: '🌱', addId: 'containsSoy', editId: 'editContainsSoy' },
-  { id: 'shellfish', label: 'Shellfish', emoji: '🦐', addId: 'containsShellfish', editId: 'editContainsShellfish' }
+  { id: 'peanuts', label: 'Peanuts', emoji: '🥜' },
+  { id: 'gluten',  label: 'Gluten',  emoji: '🌾' },
+  { id: 'dairy',   label: 'Dairy',   emoji: '🥛' },
+  { id: 'eggs',    label: 'Eggs',    emoji: '🥚' },
+  { id: 'soy',     label: 'Soy',     emoji: '🌱' },
+  { id: 'shellfish', label: 'Shellfish', emoji: '🦐' }
 ];
 
 const DIETARY_LABELS = [
-  { id: 'halal', label: 'Halal', addId: 'isHalal', editId: 'editIsHalal' },
-  { id: 'vegetarian', label: 'Vegetarian', addId: 'isVegetarian', editId: 'editIsVegetarian' },
-  { id: 'vegan', label: 'Vegan', addId: 'isVegan', editId: 'editIsVegan' }
+  { id: 'halal',       label: 'Halal' },
+  { id: 'vegetarian',  label: 'Vegetarian' },
+  { id: 'vegan',       label: 'Vegan' }
 ];
 
 function escapeHtml(value = '') {
@@ -28,317 +25,100 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
-function isChecked(id) {
-  return Boolean(document.getElementById(id)?.checked);
-}
-
-function setChecked(id, checked) {
-  const checkbox = document.getElementById(id);
-  if (checkbox) checkbox.checked = checked;
-}
-
-function collectCheckedItems(items, key) {
-  return items
-    .filter(item => isChecked(item[key]))
-    .map(item => item.id);
-}
-
-function setCheckboxesFromValues(items, key, values = []) {
-  const selected = Array.isArray(values) ? values : [];
-  items.forEach(item => setChecked(item[key], selected.includes(item.id)));
-}
-
 function renderBadges(item) {
   const allergenBadges = (Array.isArray(item.allergens) ? item.allergens : [])
     .map(allergen => {
-      const meta = ALLERGENS.find(entry => entry.id === allergen);
+      const meta = ALLERGENS.find(a => a.id === allergen);
       const label = meta ? `${meta.emoji} ${meta.label}` : allergen;
       return `<span class="badge badge-warning">${escapeHtml(label)}</span>`;
     });
 
   const dietaryBadges = (Array.isArray(item.dietary_labels) ? item.dietary_labels : [])
     .map(label => {
-      const meta = DIETARY_LABELS.find(entry => entry.id === label);
+      const meta = DIETARY_LABELS.find(d => d.id === label);
       const text = meta ? `✓ ${meta.label}` : `✓ ${label}`;
       return `<span class="badge badge-success">${escapeHtml(text)}</span>`;
     });
 
   const badges = [...allergenBadges, ...dietaryBadges];
-
   if (badges.length === 0) return '';
-
   return `<div class="menu-badges">${badges.join('')}</div>`;
 }
 
-export async function loadVendorMenu() {
-  const container = document.getElementById('vendorMenu');
+export async function loadStudentMenu() {
+  const container = document.getElementById('menuContainer');
   if (!container) return;
 
-  container.innerHTML = '<p>Loading...</p>';
+  container.innerHTML = '<p>Loading menu…</p>';
 
-  const username = sessionStorage.getItem('username');
-  const vendorId = await getVendorId(username);
+  // Fetch all approved vendors
+  const { data: vendors, error: vendorError } = await sb
+    .from('vendors')
+    .select('id, username')
+    .eq('status', 'approved');
 
-  if (!vendorId) {
-    container.innerHTML = '<p>Vendor not found</p>';
-    return;
-  }
-
-  const query = sb
-    .from('menu')
-    .select('*')
-    .eq('vendor_id', vendorId);
-
-  const { data, error } = typeof query.order === 'function'
-    ? await query.order('created_at', { ascending: true })
-    : await query;
-
-  if (error) {
-    console.error(error);
+  if (vendorError || !vendors) {
     container.innerHTML = '<p>Failed to load menu</p>';
     return;
   }
 
-  if (!data || data.length === 0) {
-    container.innerHTML = '<p>No items yet.</p>';
-    return;
-  }
+  // Fetch available menu items for every vendor
+  const allMenu = [];
 
-  container.innerHTML = data.map(item => {
-    const soldOut = item.status === 'sold_out';
+  for (const vendor of vendors) {
+    const { data: menu, error: menuError } = await sb
+      .from('menu')
+      .select('*')
+      .eq('vendor_id', vendor.id)
+      .eq('status', 'available');
 
-    return `
-      <div class="menu-item ${soldOut ? 'sold-out' : ''}">
-        <div style="font-weight:bold">${escapeHtml(item.name)}</div>
-        ${item.image_url ? `
-          <img
-            src="${escapeHtml(item.image_url)}"
-            alt="${escapeHtml(item.name)}"
-            style="display:block;margin:10px auto;width:180px;height:180px;object-fit:cover;border-radius:10px;"
-          />
-        ` : ''}
-        <div>${escapeHtml(item.description || '')}</div>
-        <div>R${escapeHtml(item.price)}</div>
-        <div>${soldOut ? 'Sold out' : 'Available'}</div>
-        ${renderBadges(item)}
-        <button onclick="toggleSoldOut(${item.id}, ${soldOut})">
-          ${soldOut ? 'Mark Available' : 'Mark Sold Out'}
-        </button>
-        <button onclick="openEditModal(${item.id})">Edit</button>
-        <button onclick="deleteMenuItem(${item.id})">Delete</button>
-      </div>
-    `;
-  }).join('');
-}
-
-export async function addMenuItem() {
-  const nameEl = document.getElementById('itemName');
-  const priceEl = document.getElementById('itemPrice');
-  const descEl = document.getElementById('itemDescription');
-  const imageEl = document.getElementById('itemImage');
-
-  const name = nameEl?.value.trim();
-  const price = Number(priceEl?.value);
-  const description = descEl?.value.trim();
-  const file = imageEl?.files?.[0];
-
-  if (!name || !price || !description) {
-    toast('Fill in all fields', 'error');
-    return;
-  }
-
-  const username = sessionStorage.getItem('username');
-  const vendorId = await getVendorId(username);
-
-  if (!vendorId) {
-    toast('Vendor not found', 'error');
-    return;
-  }
-
-  let imageUrl = null;
-
-  if (file) {
-    const fileName = `${Date.now()}-${file.name}`;
-    const { error: uploadError } = await sb
-      .storage
-      .from('menu_images')
-      .upload(fileName, file);
-
-    if (uploadError) {
-      console.error(uploadError);
-      toast('Image upload failed', 'error');
-      return;
+    if (!menuError && menu) {
+      allMenu.push(...menu.map(item => ({
+        ...item,
+        vendor_name: vendor.username,
+        vendor_id: vendor.id
+      })));
     }
-
-    const { data: urlData } = sb
-      .storage
-      .from('menu_images')
-      .getPublicUrl(fileName);
-
-    imageUrl = urlData?.publicUrl || null;
   }
 
-  const allergens = collectCheckedItems(ALLERGENS, 'addId');
-  const dietaryLabels = collectCheckedItems(DIETARY_LABELS, 'addId');
-
-  const { error } = await sb
-    .from('menu')
-    .insert([{
-      vendor_id: vendorId,
-      name,
-      price,
-      description,
-      image_url: imageUrl,
-      status: 'available',
-      allergens,
-      dietary_labels: dietaryLabels
-    }]);
-
-  if (error) {
-    console.error(error);
-    toast('Failed to add item', 'error');
+  if (allMenu.length === 0) {
+    container.innerHTML = '<p>No menu available yet.</p>';
     return;
   }
 
-  toast('Item added successfully');
+  container.innerHTML = allMenu.map(item => `
+    <div class="menu-item">
+      <div style="font-weight:bold">${escapeHtml(item.name)}</div>
+      ${item.image_url ? `
+        <img
+          src="${escapeHtml(item.image_url)}"
+          alt="${escapeHtml(item.name)}"
+          style="width:100px;height:100px;object-fit:cover;border-radius:8px;margin-top:8px;"
+        />
+      ` : ''}
+      <div>R${escapeHtml(String(item.price))}</div>
+      <div style="font-size:12px;color:var(--text-muted)">${escapeHtml(item.vendor_name)}</div>
+      <div style="font-size:12px;color:var(--text-muted)">${escapeHtml(item.description || '')}</div>
+      ${renderBadges(item)}
+      <button
+        class="btn btn-primary btn-sm"
+        data-item-id="${escapeHtml(String(item.id))}"
+        data-item-name="${escapeHtml(item.name)}"
+        data-item-price="${escapeHtml(String(item.price))}"
+        data-vendor-id="${escapeHtml(String(item.vendor_id))}"
+        onclick="addToCart(this.dataset.itemId, this.dataset.itemName, Number(this.dataset.itemPrice), this.dataset.vendorId)"
+      >+ Add to Cart</button>
+    </div>
+  `).join('');
 
-  if (nameEl) nameEl.value = '';
-  if (priceEl) priceEl.value = '';
-  if (descEl) descEl.value = '';
-  if (imageEl) imageEl.value = '';
-  ALLERGENS.forEach(item => setChecked(item.addId, false));
-  DIETARY_LABELS.forEach(item => setChecked(item.addId, false));
-
-  await loadVendorMenu();
-}
-
-export async function toggleSoldOut(id, isSoldOut) {
-  const newStatus = isSoldOut ? 'available' : 'sold_out';
-
-  const { error } = await sb
-    .from('menu')
-    .update({ status: newStatus })
-    .eq('id', id);
-
-  if (error) {
-    console.error(error);
-    toast('Update failed', 'error');
-    return;
+  // Restore cart from session storage
+  const savedCart = sessionStorage.getItem('cart');
+  if (savedCart) {
+    try {
+      setCart(JSON.parse(savedCart));
+      updateCartDisplay();
+    } catch {
+      // Ignore malformed cart
+    }
   }
-
-  toast('Item updated');
-  await loadVendorMenu();
-}
-
-export async function deleteMenuItem(id) {
-  if (!confirm('Delete this item?')) return;
-
-  const { error } = await sb
-    .from('menu')
-    .delete()
-    .eq('id', id);
-
-  if (error) {
-    console.error(error);
-    toast('Delete failed', 'error');
-    return;
-  }
-
-  toast('Item deleted');
-  await loadVendorMenu();
-}
-
-export async function openEditModal(id) {
-  const { data, error } = await sb
-    .from('menu')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error || !data) {
-    console.error(error);
-    toast('Failed to load item', 'error');
-    return;
-  }
-
-  currentEditItemId = id;
-
-  const modal = document.getElementById('editModal');
-  if (modal) {
-    modal.hidden = false;
-    modal.style.display = 'block';
-    modal.dataset.itemId = String(id);
-  }
-
-  const nameEl = document.getElementById('editItemName');
-  const priceEl = document.getElementById('editItemPrice');
-  const descEl = document.getElementById('editItemDescription');
-
-  if (nameEl) nameEl.value = data.name || '';
-  if (priceEl) priceEl.value = data.price ?? '';
-  if (descEl) descEl.value = data.description || '';
-
-  setCheckboxesFromValues(ALLERGENS, 'editId', data.allergens);
-  setCheckboxesFromValues(DIETARY_LABELS, 'editId', data.dietary_labels);
-}
-
-export function closeEditModal() {
-  const modal = document.getElementById('editModal');
-
-  if (modal) {
-    modal.hidden = true;
-    modal.style.display = 'none';
-  }
-}
-
-export async function saveEdit() {
-  const modal = document.getElementById('editModal');
-  const itemId = currentEditItemId || modal?.dataset?.itemId;
-
-  if (!itemId) {
-    toast('No item selected', 'error');
-    return;
-  }
-
-  const name = document.getElementById('editItemName')?.value.trim();
-  const price = Number(document.getElementById('editItemPrice')?.value);
-  const description = document.getElementById('editItemDescription')?.value.trim();
-
-  if (!name || !price || !description) {
-    toast('Fill in all fields', 'error');
-    return;
-  }
-
-  const updateData = {
-    name,
-    price,
-    description,
-    allergens: collectCheckedItems(ALLERGENS, 'editId'),
-    dietary_labels: collectCheckedItems(DIETARY_LABELS, 'editId')
-  };
-
-  const { error } = await sb
-    .from('menu')
-    .update(updateData)
-    .eq('id', itemId);
-
-  if (error) {
-    console.error(error);
-    toast('Update failed', 'error');
-    return;
-  }
-
-  toast('Item updated successfully');
-  closeEditModal();
-  await loadVendorMenu();
-}
-
-if (typeof window !== 'undefined') {
-  window.loadVendorMenu = loadVendorMenu;
-  window.addMenuItem = addMenuItem;
-  window.toggleSoldOut = toggleSoldOut;
-  window.deleteMenuItem = deleteMenuItem;
-  window.openEditModal = openEditModal;
-  window.closeEditModal = closeEditModal;
-  window.saveEdit = saveEdit;
 }
