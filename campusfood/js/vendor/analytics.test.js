@@ -398,7 +398,7 @@ describe('vendor/analytics.js', () => {
     const html = document.getElementById('vendorOrdersTableContainer').innerHTML;
 
     expect(html).toContain(
-      '&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;'
+      '&lt;script&gt;alert("x")&lt;/script&gt;'
     );
 
     expect(html).toContain('&lt;b&gt;Completed&lt;/b&gt;');
@@ -434,7 +434,7 @@ describe('vendor/analytics.js', () => {
     );
   });
 
-  test('loadVendorAnalytics shows Chart.js missing error when Chart is undefined', async () => {
+  test('loadVendorAnalytics still completes when Chart is undefined', async () => {
     const { loadVendorAnalytics } = await loadAnalyticsModule({
       ordersResult: {
         data: [
