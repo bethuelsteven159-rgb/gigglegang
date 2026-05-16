@@ -1,90 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Vendor Analytics – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
+
 <body>
+  <nav class="navbar">
+    <span class="brand">🍔 Campus Food — Vendor</span>
 
-<nav class="navbar">
-  <span class="brand">📊 Campus Food — Vendor Analytics</span>
+    <div class="user-info">
+      <span>👤 <span id="vendorName">Vendor</span></span>
+      <button onclick="logout()">Logout</button>
+    </div>
+  </nav>
 
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
-    <span>👤 <span id="vendorName"></span></span>
-    <a href="vendor_dashboard.html" class="nav-link">Dashboard</a>
-    <button onclick="logout()">Logout</button>
-  </div>
-</nav>
+  <div class="page">
+    <h2>📊 Vendor Analytics</h2>
 
-<div class="page">
-  <h2>Analytics for <span id="vendorNameWelcome"></span></h2>
+    <p class="page-subtitle">
+      Welcome, <strong id="vendorNameWelcome">Vendor</strong>. View your sales, completed orders, peak hours, and order activity.
+    </p>
 
-  <p class="page-subtitle">
-    Track your sales, completed orders, average order value, and peak ordering hours.
-  </p>
-
-  <div id="analyticsStatus" class="analytics-status">
-    Loading analytics...
-  </div>
-
-  <div class="analytics-actions">
-    <button id="refreshAnalyticsBtn">Refresh Analytics</button>
-    <button id="exportAnalyticsBtn">Export CSV</button>
-  </div>
-
-  <div class="analytics-summary">
-    <div class="analytics-card">
-      <h3>Total Sales</h3>
-      <p id="totalSales">R0.00</p>
-      <span>From completed orders</span>
+    <div id="analyticsStatus" class="analytics-status info">
+      Loading analytics...
     </div>
 
-    <div class="analytics-card">
-      <h3>Completed Orders</h3>
-      <p id="completedOrders">0</p>
-      <span>Orders counted as sales</span>
+    <div class="filters">
+      <div class="filter-group">
+        <label>From</label>
+        <input type="date" id="filterFrom" />
+      </div>
+
+      <div class="filter-group">
+        <label>To</label>
+        <input type="date" id="filterTo" />
+      </div>
+
+      <div class="filter-group">
+        <label>Group by</label>
+        <select id="filterGroup">
+          <option value="day">Day</option>
+          <option value="week">Week</option>
+          <option value="month" selected>Month</option>
+        </select>
+      </div>
+
+      <button class="btn-apply" id="applyVendorAnalyticsBtn">
+        Apply
+      </button>
+
+      <button class="btn-export" id="refreshAnalyticsBtn">
+        Refresh
+      </button>
+
+      <button class="btn-export" id="exportAnalyticsBtn">
+        ⬇ Export CSV
+      </button>
     </div>
 
-    <div class="analytics-card">
-      <h3>Average Order</h3>
-      <p id="averageOrder">R0.00</p>
-      <span>Average completed order value</span>
+    <div class="stat-chips">
+      <div class="stat-chip">
+        <div class="stat-label">Total revenue</div>
+        <div class="stat-value" id="totalSales">R0.00</div>
+        <div class="stat-sub">completed orders only</div>
+      </div>
+
+      <div class="stat-chip">
+        <div class="stat-label">Completed orders</div>
+        <div class="stat-value" id="completedOrders">0</div>
+        <div class="stat-sub">completed or delivered</div>
+      </div>
+
+      <div class="stat-chip">
+        <div class="stat-label">Average order</div>
+        <div class="stat-value" id="averageOrder">R0.00</div>
+        <div class="stat-sub">average completed sale</div>
+      </div>
+
+      <div class="stat-chip">
+        <div class="stat-label">Peak hour</div>
+        <div class="stat-value" id="peakHour">--:00</div>
+        <div class="stat-sub">highest order activity</div>
+      </div>
     </div>
 
-    <div class="analytics-card">
-      <h3>Peak Hour</h3>
-      <p id="peakHour">--:00</p>
-      <span>Busiest ordering time</span>
+    <div class="analytics-grid">
+      <div class="analytics-card full-width">
+        <div class="section-header">
+          <h3>Sales over time</h3>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="chartSales"></canvas>
+        </div>
+      </div>
+
+      <div class="analytics-card">
+        <div class="section-header">
+          <h3>Peak ordering hours</h3>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="chartPeak"></canvas>
+        </div>
+      </div>
+
+      <div class="analytics-card">
+        <div class="section-header">
+          <h3>Order status breakdown</h3>
+        </div>
+
+        <div class="chart-container">
+          <canvas id="chartStatus"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="analytics-card" style="margin-top: 1.5rem;">
+      <div class="section-header">
+        <h3>Order breakdown</h3>
+      </div>
+
+      <div id="vendorOrdersTableContainer">
+        <div class="loading-msg">Loading data...</div>
+      </div>
     </div>
   </div>
 
-  <div class="analytics-grid">
-    <section class="analytics-panel">
-      <h3>Sales Over Time</h3>
-      <p class="analytics-note">
-        Completed sales grouped by order date.
-      </p>
+  <script type="module">
+    import { initVendorAnalyticsPage } from "./js/pages/vendor-analytics-page.js";
 
-      <div id="salesOverTimeChart" class="bar-chart"></div>
-    </section>
-
-    <section class="analytics-panel">
-      <h3>Peak Ordering Hours</h3>
-      <p class="analytics-note">
-        All vendor orders grouped by hour.
-      </p>
-
-      <div id="peakHoursChart" class="bar-chart"></div>
-    </section>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script type="module" src="js/main.js"></script>
-
+    initVendorAnalyticsPage();
+  </script>
 </body>
 </html>
