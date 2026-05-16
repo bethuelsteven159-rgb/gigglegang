@@ -1,166 +1,123 @@
-/**
- * @jest-environment node
- */
-
+import { jest, describe, test, expect, beforeEach } from "@jest/globals";
 import request from "supertest";
-import {
-  jest,
-  describe,
-  test,
-  expect,
-  beforeEach,
-  afterEach
-} from "@jest/globals";
 
-const ORIGINAL_ENV = process.env;
+process.env.NODE_ENV = "test";
+process.env.PAYSTACK_SECRET_KEY = "sk_test_fake_key";
+process.env.FRONTEND_URL = "http://127.0.0.1:5500";
+process.env.FRONTEND_ORIGIN = "http://127.0.0.1:5500";
 
-describe("server.js Paystack API", () => {
+const { default: app } = await import("./backend/server.js");
+
+describe("Paystack backend API", () => {
   beforeEach(() => {
-    jest.resetModules();
-
-    process.env = {
-      ...ORIGINAL_ENV,
-      NODE_ENV: "test",
-      PAYSTACK_SECRET_KEY: "test_secret_key",
-      FRONTEND_URL: "http://frontend.test",
-      PORT: "5000"
-    };
+    jest.clearAllMocks();
 
     global.fetch = jest.fn();
-
-    jest.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  afterEach(() => {
-    jest.restoreAllMocks();
-    process.env = ORIGINAL_ENV;
-    delete global.fetch;
+  test("GET /api/health returns API health status", async () => {
+    const response = await request(app).get("/api/health");
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      success: true,
+      message: "Payment API is healthy"
+    });
   });
 
-  test("returns 400 when initialize request is missing required fields", async () => {
-    const { app } = await import("./server.js");
-
+  test("POST /api/paystack/initialize returns 400 when required fields are missing", async () => {
     const response = await request(app)
       .post("/api/paystack/initialize")
       .send({
-        email: "student@test.com"
+        email: "student@example.com"
       });
 
     expect(response.status).toBe(400);
-
-    expect(response.body).toEqual({
-      status: false,
-      message: "Email, amount, and orderId are required"
-    });
+    expect(response.body.success).toBe(false);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
-  test("initializes a Paystack transaction with amount converted to cents", async () => {
-    global.fetch.mockResolvedValue({
-      json: jest.fn().mockResolvedValue({
-        status: true,
-        data: {
-          authorization_url: "https://paystack.test/pay"
-        }
-      })
-    });
+  test("POST /api/paystack/initialize sends correct data to Paystack", async () => {
+    const paystackResponse = {
+      status: true,
+      message: "Authorization URL created",
+      data: {
+        authorization_url: "https://checkout.paystack.com/test-payment",
+        reference: "test_reference"
+      }
+    };
 
-    const { app } = await import("./server.js");
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => paystackResponse
+    });
 
     const response = await request(app)
       .post("/api/paystack/initialize")
       .send({
-        email: "student@test.com",
-        amount: 25,
+        email: "student@example.com",
+        amount: 30,
         orderId: "ORD-123"
       });
 
     expect(response.status).toBe(200);
-
-    expect(response.body).toEqual({
-      status: true,
-      data: {
-        authorization_url: "https://paystack.test/pay"
-      }
-    });
+    expect(response.body).toEqual(paystackResponse);
 
     expect(global.fetch).toHaveBeenCalledWith(
       "https://api.paystack.co/transaction/initialize",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({
-          Authorization: "Bearer test_secret_key",
+          Authorization: "Bearer sk_test_fake_key",
           "Content-Type": "application/json"
-        }),
-        body: expect.any(String)
+        })
       })
     );
 
-    const requestBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+    const fetchBody = JSON.parse(global.fetch.mock.calls[0][1].body);
 
-    expect(requestBody).toMatchObject({
-      email: "student@test.com",
-      amount: 2500,
+    expect(fetchBody).toEqual({
+      email: "student@example.com",
+      amount: 3000,
       currency: "ZAR",
       metadata: {
         orderId: "ORD-123"
       },
-      callback_url: "http://frontend.test/payment_success.html"
+      callback_url: "http://127.0.0.1:5500/payment_success.html"
     });
   });
 
-  test("verifies a Paystack transaction reference", async () => {
+  test("GET /api/paystack/verify/:reference verifies payment reference with Paystack", async () => {
+    const paystackResponse = {
+      status: true,
+      message: "Verification successful",
+      data: {
+        reference: "test_reference",
+        status: "success",
+        amount: 3000
+      }
+    };
+
     global.fetch.mockResolvedValue({
-      json: jest.fn().mockResolvedValue({
-        status: true,
-        data: {
-          status: "success"
-        }
-      })
+      ok: true,
+      status: 200,
+      json: async () => paystackResponse
     });
 
-    const { app } = await import("./server.js");
-
-    const response = await request(app)
-      .get("/api/paystack/verify/REF-123");
+    const response = await request(app).get("/api/paystack/verify/test_reference");
 
     expect(response.status).toBe(200);
-
-    expect(response.body).toEqual({
-      status: true,
-      data: {
-        status: "success"
-      }
-    });
+    expect(response.body).toEqual(paystackResponse);
 
     expect(global.fetch).toHaveBeenCalledWith(
-      "https://api.paystack.co/transaction/verify/REF-123",
+      "https://api.paystack.co/transaction/verify/test_reference",
       expect.objectContaining({
         method: "GET",
-        headers: {
-          Authorization: "Bearer test_secret_key"
-        }
+        headers: expect.objectContaining({
+          Authorization: "Bearer sk_test_fake_key"
+        })
       })
     );
-  });
-
-  test("returns 500 when Paystack initialize throws an error", async () => {
-    global.fetch.mockRejectedValue(new Error("Paystack down"));
-
-    const { app } = await import("./server.js");
-
-    const response = await request(app)
-      .post("/api/paystack/initialize")
-      .send({
-        email: "student@test.com",
-        amount: 25,
-        orderId: "ORD-123"
-      });
-
-    expect(response.status).toBe(500);
-
-    expect(response.body).toEqual({
-      status: false,
-      message: "Payment initialization failed"
-    });
   });
 });

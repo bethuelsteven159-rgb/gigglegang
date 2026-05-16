@@ -97,7 +97,7 @@ async function buildOrderDataFromCart() {
     return null;
   }
 
-  const totalPrice = cart.reduce((sum, item) => sum + item.price, 0);
+  const totalPrice = cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
   const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
   return {
@@ -144,6 +144,7 @@ export async function placeOrder() {
     orderId: orderData.order_number
   });
 }
+
 export function cancelPendingPayment() {
   const statusText =
     document.getElementById('paymentStatus') ||
@@ -162,12 +163,18 @@ export function cancelPendingPayment() {
     continueBtn.hidden = false;
   }
 }
+
 export async function completePaidOrderAfterPayment() {
   const statusText = document.getElementById('paymentStatus');
   const continueBtn = document.getElementById('continueBtn');
 
   const params = new URLSearchParams(window.location.search);
   const reference = params.get('reference');
+
+  if (!statusText) {
+    console.error('Payment status element was not found on the page.');
+    return;
+  }
 
   if (!reference) {
     statusText.textContent = 'No payment reference found.';
@@ -230,9 +237,12 @@ export async function completePaidOrderAfterPayment() {
     setCart([]);
 
     statusText.textContent = 'Payment successful. Your order has been placed.';
-    continueBtn.hidden = false;
+
+    if (continueBtn) {
+      continueBtn.hidden = false;
+    }
   } catch (error) {
     console.error('Payment completion error:', error);
-    statusText.textContent = 'Could not verify payment. Please try again.';
+    statusText.textContent = error.message || 'Could not verify payment. Please try again.';
   }
 }
