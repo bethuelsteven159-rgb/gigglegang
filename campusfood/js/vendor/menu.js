@@ -5,18 +5,18 @@ import { getVendorId } from '../shared/auth-helpers.js';
 let currentEditItemId = null;
 
 const ALLERGENS = [
-  { id: 'peanuts',   label: 'Peanuts',   emoji: '🥜', addId: 'containsPeanuts',   editId: 'editContainsPeanuts' },
-  { id: 'gluten',    label: 'Gluten',    emoji: '🌾', addId: 'containsGluten',    editId: 'editContainsGluten' },
-  { id: 'dairy',     label: 'Dairy',     emoji: '🥛', addId: 'containsDairy',     editId: 'editContainsDairy' },
-  { id: 'eggs',      label: 'Eggs',      emoji: '🥚', addId: 'containsEggs',      editId: 'editContainsEggs' },
-  { id: 'soy',       label: 'Soy',       emoji: '🌱', addId: 'containsSoy',       editId: 'editContainsSoy' },
-  { id: 'shellfish', label: 'Shellfish', emoji: '🦐', addId: 'containsShellfish', editId: 'editContainsShellfish' }
+  { id: 'peanuts',   label: 'Peanuts',   emoji: '🥜', addId: 'addContainsPeanuts',   editId: 'editContainsPeanuts' },
+  { id: 'gluten',    label: 'Gluten',    emoji: '🌾', addId: 'addContainsGluten',    editId: 'editContainsGluten' },
+  { id: 'dairy',     label: 'Dairy',     emoji: '🥛', addId: 'addContainsDairy',     editId: 'editContainsDairy' },
+  { id: 'eggs',      label: 'Eggs',      emoji: '🥚', addId: 'addContainsEggs',      editId: 'editContainsEggs' },
+  { id: 'soy',       label: 'Soy',       emoji: '🌱', addId: 'addContainsSoy',       editId: 'editContainsSoy' },
+  { id: 'shellfish', label: 'Shellfish', emoji: '🦐', addId: 'addContainsShellfish', editId: 'editContainsShellfish' }
 ];
 
 const DIETARY_LABELS = [
-  { id: 'halal',      label: 'Halal',      addId: 'isHalal',      editId: 'editIsHalal' },
-  { id: 'vegetarian', label: 'Vegetarian', addId: 'isVegetarian', editId: 'editIsVegetarian' },
-  { id: 'vegan',      label: 'Vegan',      addId: 'isVegan',      editId: 'editIsVegan' }
+  { id: 'halal',      label: 'Halal',      addId: 'addIsHalal',      editId: 'editIsHalal' },
+  { id: 'vegetarian', label: 'Vegetarian', addId: 'addIsVegetarian', editId: 'editIsVegetarian' },
+  { id: 'vegan',      label: 'Vegan',      addId: 'addIsVegan',      editId: 'editIsVegan' }
 ];
 
 function escapeHtml(value = '') {
@@ -46,18 +46,28 @@ function setCheckboxesFromValues(items, key, values = []) {
   items.forEach(i => setChecked(i[key], selected.includes(i.id)));
 }
 
-function renderBadges(item) {
-  const allergenBadges = (Array.isArray(item.allergens) ? item.allergens : [])
-    .map(a => {
-      const meta = ALLERGENS.find(x => x.id === a);
-      return `<span class="badge badge-warning">${escapeHtml(meta ? `${meta.emoji} ${meta.label}` : a)}</span>`;
-    });
+// Safely parse allergens/dietary_labels whether stored as array or JSON string
+function parseArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') {
+    try { return JSON.parse(value); } catch { return []; }
+  }
+  return [];
+}
 
-  const dietaryBadges = (Array.isArray(item.dietary_labels) ? item.dietary_labels : [])
-    .map(d => {
-      const meta = DIETARY_LABELS.find(x => x.id === d);
-      return `<span class="badge badge-success">${escapeHtml(meta ? `✓ ${meta.label}` : `✓ ${d}`)}</span>`;
-    });
+function renderBadges(item) {
+  const allergens     = parseArray(item.allergens);
+  const dietaryLabels = parseArray(item.dietary_labels);
+
+  const allergenBadges = allergens.map(a => {
+    const meta = ALLERGENS.find(x => x.id === a);
+    return `<span class="badge badge-warning">${escapeHtml(meta ? `${meta.emoji} ${meta.label}` : a)}</span>`;
+  });
+
+  const dietaryBadges = dietaryLabels.map(d => {
+    const meta = DIETARY_LABELS.find(x => x.id === d);
+    return `<span class="badge badge-success">${escapeHtml(meta ? `✓ ${meta.label}` : `✓ ${d}`)}</span>`;
+  });
 
   const badges = [...allergenBadges, ...dietaryBadges];
   if (badges.length === 0) return '';
@@ -116,6 +126,33 @@ export async function loadVendorMenu() {
       </div>
     `;
   }).join('');
+}
+
+export function openAddModal() {
+  const modal = document.getElementById('addModal');
+  if (!modal) return;
+  modal.hidden = false;
+  modal.style.display = 'flex';
+
+  // Clear all fields
+  const nameEl  = document.getElementById('itemName');
+  const priceEl = document.getElementById('itemPrice');
+  const descEl  = document.getElementById('itemDescription');
+  const imageEl = document.getElementById('itemImage');
+  if (nameEl)  nameEl.value  = '';
+  if (priceEl) priceEl.value = '';
+  if (descEl)  descEl.value  = '';
+  if (imageEl) imageEl.value = '';
+  ALLERGENS.forEach(i => setChecked(i.addId, false));
+  DIETARY_LABELS.forEach(i => setChecked(i.addId, false));
+}
+
+export function closeAddModal() {
+  const modal = document.getElementById('addModal');
+  if (modal) {
+    modal.hidden = true;
+    modal.style.display = 'none';
+  }
 }
 
 export async function addMenuItem() {
@@ -177,12 +214,7 @@ export async function addMenuItem() {
   }
 
   toast('Item added successfully');
-  if (nameEl)  nameEl.value  = '';
-  if (priceEl) priceEl.value = '';
-  if (descEl)  descEl.value  = '';
-  if (imageEl) imageEl.value = '';
-  ALLERGENS.forEach(i => setChecked(i.addId, false));
-  DIETARY_LABELS.forEach(i => setChecked(i.addId, false));
+  closeAddModal();
   await loadVendorMenu();
 }
 
@@ -235,12 +267,12 @@ export async function openEditModal(id) {
   const priceEl = document.getElementById('editItemPrice');
   const descEl  = document.getElementById('editItemDescription');
 
-  if (nameEl)  nameEl.value  = data.name        || '';
-  if (priceEl) priceEl.value = data.price        ?? '';
-  if (descEl)  descEl.value  = data.description  || '';
+  if (nameEl)  nameEl.value  = data.name       || '';
+  if (priceEl) priceEl.value = data.price       ?? '';
+  if (descEl)  descEl.value  = data.description || '';
 
-  setCheckboxesFromValues(ALLERGENS,      'editId', data.allergens);
-  setCheckboxesFromValues(DIETARY_LABELS, 'editId', data.dietary_labels);
+  setCheckboxesFromValues(ALLERGENS,      'editId', parseArray(data.allergens));
+  setCheckboxesFromValues(DIETARY_LABELS, 'editId', parseArray(data.dietary_labels));
 }
 
 export function closeEditModal() {
