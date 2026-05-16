@@ -1,6 +1,13 @@
 import { sb } from '../config/supabase.js';
 
 function redirectToHome() {
+  if (typeof window === 'undefined') return;
+
+  if (typeof window.__redirectToHomeForTests === 'function') {
+    window.__redirectToHomeForTests('index.html');
+    return;
+  }
+
   window.location.href = 'index.html';
 }
 
@@ -51,35 +58,12 @@ export async function requireVendor() {
 
   const { data, error } = await sb
     .from('vendors')
-    .select('id, username, status')
+    .select('id')
     .eq('id', userId)
     .maybeSingle();
 
   if (error || !data) {
     alert('Access denied. Vendors only.');
-    redirectToHome();
-    return false;
-  }
-
-  return true;
-}
-
-export async function requireStudent() {
-  const userId = sessionStorage.getItem('userId');
-
-  if (!userId) {
-    redirectToHome();
-    return false;
-  }
-
-  const { data, error } = await sb
-    .from('students')
-    .select('id, username')
-    .eq('id', userId)
-    .maybeSingle();
-
-  if (error || !data) {
-    alert('Access denied. Students only.');
     redirectToHome();
     return false;
   }
