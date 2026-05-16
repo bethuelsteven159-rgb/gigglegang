@@ -1,9 +1,9 @@
 import { jest } from '@jest/globals';
 
-const mockVendorEq = jest.fn();
-const mockVendorSelect = jest.fn(() => ({ eq: mockVendorEq }));
+const mockVendorOrder  = jest.fn();
+const mockVendorSelect = jest.fn(() => ({ order: mockVendorOrder }));
 
-const mockMenuEq = jest.fn();
+const mockMenuEq     = jest.fn();
 const mockMenuSelect = jest.fn(() => ({ eq: mockMenuEq }));
 
 const mockFrom = jest.fn((table) => {
@@ -27,9 +27,10 @@ describe('admin/compliance.js', () => {
     document.body.innerHTML = '';
     mockFrom.mockClear();
     mockVendorSelect.mockClear();
-    mockVendorEq.mockReset();
+    mockVendorOrder.mockReset();
     mockMenuSelect.mockClear();
     mockMenuEq.mockReset();
+    global.console.error = jest.fn();
   });
 
   test('returns early when tbody element is missing', async () => {
@@ -39,21 +40,24 @@ describe('admin/compliance.js', () => {
 
   test('shows no vendors message on error', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: null, error: { message: 'db error' } });
+    mockVendorOrder.mockResolvedValue({ data: null, error: { message: 'db error' } });
     await loadCompliance();
     expect(document.getElementById('complianceBody').innerHTML).toContain('No vendors found');
   });
 
   test('shows no vendors message when vendor list is empty', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [], error: null });
+    mockVendorOrder.mockResolvedValue({ data: [], error: null });
     await loadCompliance();
     expect(document.getElementById('complianceBody').innerHTML).toContain('No vendors found');
   });
 
   test('shows No Items row when vendor has no menu items', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'ShopA' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({ data: [], error: null });
     await loadCompliance();
     const html = document.getElementById('complianceBody').innerHTML;
@@ -63,11 +67,14 @@ describe('admin/compliance.js', () => {
 
   test('renders fully compliant vendor (100%) with real arrays', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'HealthyBite' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'HealthyBite', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: ['peanuts'], dietary_labels: ['halal'] },
-        { allergens: ['gluten'],  dietary_labels: ['vegan'] }
+        { id: 1, allergens: ['peanuts'], dietary_labels: ['halal'] },
+        { id: 2, allergens: ['gluten'],  dietary_labels: ['vegan'] }
       ],
       error: null
     });
@@ -80,11 +87,14 @@ describe('admin/compliance.js', () => {
 
   test('renders fully compliant vendor (100%) with JSON string arrays', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'JsonShop' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'JsonShop', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: '["peanuts","gluten"]', dietary_labels: '["halal"]' },
-        { allergens: '["dairy"]',            dietary_labels: '["vegan"]' }
+        { id: 1, allergens: '["peanuts","gluten"]', dietary_labels: '["halal"]' },
+        { id: 2, allergens: '["dairy"]',            dietary_labels: '["vegan"]' }
       ],
       error: null
     });
@@ -96,13 +106,16 @@ describe('admin/compliance.js', () => {
 
   test('renders partially compliant vendor (75–99%)', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'MixedGrill' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'MixedGrill', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: ['peanuts'], dietary_labels: ['halal'] },
-        { allergens: ['gluten'],  dietary_labels: ['vegan'] },
-        { allergens: ['dairy'],   dietary_labels: ['vegetarian'] },
-        { allergens: [],          dietary_labels: [] }
+        { id: 1, allergens: ['peanuts'], dietary_labels: ['halal'] },
+        { id: 2, allergens: ['gluten'],  dietary_labels: ['vegan'] },
+        { id: 3, allergens: ['dairy'],   dietary_labels: ['vegetarian'] },
+        { id: 4, allergens: [],          dietary_labels: [] }
       ],
       error: null
     });
@@ -114,13 +127,16 @@ describe('admin/compliance.js', () => {
 
   test('renders low compliance vendor (1–74%)', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'QuickByte' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'QuickByte', status: 'pending' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: ['peanuts'], dietary_labels: ['halal'] },
-        { allergens: [],          dietary_labels: [] },
-        { allergens: [],          dietary_labels: [] },
-        { allergens: [],          dietary_labels: [] }
+        { id: 1, allergens: ['peanuts'], dietary_labels: ['halal'] },
+        { id: 2, allergens: [],          dietary_labels: [] },
+        { id: 3, allergens: [],          dietary_labels: [] },
+        { id: 4, allergens: [],          dietary_labels: [] }
       ],
       error: null
     });
@@ -132,11 +148,14 @@ describe('admin/compliance.js', () => {
 
   test('renders non-compliant vendor (0%)', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'BareMinimum' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'BareMinimum', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: [], dietary_labels: [] },
-        { allergens: [], dietary_labels: [] }
+        { id: 1, allergens: [], dietary_labels: [] },
+        { id: 2, allergens: [], dietary_labels: [] }
       ],
       error: null
     });
@@ -146,14 +165,28 @@ describe('admin/compliance.js', () => {
     expect(html).toContain('❌ Non-Compliant');
   });
 
+  test('shows vendor status badge in table', async () => {
+    setupDom();
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA', status: 'suspended' }],
+      error: null
+    });
+    mockMenuEq.mockResolvedValue({ data: [], error: null });
+    await loadCompliance();
+    expect(document.getElementById('complianceBody').innerHTML).toContain('suspended');
+  });
+
   test('renders multiple vendors in one table', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({
-      data: [{ id: 'v1', username: 'VendorOne' }, { id: 'v2', username: 'VendorTwo' }],
+    mockVendorOrder.mockResolvedValue({
+      data: [
+        { id: 'v1', username: 'VendorOne', status: 'approved' },
+        { id: 'v2', username: 'VendorTwo', status: 'approved' }
+      ],
       error: null
     });
     mockMenuEq.mockResolvedValue({
-      data: [{ allergens: ['peanuts'], dietary_labels: ['halal'] }],
+      data: [{ id: 1, allergens: ['peanuts'], dietary_labels: ['halal'] }],
       error: null
     });
     await loadCompliance();
@@ -164,12 +197,15 @@ describe('admin/compliance.js', () => {
 
   test('counts allergen-only and dietary-only items separately', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'Counts' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'Counts', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: ['peanuts'], dietary_labels: [] },
-        { allergens: [],          dietary_labels: ['halal'] },
-        { allergens: ['gluten'],  dietary_labels: ['vegan'] }
+        { id: 1, allergens: ['peanuts'], dietary_labels: [] },
+        { id: 2, allergens: [],          dietary_labels: ['halal'] },
+        { id: 3, allergens: ['gluten'],  dietary_labels: ['vegan'] }
       ],
       error: null
     });
@@ -181,11 +217,14 @@ describe('admin/compliance.js', () => {
 
   test('handles mixed real arrays and JSON strings in same dataset', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'Mixed' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'Mixed', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: ['peanuts'],  dietary_labels: '["halal"]' },
-        { allergens: '["gluten"]', dietary_labels: ['vegan'] }
+        { id: 1, allergens: ['peanuts'],  dietary_labels: '["halal"]' },
+        { id: 2, allergens: '["gluten"]', dietary_labels: ['vegan'] }
       ],
       error: null
     });
@@ -197,11 +236,14 @@ describe('admin/compliance.js', () => {
 
   test('handles null allergens and dietary_labels gracefully', async () => {
     setupDom();
-    mockVendorEq.mockResolvedValue({ data: [{ id: 'v1', username: 'NullShop' }], error: null });
+    mockVendorOrder.mockResolvedValue({
+      data: [{ id: 'v1', username: 'NullShop', status: 'approved' }],
+      error: null
+    });
     mockMenuEq.mockResolvedValue({
       data: [
-        { allergens: null, dietary_labels: null },
-        { allergens: null, dietary_labels: null }
+        { id: 1, allergens: null, dietary_labels: null },
+        { id: 2, allergens: null, dietary_labels: null }
       ],
       error: null
     });
@@ -209,5 +251,21 @@ describe('admin/compliance.js', () => {
     const html = document.getElementById('complianceBody').innerHTML;
     expect(html).toContain('0%');
     expect(html).toContain('❌ Non-Compliant');
+  });
+
+  test('includes pending vendors in the report', async () => {
+    setupDom();
+    mockVendorOrder.mockResolvedValue({
+      data: [
+        { id: 'v1', username: 'ApprovedShop', status: 'approved' },
+        { id: 'v2', username: 'PendingShop',  status: 'pending' }
+      ],
+      error: null
+    });
+    mockMenuEq.mockResolvedValue({ data: [], error: null });
+    await loadCompliance();
+    const html = document.getElementById('complianceBody').innerHTML;
+    expect(html).toContain('ApprovedShop');
+    expect(html).toContain('PendingShop');
   });
 });
