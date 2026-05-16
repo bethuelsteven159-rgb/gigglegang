@@ -38,11 +38,11 @@ export function updateCartDisplay() {
   cartPanel.style.display = 'block';
 
   cartItems.innerHTML = cart.map((item, idx) => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid #ddd;">
-      <span>${item.name}</span>
-      <span>
-        R${item.price}
-        <button onclick="removeFromCart(${idx})">✕</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid var(--border);">
+      <span style="font-weight:500;color:var(--text);">${item.name}</span>
+      <span style="display:flex;align-items:center;gap:0.75rem;">
+        <span style="font-weight:700;color:var(--accent);">R${item.price}</span>
+        <button class="btn btn-sm btn-danger" onclick="removeFromCart(${idx})">✕ Remove</button>
       </span>
     </div>
   `).join('');
