@@ -1,22 +1,46 @@
-const API_BASE_URL = 'http://localhost:5000';
+const LOCAL_API_BASE_URL = "http://localhost:5000";
+const LIVE_API_BASE_URL = "https://YOUR-BACKEND-URL-HERE";
 
-async function readJson(response) {
-  try {
-    return await response.json();
-  } catch (error) {
-    return {
-      success: false,
-      message: 'Server returned an invalid response'
-    };
-  }
+function isLocalFrontend() {
+  return (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1"
+  );
 }
 
-export async function startPaystackPayment({ email, amount, orderId }) {
+export function getPaymentApiBaseUrl() {
+  if (isLocalFrontend()) {
+    return LOCAL_API_BASE_URL;
+  }
+
+  return LIVE_API_BASE_URL;
+}
+
+function isLiveApiConfigured(apiBaseUrl) {
+  return !apiBaseUrl.includes("YOUR-BACKEND-URL-HERE");
+}
+
+export async function startPaystackPayment({
+  email,
+  amount,
+  orderId,
+  redirect = (url) => {
+    window.location.href = url;
+  }
+}) {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/paystack/initialize`, {
-      method: 'POST',
+    const apiBaseUrl = getPaymentApiBaseUrl();
+
+    if (!isLocalFrontend() && !isLiveApiConfigured(apiBaseUrl)) {
+      console.error("Live backend URL is not configured in payment.js");
+      alert("Payment backend is not configured for the live website yet.");
+      return;
+    }
+
+    const response = await fetch(`${apiBaseUrl}/api/paystack/initialize`, {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
         email,
@@ -25,59 +49,40 @@ export async function startPaystackPayment({ email, amount, orderId }) {
       })
     });
 
-    const data = await readJson(response);
+    const data = await response.json();
 
     if (!response.ok || !data.status || !data.data?.authorization_url) {
-      console.error('Paystack initialize failed:', data);
-      alert(data.message || 'Payment could not start. Please try again.');
+      console.error("Paystack initialize failed:", data);
+      alert("Payment could not start. Please try again.");
       return;
     }
 
-    window.location.href = data.data.authorization_url;
+    redirect(data.data.authorization_url);
   } catch (error) {
-    console.error('Payment error:', error);
-    alert('Something went wrong while starting payment.');
+    console.error("Payment error:", error);
+    alert("Something went wrong while starting payment.");
   }
 }
 
 export async function verifyPaystackReference(reference) {
-  const response = await fetch(
-    `${API_BASE_URL}/api/paystack/verify/${encodeURIComponent(reference)}`
-  );
+  const apiBaseUrl = getPaymentApiBaseUrl();
 
-  return await readJson(response);
-}
-
-export async function requestPaystackRefund({
-  orderId,
-  paymentId,
-  paymentReference,
-  amount,
-  reason
-}) {
-  const transaction = paymentReference || paymentId;
-
-  if (!transaction) {
-    throw new Error('Payment reference is missing. Please contact support.');
+  if (!reference) {
+    throw new Error("Payment reference is required");
   }
 
-  const response = await fetch(`${API_BASE_URL}/api/paystack/refund`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      orderId,
-      paymentId: transaction,
-      amount,
-      reason
-    })
-  });
+  if (!isLocalFrontend() && !isLiveApiConfigured(apiBaseUrl)) {
+    throw new Error("Live backend URL is not configured in payment.js");
+  }
 
-  const data = await readJson(response);
+  const response = await fetch(
+    `${apiBaseUrl}/api/paystack/verify/${encodeURIComponent(reference)}`
+  );
 
-  if (!response.ok || !data.success) {
-    throw new Error(data.message || 'Refund request failed');
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Payment verification failed");
   }
 
   return data;
