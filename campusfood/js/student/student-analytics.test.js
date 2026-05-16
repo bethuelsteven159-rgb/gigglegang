@@ -55,7 +55,7 @@ async function loadStudentAnalyticsModule({
     });
   });
 
-  mockVendorsIn = jest.fn((column, vendorIds) => {
+  mockVendorsIn = jest.fn((column) => {
     if (column === 'id') {
       return Promise.resolve(vendorsIdResult);
     }
@@ -99,6 +99,14 @@ async function loadStudentAnalyticsModule({
   }));
 
   return await import('./student-analytics.js');
+}
+
+function getContainerText() {
+  return document
+    .getElementById('topVendorsPageContainer')
+    .textContent
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 describe('student-analytics.js', () => {
@@ -241,6 +249,7 @@ describe('student-analytics.js', () => {
     await loadTopVendorsPage();
 
     const html = document.getElementById('topVendorsPageContainer').innerHTML;
+    const text = getContainerText();
 
     expect(mockFrom).toHaveBeenCalledWith('reviews');
     expect(mockFrom).toHaveBeenCalledWith('vendors');
@@ -260,8 +269,8 @@ describe('student-analytics.js', () => {
     expect(html).toContain('⭐ 5.0');
     expect(html).toContain('⭐ 4.0');
 
-    expect(html).toContain('1 review');
-    expect(html).toContain('2 reviews');
+    expect(text).toContain('1 review');
+    expect(text).toContain('2 reviews');
   });
 
   test('sorts by review count when average rating is tied', async () => {
