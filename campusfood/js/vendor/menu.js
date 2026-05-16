@@ -109,20 +109,30 @@ export async function loadVendorMenu() {
     const soldOut = item.status === 'sold_out';
     return `
       <div class="menu-item ${soldOut ? 'sold-out' : ''}">
-        <div style="font-weight:bold">${escapeHtml(item.name)}</div>
         ${item.image_url ? `
           <img src="${escapeHtml(item.image_url)}" alt="${escapeHtml(item.name)}"
-            style="display:block;margin:10px auto;width:180px;height:180px;object-fit:cover;border-radius:10px;" />
+            style="width:100%;height:180px;object-fit:cover;border-radius:8px;margin-bottom:0.25rem;" />
         ` : ''}
-        <div>${escapeHtml(item.description || '')}</div>
-        <div>R${escapeHtml(String(item.price))}</div>
-        <div>${soldOut ? 'Sold out' : 'Available'}</div>
+        <div class="item-name">${escapeHtml(item.name)}</div>
+        <div style="font-size:0.875rem;color:var(--text-muted);">${escapeHtml(item.description || '')}</div>
+        <div class="item-price">R${escapeHtml(String(item.price))}</div>
+        <span class="status ${soldOut ? 'status-cancelled' : 'status-approved'}">
+          ${soldOut ? 'Sold Out' : 'Available'}
+        </span>
         ${renderBadges(item)}
-        <button onclick="toggleSoldOut(${item.id}, ${soldOut})">
-          ${soldOut ? 'Mark Available' : 'Mark Sold Out'}
-        </button>
-        <button onclick="openEditModal(${item.id})">Edit</button>
-        <button onclick="deleteMenuItem(${item.id})">Delete</button>
+        <div class="item-actions">
+          <button class="btn btn-sm ${soldOut ? 'btn-primary' : ''}"
+            style="${soldOut ? '' : 'background:var(--surface-alt);color:var(--text);border:1px solid var(--border);'}"
+            onclick="toggleSoldOut(${item.id}, ${soldOut})">
+            ${soldOut ? '✅ Mark Available' : '⏸ Mark Sold Out'}
+          </button>
+          <button class="btn btn-sm btn-primary" onclick="openEditModal(${item.id})">
+            ✏️ Edit
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMenuItem(${item.id})">
+            🗑️ Delete
+          </button>
+        </div>
       </div>
     `;
   }).join('');
