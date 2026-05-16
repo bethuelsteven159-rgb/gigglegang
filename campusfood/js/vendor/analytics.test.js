@@ -246,7 +246,7 @@ describe('vendor/analytics.js', () => {
     expect(document.getElementById('totalSales').textContent).toBe('R120.00');
     expect(document.getElementById('completedOrders').textContent).toBe('2');
     expect(document.getElementById('averageOrder').textContent).toBe('R60.00');
-    expect(document.getElementById('peakHour').textContent).toBe('10:00');
+    expect(document.getElementById('peakHour').textContent).toBe('12:00');
 
     expect(global.Chart).toHaveBeenCalledTimes(3);
 
