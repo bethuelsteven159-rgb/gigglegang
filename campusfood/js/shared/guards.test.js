@@ -1,171 +1,302 @@
-import { jest } from '@jest/globals';
+/**
+ * @jest-environment jsdom
+ */
 
-const mockGetUser = jest.fn();
-const mockMaybeSingle = jest.fn();
-const mockEq = jest.fn(() => ({
-  maybeSingle: mockMaybeSingle
-}));
-const mockSelect = jest.fn(() => ({
-  eq: mockEq
-}));
-const mockFrom = jest.fn(() => ({
-  select: mockSelect
-}));
+import {
+  jest,
+  describe,
+  test,
+  expect,
+  beforeEach,
+  afterEach
+} from '@jest/globals';
 
-jest.unstable_mockModule('../config/supabase.js', () => ({
-  sb: {
-    auth: {
-      getUser: mockGetUser
+let mockSb;
+let redirectSpy;
+
+async function loadGuardsModule({
+  adminResult = {
+    data: {
+      email: 'admin@test.com'
     },
-    from: mockFrom
+    error: null
+  },
+
+  vendorResult = {
+    data: {
+      id: 'v1'
+    },
+    error: null
+  },
+
+  userResult = {
+    data: {
+      user: {
+        id: 'u1',
+        email: 'admin@test.com'
+      }
+    },
+    error: null
   }
-}));
+} = {}) {
+  jest.resetModules();
 
-const {
-  requireRole,
-  requireAdmin,
-  requireVendor,
-  requireStudent
-} = await import('./guards.js');
+  const adminsMaybeSingle = jest.fn().mockResolvedValue(adminResult);
 
-describe('guards.js', () => {
+  const adminsEq = jest.fn(() => ({
+    maybeSingle: adminsMaybeSingle
+  }));
+
+  const adminsSelect = jest.fn(() => ({
+    eq: adminsEq
+  }));
+
+  const vendorsMaybeSingle = jest.fn().mockResolvedValue(vendorResult);
+
+  const vendorsEq = jest.fn(() => ({
+    maybeSingle: vendorsMaybeSingle
+  }));
+
+  const vendorsSelect = jest.fn(() => ({
+    eq: vendorsEq
+  }));
+
+  mockSb = {
+    auth: {
+      getUser: jest.fn().mockResolvedValue(userResult)
+    },
+
+    from: jest.fn((table) => {
+      if (table === 'admins') {
+        return {
+          select: adminsSelect
+        };
+      }
+
+      if (table === 'vendors') {
+        return {
+          select: vendorsSelect
+        };
+      }
+
+      return {
+        select: jest.fn(() => ({
+          eq: jest.fn()
+        }))
+      };
+    })
+  };
+
+  jest.unstable_mockModule('../config/supabase.js', () => ({
+    sb: mockSb
+  }));
+
+  return await import('./guards.js');
+}
+
+describe('shared/guards.js', () => {
   beforeEach(() => {
     sessionStorage.clear();
-    mockGetUser.mockReset();
-    mockMaybeSingle.mockReset();
-    mockEq.mockClear();
-    mockSelect.mockClear();
-    mockFrom.mockClear();
 
-    global.alert = jest.fn();
+    redirectSpy = jest.fn();
+
+    window.__redirectToHomeForTests = redirectSpy;
+
+    jest.spyOn(window, 'alert').mockImplementation(() => {});
   });
 
-  test('requireRole returns true when role matches', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+
+    delete window.__redirectToHomeForTests;
+  });
+
+  test('requireRole returns true when role matches expected role', async () => {
+    const { requireRole } = await loadGuardsModule();
+
     sessionStorage.setItem('role', 'student');
 
     const result = requireRole('student');
 
     expect(result).toBe(true);
+    expect(redirectSpy).not.toHaveBeenCalled();
   });
 
-  test('requireRole returns false when role does not match', () => {
+  test('requireRole redirects and returns false when role does not match', async () => {
+    const { requireRole } = await loadGuardsModule();
+
     sessionStorage.setItem('role', 'vendor');
 
     const result = requireRole('student');
 
     expect(result).toBe(false);
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
   });
 
-  test('requireAdmin returns false when no authenticated user exists', async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: null },
-      error: null
-    });
+  test('requireRole redirects and returns false when role is missing', async () => {
+    const { requireRole } = await loadGuardsModule();
 
-    const result = await requireAdmin();
+    const result = requireRole('admin');
 
     expect(result).toBe(false);
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
   });
 
-  test('requireAdmin returns false and alerts when admin record is missing', async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: 'admin@test.com' } },
-      error: null
-    });
+  test('requireAdmin returns true when logged-in user is an admin', async () => {
+    const { requireAdmin } = await loadGuardsModule({
+      userResult: {
+        data: {
+          user: {
+            id: 'u1',
+            email: 'admin@test.com'
+          }
+        },
+        error: null
+      },
 
-    mockMaybeSingle.mockResolvedValue({
-      data: null,
-      error: null
-    });
-
-    const result = await requireAdmin();
-
-    expect(mockFrom).toHaveBeenCalledWith('admins');
-    expect(result).toBe(false);
-    expect(alert).toHaveBeenCalledWith('Access denied. Admins only.');
-  });
-
-  test('requireAdmin returns true when admin exists', async () => {
-    mockGetUser.mockResolvedValue({
-      data: { user: { email: 'admin@test.com' } },
-      error: null
-    });
-
-    mockMaybeSingle.mockResolvedValue({
-      data: { email: 'admin@test.com' },
-      error: null
+      adminResult: {
+        data: {
+          email: 'admin@test.com'
+        },
+        error: null
+      }
     });
 
     const result = await requireAdmin();
 
     expect(result).toBe(true);
+    expect(mockSb.auth.getUser).toHaveBeenCalledTimes(1);
+    expect(mockSb.from).toHaveBeenCalledWith('admins');
+    expect(redirectSpy).not.toHaveBeenCalled();
   });
 
-  test('requireVendor returns false when no userId in session', async () => {
-    const result = await requireVendor();
-
-    expect(result).toBe(false);
-  });
-
-  test('requireVendor returns false and alerts when vendor record is missing', async () => {
-    sessionStorage.setItem('userId', 'vendor-1');
-
-    mockMaybeSingle.mockResolvedValue({
-      data: null,
-      error: null
+  test('requireAdmin redirects and returns false when user is not logged in', async () => {
+    const { requireAdmin } = await loadGuardsModule({
+      userResult: {
+        data: {
+          user: null
+        },
+        error: null
+      }
     });
 
-    const result = await requireVendor();
+    const result = await requireAdmin();
 
-    expect(mockFrom).toHaveBeenCalledWith('vendors');
     expect(result).toBe(false);
-    expect(alert).toHaveBeenCalledWith('Access denied. Vendors only.');
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
+  });
+
+  test('requireAdmin redirects and returns false when auth returns an error', async () => {
+    const { requireAdmin } = await loadGuardsModule({
+      userResult: {
+        data: {
+          user: null
+        },
+        error: {
+          message: 'Auth failed'
+        }
+      }
+    });
+
+    const result = await requireAdmin();
+
+    expect(result).toBe(false);
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
+  });
+
+  test('requireAdmin denies access when admin row is missing', async () => {
+    const { requireAdmin } = await loadGuardsModule({
+      adminResult: {
+        data: null,
+        error: null
+      }
+    });
+
+    const result = await requireAdmin();
+
+    expect(result).toBe(false);
+    expect(window.alert).toHaveBeenCalledWith('Access denied. Admins only.');
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
+  });
+
+  test('requireAdmin denies access when admin query fails', async () => {
+    const { requireAdmin } = await loadGuardsModule({
+      adminResult: {
+        data: null,
+        error: {
+          message: 'Admin query failed'
+        }
+      }
+    });
+
+    const result = await requireAdmin();
+
+    expect(result).toBe(false);
+    expect(window.alert).toHaveBeenCalledWith('Access denied. Admins only.');
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
   });
 
   test('requireVendor returns true when vendor exists', async () => {
-    sessionStorage.setItem('userId', 'vendor-1');
-
-    mockMaybeSingle.mockResolvedValue({
-      data: { id: 'vendor-1', username: 'shop', status: 'approved' },
-      error: null
+    const { requireVendor } = await loadGuardsModule({
+      vendorResult: {
+        data: {
+          id: 'v1'
+        },
+        error: null
+      }
     });
+
+    sessionStorage.setItem('userId', 'v1');
 
     const result = await requireVendor();
 
     expect(result).toBe(true);
+    expect(mockSb.from).toHaveBeenCalledWith('vendors');
+    expect(redirectSpy).not.toHaveBeenCalled();
   });
 
-  test('requireStudent returns false when no userId in session', async () => {
-    const result = await requireStudent();
+  test('requireVendor redirects and returns false when userId is missing', async () => {
+    const { requireVendor } = await loadGuardsModule();
+
+    const result = await requireVendor();
 
     expect(result).toBe(false);
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
   });
 
-  test('requireStudent returns false and alerts when student record is missing', async () => {
-    sessionStorage.setItem('userId', 'student-1');
-
-    mockMaybeSingle.mockResolvedValue({
-      data: null,
-      error: null
+  test('requireVendor denies access when vendor row is missing', async () => {
+    const { requireVendor } = await loadGuardsModule({
+      vendorResult: {
+        data: null,
+        error: null
+      }
     });
 
-    const result = await requireStudent();
+    sessionStorage.setItem('userId', 'v1');
 
-    expect(mockFrom).toHaveBeenCalledWith('students');
+    const result = await requireVendor();
+
     expect(result).toBe(false);
-    expect(alert).toHaveBeenCalledWith('Access denied. Students only.');
+    expect(window.alert).toHaveBeenCalledWith('Access denied. Vendors only.');
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
   });
 
-  test('requireStudent returns true when student exists', async () => {
-    sessionStorage.setItem('userId', 'student-1');
-
-    mockMaybeSingle.mockResolvedValue({
-      data: { id: 'student-1', username: 'bethuel' },
-      error: null
+  test('requireVendor denies access when vendor query fails', async () => {
+    const { requireVendor } = await loadGuardsModule({
+      vendorResult: {
+        data: null,
+        error: {
+          message: 'Vendor query failed'
+        }
+      }
     });
 
-    const result = await requireStudent();
+    sessionStorage.setItem('userId', 'v1');
 
-    expect(result).toBe(true);
+    const result = await requireVendor();
+
+    expect(result).toBe(false);
+    expect(window.alert).toHaveBeenCalledWith('Access denied. Vendors only.');
+    expect(redirectSpy).toHaveBeenCalledWith('index.html');
   });
 });
