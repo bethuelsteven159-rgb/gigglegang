@@ -1,5 +1,5 @@
 const LOCAL_API_BASE_URL = "http://localhost:5000";
-const LIVE_API_BASE_URL = "https://YOUR-BACKEND-URL-HERE";
+const LIVE_API_BASE_URL = "https://gigglegang-yi6v.onrender.com";
 
 function isLocalFrontend() {
   return (
@@ -18,6 +18,17 @@ export function getPaymentApiBaseUrl() {
 
 function isLiveApiConfigured(apiBaseUrl) {
   return !apiBaseUrl.includes("YOUR-BACKEND-URL-HERE");
+}
+
+async function readJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {
+      success: false,
+      message: "Server returned an invalid response"
+    };
+  }
 }
 
 export async function startPaystackPayment({
@@ -49,7 +60,7 @@ export async function startPaystackPayment({
       })
     });
 
-    const data = await response.json();
+    const data = await readJson(response);
 
     if (!response.ok || !data.status || !data.data?.authorization_url) {
       console.error("Paystack initialize failed:", data);
@@ -79,10 +90,50 @@ export async function verifyPaystackReference(reference) {
     `${apiBaseUrl}/api/paystack/verify/${encodeURIComponent(reference)}`
   );
 
-  const data = await response.json();
+  const data = await readJson(response);
 
   if (!response.ok) {
     throw new Error(data.message || "Payment verification failed");
+  }
+
+  return data;
+}
+
+export async function requestPaystackRefund({
+  orderId,
+  paymentId,
+  paymentReference,
+  amount,
+  reason
+}) {
+  const apiBaseUrl = getPaymentApiBaseUrl();
+  const transaction = paymentReference || paymentId;
+
+  if (!transaction) {
+    throw new Error("Payment reference is missing. Please contact support.");
+  }
+
+  if (!isLocalFrontend() && !isLiveApiConfigured(apiBaseUrl)) {
+    throw new Error("Live backend URL is not configured in payment.js");
+  }
+
+  const response = await fetch(`${apiBaseUrl}/api/paystack/refund`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      orderId,
+      paymentId: transaction,
+      amount,
+      reason
+    })
+  });
+
+  const data = await readJson(response);
+
+  if (!response.ok || data.success === false || data.status === false) {
+    throw new Error(data.message || "Refund request failed");
   }
 
   return data;
