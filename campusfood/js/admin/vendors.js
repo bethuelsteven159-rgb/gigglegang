@@ -58,7 +58,8 @@ export async function deleteVendor(vendorId) {
     .eq('id', vendorId);
 
   if (error) {
-    toast('Delete failed', 'error');
+    console.error('Delete vendor error:', error);
+    toast(`Delete failed: ${error.message || 'unknown error'}`, 'error');
   } else {
     toast('Vendor removed');
     loadVendors();
