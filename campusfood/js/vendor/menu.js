@@ -132,7 +132,6 @@ export function openAddModal() {
   const modal = document.getElementById('addModal');
   if (!modal) return;
   modal.hidden = false;
-  modal.style.display = 'flex';
 
   // Clear all fields
   const nameEl  = document.getElementById('itemName');
@@ -149,10 +148,7 @@ export function openAddModal() {
 
 export function closeAddModal() {
   const modal = document.getElementById('addModal');
-  if (modal) {
-    modal.hidden = true;
-    modal.style.display = 'none';
-  }
+  if (modal) modal.hidden = true;
 }
 
 export async function addMenuItem() {
@@ -259,7 +255,6 @@ export async function openEditModal(id) {
   const modal = document.getElementById('editModal');
   if (modal) {
     modal.hidden = false;
-    modal.style.display = 'flex';
     modal.dataset.itemId = String(id);
   }
 
@@ -277,10 +272,7 @@ export async function openEditModal(id) {
 
 export function closeEditModal() {
   const modal = document.getElementById('editModal');
-  if (modal) {
-    modal.hidden = true;
-    modal.style.display = 'none';
-  }
+  if (modal) modal.hidden = true;
 }
 
 export async function saveEdit() {
