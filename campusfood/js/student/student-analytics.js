@@ -1,4 +1,4 @@
-import { sb } from "./config/supabase.js";
+import { sb } from "../config/supabase.js";
 
 let topVendors = [];
 
