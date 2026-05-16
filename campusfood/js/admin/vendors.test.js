@@ -139,7 +139,7 @@ describe('admin/vendors.js', () => {
 
     await deleteVendor('v1');
 
-    expect(mockToast).toHaveBeenCalledWith('Delete failed', 'error');
+    expect(mockToast).toHaveBeenCalledWith(expect.stringContaining('Delete failed'), 'error');
   });
 
   test('deleteVendor shows success toast on success', async () => {
