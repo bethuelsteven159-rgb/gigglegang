@@ -213,7 +213,7 @@ describe('vendor/analytics.js', () => {
             order_number: '100',
             total_price: 50,
             status: 'Completed',
-            created_at: '2026-05-16T10:30:00Z',
+            created_at: '2026-05-16T10:30:00',
             vendor_id: 'v1'
           },
           {
@@ -221,7 +221,7 @@ describe('vendor/analytics.js', () => {
             order_number: '101',
             total_price: 70,
             status: 'Delivered',
-            created_at: '2026-05-16T10:45:00Z',
+            created_at: '2026-05-16T10:45:00',
             vendor_id: 'v1'
           },
           {
@@ -229,7 +229,7 @@ describe('vendor/analytics.js', () => {
             order_number: '102',
             total_price: 30,
             status: 'Being Prepared',
-            created_at: '2026-05-16T12:00:00Z',
+            created_at: '2026-05-16T12:00:00',
             vendor_id: 'v1'
           }
         ],
@@ -246,7 +246,7 @@ describe('vendor/analytics.js', () => {
     expect(document.getElementById('totalSales').textContent).toBe('R120.00');
     expect(document.getElementById('completedOrders').textContent).toBe('2');
     expect(document.getElementById('averageOrder').textContent).toBe('R60.00');
-    expect(document.getElementById('peakHour').textContent).toBe('12:00');
+    expect(document.getElementById('peakHour').textContent).toBe('10:00');
 
     expect(global.Chart).toHaveBeenCalledTimes(3);
 
@@ -284,7 +284,7 @@ describe('vendor/analytics.js', () => {
             order_number: '100',
             total_price: 100,
             status: ' completed ',
-            created_at: '2026-05-16T09:00:00Z',
+            created_at: '2026-05-16T09:00:00',
             vendor_id: 'v1'
           },
           {
@@ -292,7 +292,7 @@ describe('vendor/analytics.js', () => {
             order_number: '101',
             total_price: 50,
             status: 'DELIVERED',
-            created_at: '2026-05-16T10:00:00Z',
+            created_at: '2026-05-16T10:00:00',
             vendor_id: 'v1'
           },
           {
@@ -300,7 +300,7 @@ describe('vendor/analytics.js', () => {
             order_number: '102',
             total_price: 200,
             status: 'Cancelled',
-            created_at: '2026-05-16T11:00:00Z',
+            created_at: '2026-05-16T11:00:00',
             vendor_id: 'v1'
           }
         ],
@@ -383,7 +383,7 @@ describe('vendor/analytics.js', () => {
             order_number: '<script>alert("x")</script>',
             total_price: 40,
             status: '<b>Completed</b>',
-            created_at: '2026-05-16T10:00:00Z',
+            created_at: '2026-05-16T10:00:00',
             vendor_id: 'v1'
           }
         ],
@@ -415,7 +415,7 @@ describe('vendor/analytics.js', () => {
             order_number: '100',
             total_price: 50,
             status: 'Completed',
-            created_at: '2026-05-16T10:00:00Z',
+            created_at: '2026-05-16T10:00:00',
             vendor_id: 'v1'
           }
         ],
@@ -443,7 +443,7 @@ describe('vendor/analytics.js', () => {
             order_number: '100',
             total_price: 50,
             status: 'Completed',
-            created_at: '2026-05-16T10:00:00Z',
+            created_at: '2026-05-16T10:00:00',
             vendor_id: 'v1'
           }
         ],
@@ -471,7 +471,7 @@ describe('vendor/analytics.js', () => {
             order_number: '100',
             total_price: 50,
             status: 'Completed',
-            created_at: '2026-05-16T10:00:00Z',
+            created_at: '2026-05-16T10:00:00',
             vendor_id: 'v1'
           }
         ],
@@ -522,7 +522,7 @@ describe('vendor/analytics.js', () => {
               order_number: '100',
               total_price: 50,
               status: 'Completed',
-              created_at: '2026-05-16T10:00:00Z',
+              created_at: '2026-05-16T10:00:00',
               vendor_id: 'v1'
             },
             {
@@ -530,7 +530,7 @@ describe('vendor/analytics.js', () => {
               order_number: '101',
               total_price: 80,
               status: 'Being Prepared',
-              created_at: '2026-05-16T11:00:00Z',
+              created_at: '2026-05-16T11:00:00',
               vendor_id: 'v1'
             }
           ],
