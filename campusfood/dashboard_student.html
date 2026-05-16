@@ -7,6 +7,7 @@
   <title>Student Dashboard – Campus Food</title>
 
   <link rel="stylesheet" href="style.css">
+  <script src="js/student/student-chatbot.js" defer></script>
 </head>
 <body>
 
@@ -147,6 +148,30 @@
 <div id="toast"></div>
 
 <script type="module" src="js/main.js"></script>
+
+<button id="chatBtn" class="chat-btn">💬 Help</button>
+
+<div id="chatBox" class="chat-box">
+  <div class="chat-header">
+    <span>Uni-Eats Assistant</span>
+    <button id="closeChat">✕</button>
+  </div>
+
+  <div id="chatMessages" class="chat-messages"></div>
+
+  <div id="nameArea">
+    <input id="studentNameInput" type="text" placeholder="Enter your name">
+    <button id="saveNameBtn">Continue</button>
+  </div>
+
+  <div id="questionArea" style="display:none;">
+    <select id="questionSelect">
+      <option value="">Choose a question</option>
+    </select>
+    <button id="askBtn">Ask</button>
+  </div>
+</div>
+
 
 </body>
 </html>
