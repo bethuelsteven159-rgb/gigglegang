@@ -365,14 +365,14 @@ window.exportPDF = async (type) => {
   showToast('Generating PDF…', 'info');
 
   try {
-    el.querySelectorAll('.export-row').forEach(b => b.style.display = 'none');
+    el.querySelectorAll('.btn-export').forEach(b => b.style.display = '');
     const canvas = await html2canvas(el, {
       scale: 2,
       backgroundColor: '#ffffff',
       useCORS: true,
     });
 
-    el.querySelectorAll('.export-row').forEach(b => b.style.display = '');
+    
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
