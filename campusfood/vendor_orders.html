@@ -1,90 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Incoming Orders – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Incoming Orders | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
-<nav class="navbar">
-  <span class="brand">📦 Incoming Orders</span>
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
-    <span>👤 <span id="vendorName"></span></span>
-    <button onclick="logout()">Logout</button>
-  </div>
-</nav>
-
-<div class="page">
-  <h2>Orders for <span id="vendorLabel"></span></h2>
-  <div class="panel table-wrapper" style="padding:0;">
-    <table style="width:100%">
-      <thead>
-        <tr>
-          <th>Order ID</th>
-          <th>Student</th>
-          <th>Items</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Refund</th>
-          <th>Action</th>
-          <th>Review</th>
-        </tr>
-      </thead>
-      <tbody id="ordersBody">
-        <tr>
-          <td colspan="8" style="text-align:center;padding:1.5rem;color:var(--text-muted)">
-            Loading…
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- REVIEW MODAL -->
-<div id="vendorReviewModal" class="review-modal">
-  <div class="review-box">
-    <div class="review-header">
-      <div>
-        <h3>Customer Review</h3>
-        <p class="review-order-info">What the customer said about this order</p>
-      </div>
-      <button type="button" class="review-close" onclick="closeVendorReviewModal()">✕</button>
+  <nav class="navbar">
+    <span class="brand">Incoming Orders</span>
+    <div class="user-info">
+      <a href="dashboard_vendor.html" class="btn btn-sm">← Dashboard</a>
+      <span>👤 <span id="vendorName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
     </div>
+  </nav>
 
-    <div class="review-summary">
-      <div class="review-summary-row">
-        <span class="label">Order</span>
-        <span id="reviewModalOrderNumber">-</span>
+  <main class="page">
+    <section class="page-hero orders-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Vendor orders</p>
+        <h2>Orders for <span id="vendorLabel"></span></h2>
+        <p class="page-subtitle">
+          Update order progress, handle refunds, and review student feedback in one place.
+        </p>
       </div>
-      <div class="review-summary-row">
-        <span class="label">Student</span>
-        <span id="reviewModalStudent">-</span>
-      </div>
-      <div class="review-summary-row">
-        <span class="label">Items</span>
-        <span id="reviewModalItems">-</span>
-      </div>
-      <div class="review-summary-row">
-        <span class="label">Rating</span>
-        <span id="reviewModalRating">-</span>
-      </div>
-    </div>
+      <div class="hero-badge" aria-hidden="true">📦</div>
+    </section>
 
-    <label class="review-subtitle">Comment</label>
-    <div id="reviewModalText" class="vendor-review-text">No written comment.</div>
+    <section class="panel table-wrapper" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Student</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Refund</th>
+            <th>Action</th>
+            <th>Review</th>
+          </tr>
+        </thead>
+        <tbody id="ordersBody">
+          <tr>
+            <td colspan="8" style="text-align:center;padding:1.5rem;color:var(--text-muted)">Loading…</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
 
-    <div class="actions">
-      <button type="button" class="btn btn-primary" onclick="closeVendorReviewModal()">Close</button>
+  <div id="vendorReviewModal" class="review-modal">
+    <div class="review-box">
+      <div class="review-header">
+        <div>
+          <h3>Customer Review</h3>
+          <p class="review-order-info">What the customer said about this order</p>
+        </div>
+        <button type="button" class="review-close" onclick="closeVendorReviewModal()" aria-label="Close review modal">✕</button>
+      </div>
+
+      <div class="review-summary">
+        <div class="review-summary-row"><span class="label">Order</span><span id="reviewModalOrderNumber">-</span></div>
+        <div class="review-summary-row"><span class="label">Student</span><span id="reviewModalStudent">-</span></div>
+        <div class="review-summary-row"><span class="label">Items</span><span id="reviewModalItems">-</span></div>
+        <div class="review-summary-row"><span class="label">Rating</span><span id="reviewModalRating">-</span></div>
+      </div>
+
+      <label class="review-subtitle">Comment</label>
+      <div id="reviewModalText" class="vendor-review-text">No written comment.</div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" onclick="closeVendorReviewModal()">Close</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="toast"></div>
-<script type="module" src="js/main.js"></script>
-
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

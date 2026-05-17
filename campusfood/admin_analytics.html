@@ -1,294 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Analytics – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Admin Analytics | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <style>
-    .analytics-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      margin-top: 1.5rem;
-    }
-    .analytics-card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    }
-    .analytics-card.full-width { grid-column: 1 / -1; }
-    .analytics-card h3 {
-      margin: 0 0 1rem 0;
-      font-size: 1rem;
-      font-weight: 600;
-      color: #111827;
-    }
-    .chart-container {
-      position: relative;
-      height: 260px;
-    }
-    .filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.75rem;
-      align-items: flex-end;
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      margin-top: 1rem;
-    }
-    .filter-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-    .filter-group label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .filter-group select,
-    .filter-group input[type="date"] {
-      padding: 0.45rem 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      background: #f9fafb;
-      color: #111827;
-      cursor: pointer;
-    }
-    .filter-group select:focus,
-    .filter-group input[type="date"]:focus {
-      outline: 2px solid #f97316;
-      border-color: transparent;
-    }
-    .btn-apply {
-      padding: 0.5rem 1.25rem;
-      background: #f97316;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      font-size: 0.875rem;
-      font-weight: 600;
-      cursor: pointer;
-      align-self: flex-end;
-      transition: background 0.15s;
-    }
-    .btn-apply:hover { background: #ea6b0f; }
-    .export-row {
-      display: flex;
-      gap: 0.5rem;
-      margin-top: 1rem;
-      justify-content: flex-end;
-    }
-    .btn-export {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      padding: 0.45rem 1rem;
-      border: 1px solid #d1d5db;
-      border-radius: 8px;
-      background: #fff;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #374151;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
-    }
-    .btn-export:hover { background: #f3f4f6; border-color: #9ca3af; }
-    .stat-chips {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .stat-chip {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 1rem 1.25rem;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    }
-    .stat-chip .stat-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .stat-chip .stat-value {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #111827;
-      margin-top: 0.25rem;
-    }
-    .stat-chip .stat-sub {
-      font-size: 0.75rem;
-      color: #6b7280;
-      margin-top: 0.1rem;
-    }
-    .data-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-      margin-top: 0.5rem;
-    }
-    .data-table th {
-      text-align: left;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .data-table td {
-      padding: 0.65rem 0.75rem;
-      color: #111827;
-      border-bottom: 1px solid #f3f4f6;
-    }
-    .data-table tr:last-child td { border-bottom: none; }
-    .data-table tr:hover td { background: #f9fafb; }
-    .loading-msg {
-      text-align: center;
-      color: #9ca3af;
-      padding: 2rem;
-      font-size: 0.9rem;
-    }
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 0.75rem;
-    }
-    .section-header h3 { margin: 0; }
-  </style>
 </head>
 <body>
+  <nav class="navbar">
+    <span class="brand">Campus Food — Admin</span>
+    <div class="user-info">
+      <a href="dashboard_admin.html" class="btn btn-sm">← Dashboard</a>
+      <span>🛡️ <span id="adminName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
+    </div>
+  </nav>
 
-<nav class="navbar">
-  <span class="brand">🍔 Campus Food — Admin</span>
-  <div class="user-info" style="display:flex;gap:1rem;align-items:center;">
-    <span>🛡️ <span id="adminName"></span></span>
-    <button onclick="logout()">Logout</button>
-  </div>
-</nav>
+  <main class="page">
+    <section class="page-hero analytics-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Admin analytics</p>
+        <h2>📊 Analytics Dashboard</h2>
+        <p class="page-subtitle">
+          Review campus-wide revenue, vendor performance, peak ordering times, and sales distribution.
+        </p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">📈</div>
+    </section>
 
-<div class="page">
-  <h2>📊 Analytics Dashboard</h2>
+    <section class="filters" aria-label="Analytics filters">
+      <div class="filter-group">
+        <label for="filterFrom">From</label>
+        <input type="date" id="filterFrom" />
+      </div>
+      <div class="filter-group">
+        <label for="filterTo">To</label>
+        <input type="date" id="filterTo" />
+      </div>
+      <div class="filter-group">
+        <label for="filterVendor">Vendor</label>
+        <select id="filterVendor"><option value="">All vendors</option></select>
+      </div>
+      <div class="filter-group">
+        <label for="filterGroup">Group by</label>
+        <select id="filterGroup">
+          <option value="day">Day</option>
+          <option value="week">Week</option>
+          <option value="month" selected>Month</option>
+        </select>
+      </div>
+      <button class="btn-apply" onclick="loadAnalytics()" type="button">Apply</button>
+    </section>
 
-  <div class="filters">
-    <div class="filter-group">
-      <label>From</label>
-      <input type="date" id="filterFrom">
-    </div>
-    <div class="filter-group">
-      <label>To</label>
-      <input type="date" id="filterTo">
-    </div>
-    <div class="filter-group">
-      <label>Vendor</label>
-      <select id="filterVendor">
-        <option value="">All vendors</option>
-      </select>
-    </div>
-    <div class="filter-group">
-      <label>Group by</label>
-      <select id="filterGroup">
-        <option value="day">Day</option>
-        <option value="week">Week</option>
-        <option value="month" selected>Month</option>
-      </select>
-    </div>
-    <button class="btn-apply" onclick="loadAnalytics()">Apply</button>
-  </div>
+    <section class="stat-chips" aria-label="Analytics summary">
+      <div class="stat-chip">
+        <div class="stat-label">Total revenue</div>
+        <div class="stat-value" id="statRevenue">—</div>
+        <div class="stat-sub">in selected period</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-label">Total orders</div>
+        <div class="stat-value" id="statOrders">—</div>
+        <div class="stat-sub">completed &amp; paid</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-label">Active vendors</div>
+        <div class="stat-value" id="statVendors">—</div>
+        <div class="stat-sub">with sales this period</div>
+      </div>
+    </section>
 
-  <div class="stat-chips">
-    <div class="stat-chip">
-      <div class="stat-label">Total revenue</div>
-      <div class="stat-value" id="statRevenue">—</div>
-      <div class="stat-sub">in selected period</div>
-    </div>
-    <div class="stat-chip">
-      <div class="stat-label">Total orders</div>
-      <div class="stat-value" id="statOrders">—</div>
-      <div class="stat-sub">completed & paid</div>
-    </div>
-    <div class="stat-chip">
-      <div class="stat-label">Active vendors</div>
-      <div class="stat-value" id="statVendors">—</div>
-      <div class="stat-sub">with sales this period</div>
-    </div>
-  </div>
+    <section class="analytics-grid">
+      <div class="analytics-card full-width">
+        <div class="section-header">
+          <h3>Sales per vendor over time</h3>
+          <div class="export-row">
+            <button class="btn-export" onclick="exportCSV('sales')" type="button">⬇ CSV</button>
+            <button class="btn-export" onclick="exportPDF('sales')" type="button">⬇ PDF</button>
+          </div>
+        </div>
+        <div class="chart-container"><canvas id="chartSales"></canvas></div>
+      </div>
 
-  <div class="analytics-grid">
+      <div class="analytics-card">
+        <div class="section-header">
+          <h3>Peak ordering hours</h3>
+          <div class="export-row">
+            <button class="btn-export" onclick="exportCSV('peak')" type="button">⬇ CSV</button>
+            <button class="btn-export" onclick="exportPDF('peak')" type="button">⬇ PDF</button>
+          </div>
+        </div>
+        <div class="chart-container"><canvas id="chartPeak"></canvas></div>
+      </div>
 
-    <div class="analytics-card full-width">
+      <div class="analytics-card">
+        <div class="section-header">
+          <h3>Revenue share by vendor</h3>
+          <div class="export-row">
+            <button class="btn-export" onclick="exportCSV('share')" type="button">⬇ CSV</button>
+            <button class="btn-export" onclick="exportPDF('share')" type="button">⬇ PDF</button>
+          </div>
+        </div>
+        <div class="chart-container"><canvas id="chartShare"></canvas></div>
+      </div>
+    </section>
+
+    <section class="analytics-card" style="margin-top:1.5rem;">
       <div class="section-header">
-        <h3>Sales per vendor over time</h3>
-        <div class="export-row" style="margin:0;">
-          <button class="btn-export" onclick="exportCSV('sales')">⬇ CSV</button>
-          <button class="btn-export" onclick="exportPDF('sales')">⬇ PDF</button>
+        <h3>Vendor breakdown</h3>
+        <div class="export-row">
+          <button class="btn-export" onclick="exportCSV('table')" type="button">⬇ CSV</button>
+          <button class="btn-export" onclick="exportPDF('table')" type="button">⬇ PDF</button>
         </div>
       </div>
-      <div class="chart-container">
-        <canvas id="chartSales"></canvas>
-      </div>
-    </div>
+      <div id="tableContainer"><div class="loading-msg">Loading data…</div></div>
+    </section>
+  </main>
 
-    <div class="analytics-card">
-      <div class="section-header">
-        <h3>Peak ordering hours</h3>
-        <div class="export-row" style="margin:0;">
-          <button class="btn-export" onclick="exportCSV('peak')">⬇ CSV</button>
-          <button class="btn-export" onclick="exportPDF('peak')">⬇ PDF</button>
-        </div>
-      </div>
-      <div class="chart-container">
-        <canvas id="chartPeak"></canvas>
-      </div>
-    </div>
-
-    <div class="analytics-card">
-      <div class="section-header">
-        <h3>Revenue share by vendor</h3>
-        <div class="export-row" style="margin:0;">
-          <button class="btn-export" onclick="exportCSV('share')">⬇ CSV</button>
-          <button class="btn-export" onclick="exportPDF('share')">⬇ PDF</button>
-        </div>
-      </div>
-      <div class="chart-container">
-        <canvas id="chartShare"></canvas>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="analytics-card" style="margin-top:1.5rem;">
-    <div class="section-header">
-      <h3>Vendor breakdown</h3>
-      <div class="export-row" style="margin:0;">
-        <button class="btn-export" onclick="exportCSV('table')">⬇ CSV</button>
-        <button class="btn-export" onclick="exportPDF('table')">⬇ PDF</button>
-      </div>
-    </div>
-    <div id="tableContainer">
-      <div class="loading-msg">Loading data…</div>
-    </div>
-  </div>
-
-</div>
-
-<div id="toast"></div>
-<script type="module" src="js/admin_analytics.js"></script>
+  <div id="toast"></div>
+  <script type="module" src="js/admin_analytics.js"></script>
 </body>
 </html>

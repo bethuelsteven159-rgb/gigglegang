@@ -3,48 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-  <title>Vendor Analytics – Campus Food</title>
-
+  <meta name="theme-color" content="#f97316" />
   <link rel="stylesheet" href="style.css" />
-
+  <link rel="icon" href="data:," />
+  <title>Vendor Analytics | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
-
 <body>
   <nav class="navbar">
-    <span class="brand">🍔 Campus Food — Vendor</span>
-
+    <span class="brand">Campus Food — Vendor</span>
     <div class="user-info">
+      <a href="dashboard_vendor.html" class="btn btn-sm">← Dashboard</a>
       <span>👤 <span id="vendorName">Vendor</span></span>
-      <button onclick="logout()">Logout</button>
+      <button onclick="logout()" type="button">Logout</button>
     </div>
   </nav>
 
-  <div class="page">
-    <h2>📊 Vendor Analytics</h2>
+  <main class="page">
+    <section class="page-hero analytics-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Vendor analytics</p>
+        <h2>📊 Vendor Analytics</h2>
+        <p class="page-subtitle">
+          Welcome, <strong id="vendorNameWelcome">Vendor</strong>. View your sales, completed orders, peak hours, and order activity.
+        </p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">📈</div>
+    </section>
 
-    <p class="page-subtitle">
-      Welcome, <strong id="vendorNameWelcome">Vendor</strong>. View your sales, completed orders, peak hours, and order activity.
-    </p>
+    <div id="analyticsStatus" class="analytics-status info">Loading analytics...</div>
 
-    <div id="analyticsStatus" class="analytics-status info">
-      Loading analytics...
-    </div>
-
-    <div class="filters">
+    <section class="filters" aria-label="Analytics filters">
       <div class="filter-group">
-        <label>From</label>
+        <label for="filterFrom">From</label>
         <input type="date" id="filterFrom" />
       </div>
 
       <div class="filter-group">
-        <label>To</label>
+        <label for="filterTo">To</label>
         <input type="date" id="filterTo" />
       </div>
 
       <div class="filter-group">
-        <label>Group by</label>
+        <label for="filterGroup">Group by</label>
         <select id="filterGroup">
           <option value="day">Day</option>
           <option value="week">Week</option>
@@ -52,91 +53,59 @@
         </select>
       </div>
 
-      <button class="btn-apply" id="applyVendorAnalyticsBtn">
-        Apply
-      </button>
+      <button class="btn-apply" id="applyVendorAnalyticsBtn" type="button">Apply</button>
+      <button class="btn-export" id="refreshAnalyticsBtn" type="button">Refresh</button>
+      <button class="btn-export" id="exportAnalyticsBtn" type="button">⬇ Export CSV</button>
+    </section>
 
-      <button class="btn-export" id="refreshAnalyticsBtn">
-        Refresh
-      </button>
-
-      <button class="btn-export" id="exportAnalyticsBtn">
-        ⬇ Export CSV
-      </button>
-    </div>
-
-    <div class="stat-chips">
+    <section class="stat-chips" aria-label="Analytics summary">
       <div class="stat-chip">
         <div class="stat-label">Total revenue</div>
         <div class="stat-value" id="totalSales">R0.00</div>
         <div class="stat-sub">completed orders only</div>
       </div>
-
       <div class="stat-chip">
         <div class="stat-label">Completed orders</div>
         <div class="stat-value" id="completedOrders">0</div>
         <div class="stat-sub">completed or delivered</div>
       </div>
-
       <div class="stat-chip">
         <div class="stat-label">Average order</div>
         <div class="stat-value" id="averageOrder">R0.00</div>
         <div class="stat-sub">average completed sale</div>
       </div>
-
       <div class="stat-chip">
         <div class="stat-label">Peak hour</div>
         <div class="stat-value" id="peakHour">--:00</div>
         <div class="stat-sub">highest order activity</div>
       </div>
-    </div>
+    </section>
 
-    <div class="analytics-grid">
+    <section class="analytics-grid">
       <div class="analytics-card full-width">
-        <div class="section-header">
-          <h3>Sales over time</h3>
-        </div>
-
-        <div class="chart-container">
-          <canvas id="chartSales"></canvas>
-        </div>
+        <div class="section-header"><h3>Sales over time</h3></div>
+        <div class="chart-container"><canvas id="chartSales"></canvas></div>
       </div>
 
       <div class="analytics-card">
-        <div class="section-header">
-          <h3>Peak ordering hours</h3>
-        </div>
-
-        <div class="chart-container">
-          <canvas id="chartPeak"></canvas>
-        </div>
+        <div class="section-header"><h3>Peak ordering hours</h3></div>
+        <div class="chart-container"><canvas id="chartPeak"></canvas></div>
       </div>
 
       <div class="analytics-card">
-        <div class="section-header">
-          <h3>Order status breakdown</h3>
-        </div>
-
-        <div class="chart-container">
-          <canvas id="chartStatus"></canvas>
-        </div>
+        <div class="section-header"><h3>Order status breakdown</h3></div>
+        <div class="chart-container"><canvas id="chartStatus"></canvas></div>
       </div>
-    </div>
+    </section>
 
-    <div class="analytics-card" style="margin-top: 1.5rem;">
-      <div class="section-header">
-        <h3>Order breakdown</h3>
-      </div>
-
-      <div id="vendorOrdersTableContainer">
-        <div class="loading-msg">Loading data...</div>
-      </div>
-    </div>
-  </div>
+    <section class="analytics-card" style="margin-top: 1.5rem;">
+      <div class="section-header"><h3>Order breakdown</h3></div>
+      <div id="vendorOrdersTableContainer"><div class="loading-msg">Loading data...</div></div>
+    </section>
+  </main>
 
   <script type="module">
     import { initVendorAnalyticsPage } from "./js/pages/vendor-analytics-page.js";
-
     initVendorAnalyticsPage();
   </script>
 </body>

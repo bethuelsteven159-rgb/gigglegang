@@ -1603,3 +1603,284 @@ td select {
     transition-duration: 1ms !important;
   }
 }
+
+
+/* =========================================================
+   Extra HTML refresh layout helpers
+   These classes are used by the refreshed HTML pages.
+========================================================= */
+.app-login {
+  grid-template-columns: minmax(280px, 520px) minmax(320px, 430px);
+  gap: clamp(1.2rem, 4vw, 4rem);
+  padding-inline: clamp(1rem, 5vw, 5rem);
+}
+
+.login-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+  color: white;
+}
+
+.login-copy .brand-mark {
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.1rem;
+  border-radius: 24px;
+  font-size: 2.45rem;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.22);
+  backdrop-filter: blur(14px);
+}
+
+.eyebrow {
+  margin-bottom: 0.55rem !important;
+  color: var(--accent-dark) !important;
+  font-size: 0.76rem !important;
+  font-weight: 950 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+}
+
+.login-copy .eyebrow {
+  color: #fed7aa !important;
+}
+
+.login-copy h1 {
+  max-width: 12ch;
+  margin-bottom: 1rem;
+  font-size: clamp(2.8rem, 7vw, 5.7rem);
+  line-height: 0.88;
+  font-weight: 950;
+  letter-spacing: -0.095em;
+}
+
+.login-copy p:not(.eyebrow) {
+  max-width: 42rem;
+  color: rgba(255,255,255,0.78) !important;
+  font-size: 1.05rem;
+}
+
+.login-highlights {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 1.5rem;
+}
+
+.login-highlights span,
+.hero-actions .btn,
+.toolbar-panel .btn {
+  backdrop-filter: blur(12px);
+}
+
+.login-highlights span {
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  color: white;
+  background: rgba(255,255,255,0.13);
+  border: 1px solid rgba(255,255,255,0.18);
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.page-hero {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.35rem;
+  padding: clamp(1.2rem, 4vw, 2rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(circle at 92% 18%, rgba(249, 115, 22, 0.20), transparent 14rem),
+    linear-gradient(145deg, rgba(255,255,255,0.86), rgba(255,241,232,0.72));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(1.1);
+}
+
+.page-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 5px;
+  background: linear-gradient(90deg, var(--accent), #fbbf24, transparent 75%);
+}
+
+.page-hero h2 {
+  margin-bottom: 0.65rem !important;
+  font-size: clamp(2rem, 4vw, 3.8rem) !important;
+  line-height: 0.95 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.085em !important;
+}
+
+.hero-content {
+  min-width: 0;
+}
+
+.hero-badge {
+  display: grid;
+  place-items: center;
+  width: clamp(82px, 12vw, 132px);
+  height: clamp(82px, 12vw, 132px);
+  border-radius: 34px;
+  font-size: clamp(2.4rem, 6vw, 4.2rem);
+  background: linear-gradient(145deg, #fff7ed, #fed7aa);
+  box-shadow: 0 24px 44px rgba(249, 115, 22, 0.22);
+  transform: rotate(3deg);
+}
+
+.hero-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1.4rem 0 0.9rem;
+}
+
+.section-title-row h2 {
+  margin: 0 !important;
+}
+
+.toolbar-panel {
+  padding: 1rem !important;
+}
+
+.toolbar,
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.compact-filters {
+  margin: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.payment-page {
+  min-height: calc(100vh - 76px);
+  display: grid;
+  place-items: center;
+}
+
+.payment-card {
+  width: min(620px, 100%);
+  text-align: center;
+  padding: clamp(1.4rem, 4vw, 2.4rem) !important;
+}
+
+.payment-card .actions {
+  justify-content: center;
+}
+
+.payment-icon {
+  display: grid;
+  place-items: center;
+  width: 82px;
+  height: 82px;
+  margin: 0 auto 1rem;
+  border-radius: 28px;
+  color: white;
+  font-size: 2.2rem;
+  font-weight: 950;
+}
+
+.payment-icon.success {
+  background: linear-gradient(145deg, #10b981, #047857);
+  box-shadow: 0 22px 42px rgba(16, 185, 129, 0.24);
+}
+
+.payment-icon.warning {
+  background: linear-gradient(145deg, #f59e0b, #b45309);
+  box-shadow: 0 22px 42px rgba(245, 158, 11, 0.24);
+}
+
+.payment-card #paymentStatus,
+.payment-card #paymentCancelStatus {
+  justify-content: center;
+}
+
+.payment-card #paymentStatus::before,
+.payment-card #paymentCancelStatus::before {
+  display: none;
+}
+
+.navbar a.btn {
+  background: rgba(255,255,255,0.75) !important;
+}
+
+@media (max-width: 920px) {
+  .app-login {
+    grid-template-columns: 1fr;
+    align-content: center;
+  }
+
+  .login-copy {
+    text-align: center;
+    margin-inline: auto;
+  }
+
+  .login-copy h1 {
+    max-width: 12ch;
+    margin-inline: auto;
+  }
+
+  .login-copy .brand-mark {
+    margin-inline: auto;
+  }
+
+  .login-highlights {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .page-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-badge {
+    width: 76px;
+    height: 76px;
+    border-radius: 24px;
+    font-size: 2.35rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar,
+  .toolbar-group,
+  .section-title-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

@@ -1,266 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compliance Report – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Compliance Report | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: #f5f5f5;
-      min-height: 100vh;
-    }
-
-    .navbar {
-      background: white;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .brand {
-      font-size: 1.25rem;
-      font-weight: 600;
-      color: #333;
-    }
-
-    .user-info {
-      display: flex;
-      gap: 1rem;
-      align-items: center;
-    }
-
-    .user-info span {
-      color: #666;
-    }
-
-    #logoutBtn {
-      padding: 0.5rem 1rem;
-      background: #dc2626;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.875rem;
-      transition: background 0.2s;
-    }
-
-    #logoutBtn:hover {
-      background: #b91c1c;
-    }
-
-    .page {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-
-    .page h2 {
-      color: #333;
-      margin-bottom: 0.5rem;
-      font-size: 1.8rem;
-    }
-
-    .page > p {
-      margin-bottom: 1.5rem;
-      color: #666;
-      font-size: 0.875rem;
-    }
-
-    .panel {
-      background: white;
-      border-radius: 12px;
-      padding: 0;
-      overflow-x: auto;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    table {
-      width: 100%;
-      min-width: 800px;
-      border-collapse: collapse;
-    }
-
-    thead {
-      background: #f9fafb;
-      border-bottom: 2px solid #e5e7eb;
-    }
-
-    th {
-      padding: 1rem;
-      text-align: left;
-      font-weight: 600;
-      color: #374151;
-      font-size: 0.875rem;
-    }
-
-    td {
-      padding: 1rem;
-      border-bottom: 1px solid #e5e7eb;
-      color: #6b7280;
-      font-size: 0.875rem;
-    }
-
-    tr:hover {
-      background: #f9fafb;
-    }
-
-    .compliance-high {
-      color: #10b981;
-      font-weight: 600;
-    }
-
-    .compliance-medium {
-      color: #f59e0b;
-      font-weight: 600;
-    }
-
-    .compliance-low {
-      color: #ef4444;
-      font-weight: 600;
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 500;
-    }
-
-    .badge-excellent {
-      background: #d1fae5;
-      color: #065f46;
-    }
-
-    .badge-good {
-      background: #fed7aa;
-      color: #92400e;
-    }
-
-    .badge-poor {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .guidelines {
-      margin-top: 1.5rem;
-      padding: 1rem;
-      background: #f9fafb;
-      border-radius: 8px;
-      border-left: 4px solid #3b82f6;
-    }
-
-    .guidelines h3 {
-      color: #374151;
-      margin-bottom: 0.5rem;
-      font-size: 1rem;
-    }
-
-    .guidelines p {
-      font-size: 0.875rem;
-      color: #6b7280;
-      line-height: 1.5;
-    }
-
-    #toast {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      background: #333;
-      color: white;
-      border-radius: 8px;
-      display: none;
-      z-index: 1000;
-      font-size: 0.875rem;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-
-    #toast.success {
-      background: #10b981;
-    }
-
-    #toast.error {
-      background: #ef4444;
-    }
-
-    @media (max-width: 768px) {
-      .navbar {
-        padding: 0.75rem 1rem;
-        flex-direction: column;
-        gap: 0.75rem;
-      }
-      
-      .page {
-        padding: 1rem;
-      }
-      
-      .page h2 {
-        font-size: 1.5rem;
-      }
-    }
-  </style>
 </head>
 <body>
+  <nav class="navbar">
+    <span class="brand">Compliance Report</span>
+    <div class="user-info">
+      <a href="dashboard_admin.html" class="btn btn-sm">← Dashboard</a>
+      <span>🛡️ <span id="adminName"></span></span>
+      <button id="logoutBtn" type="button">Logout</button>
+    </div>
+  </nav>
 
-<nav class="navbar">
-  <span class="brand">✅ Compliance Report</span>
-  <div class="user-info">
-    <span>👤 <span id="adminName"></span></span>
-    <button id="logoutBtn">Logout</button>
-  </div>
-</nav>
+  <main class="page">
+    <section class="page-hero compliance-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Admin compliance</p>
+        <h2>Allergen &amp; Dietary Compliance Report</h2>
+        <p class="page-subtitle">Based on SA R146/2010 Food Labelling Regulations.</p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">✅</div>
+    </section>
 
-<div class="page">
-  <h2>Allergen & Dietary Compliance Report</h2>
-  <p>Based on SA R146/2010 Food Labelling Regulations</p>
+    <section class="panel table-wrapper" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Vendor</th>
+            <th>Status</th>
+            <th>Total Items</th>
+            <th>Items with Allergen Info</th>
+            <th>Items with Dietary Info</th>
+            <th>Compliance %</th>
+            <th>Compliance Level</th>
+          </tr>
+        </thead>
+        <tbody id="complianceBody">
+          <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading compliance data...</td></tr>
+        </tbody>
+      </table>
+    </section>
 
-  <div class="panel">
-    <table>
-      <thead>
-        <tr>
-          <th>Vendor</th>
-          <th>Status</th>
-          <th>Total Items</th>
-          <th>Items with Allergen Info</th>
-          <th>Items with Dietary Info</th>
-          <th>Compliance %</th>
-          <th>Compliance Level</th>
-        </tr>
-      </thead>
-      <tbody id="complianceBody">
-        <tr><td colspan="7" style="text-align: center; padding: 2rem;">Loading compliance data...</td></tr>
-      </tbody>
-    </table>
-  </div>
+    <section class="guidelines">
+      <h3>📋 Compliance Guidelines</h3>
+      <p>
+        Vendors should declare allergens clearly, including peanuts, tree nuts, milk/dairy, eggs, soy, fish, shellfish, and gluten.
+        Dietary information such as Halal, Vegan, Vegetarian, and Gluten-Free is also recommended for student safety.
+      </p>
+    </section>
+  </main>
 
-  <div class="guidelines">
-    <h3>📋 Compliance Guidelines</h3>
-    <p>
-      Based on South African R146/2010 regulations, vendors must declare the following allergens: 
-      Peanuts, Tree Nuts, Milk/Dairy, Eggs, Soy, Fish, Shellfish, and Gluten. 
-      Dietary information (Halal, Vegan, Vegetarian, Gluten-Free) is also recommended for student safety.
-    </p>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script type="module" src="js/main.js"></script>
-
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

@@ -2,70 +2,37 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
-  <title>Top Vendors – Campus Food</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Top Vendors | Campus Food</title>
 </head>
-
 <body>
-
   <nav class="navbar">
-
-    <span class="brand">
-      🍔 Campus Food — Top Vendors
-    </span>
-
-    <div
-      class="user-info"
-      style="display:flex;gap:1rem;align-items:center;"
-    >
-
-      <a
-        href="dashboard_student.html"
-        class="btn-top-vendors"
-      >
-        ← Dashboard
-      </a>
-
+    <span class="brand">Campus Food — Top Vendors</span>
+    <div class="user-info">
+      <a href="dashboard_student.html" class="btn btn-sm">← Dashboard</a>
     </div>
-
   </nav>
 
-  <div class="page">
+  <main class="page">
+    <section class="page-hero top-vendors-page-header">
+      <div class="hero-content">
+        <p class="eyebrow">Student analytics</p>
+        <h2>⭐ Top Rated Vendors</h2>
+        <p class="top-vendors-page-subtext">
+          Vendors ranked by average student review ratings.
+        </p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">🏆</div>
+    </section>
 
-    <div class="top-vendors-page-header">
+    <section id="topVendorsPageContainer" class="top-vendors-grid">
+      <p class="top-vendors-empty">Loading vendor rankings...</p>
+    </section>
+  </main>
 
-      <h2>
-        ⭐ Top Rated Vendors
-      </h2>
-
-      <p class="top-vendors-page-subtext">
-        Vendors ranked by average student review ratings.
-      </p>
-
-    </div>
-
-    <div
-      id="topVendorsPageContainer"
-      class="top-vendors-grid"
-    >
-      <p class="top-vendors-empty">
-        Loading vendor rankings...
-      </p>
-    </div>
-
-  </div>
-
-  <script
-    type="module"
-    src="js/student/student-analytics.js"
-  ></script>
-
+  <script type="module" src="js/student/student-analytics.js"></script>
 </body>
 </html>

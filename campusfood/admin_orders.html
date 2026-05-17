@@ -1,46 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>All Orders – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>All Orders | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <nav class="navbar">
+    <span class="brand">All Orders</span>
+    <div class="user-info">
+      <a href="dashboard_admin.html" class="btn btn-sm">← Dashboard</a>
+      <span>🛡️ <span id="adminName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
+    </div>
+  </nav>
 
-<nav class="navbar">
-  <span class="brand">📋 All Orders</span>
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
-    <span>👤 <span id="adminName"></span></span>
-    <button onclick="logout()">Logout</button>
-  </div>
-</nav>
+  <main class="page">
+    <section class="page-hero admin-orders-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Admin orders</p>
+        <h2>All Orders</h2>
+        <p class="page-subtitle">Monitor orders across every approved vendor.</p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">📋</div>
+    </section>
 
-<div class="page">
-  <h2>All Orders (All Vendors)</h2>
-  <div class="panel" style="padding:0; overflow:hidden;">
-    <table style="width:100%">
-      <thead>
-        <tr>
-          <th>Order #</th>
-          <th>Vendor</th>
-          <th>Student</th>
-          <th>Items</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Date</th>
-        </tr>
-      </thead>
-      <tbody id="allOrdersBody">
-        <tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--muted)">Loading…</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+    <section class="panel table-wrapper" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Order #</th>
+            <th>Vendor</th>
+            <th>Student</th>
+            <th>Items</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="allOrdersBody">
+          <tr><td colspan="7" style="text-align:center;padding:1.5rem;color:var(--muted)">Loading…</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
 
-<div id="toast"></div>
-<script type="module" src="js/main.js"></script>
-
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

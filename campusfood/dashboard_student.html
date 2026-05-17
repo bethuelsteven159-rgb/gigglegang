@@ -2,176 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-  <title>Student Dashboard – Campus Food</title>
-
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Student Dashboard | Campus Food</title>
   <script src="js/student/student-chatbot.js" defer></script>
 </head>
 <body>
+  <nav class="navbar">
+    <span class="brand">Campus Food — Student</span>
+    <div class="user-info">
+      <span>👤 <span id="studentName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
+    </div>
+  </nav>
 
-<nav class="navbar">
-
-  <span class="brand">
-    🍔 Campus Food — Student
-  </span>
-
-  <div class="user-info" style="display:flex;gap:1rem;align-items:center;">
-
-    <span>
-      👤
-      <span id="studentName"></span>
-    </span>
-
-    <button onclick="logout()">
-      Logout
-    </button>
-
-  </div>
-
-</nav>
-
-<div class="page">
-
-  <h2>
-    Welcome,
-    <span id="studentNameWelcome"></span>
-  </h2>
-
-  <!-- DASHBOARD CARDS -->
-  <div class="cards">
-
-    <a class="card" href="student_orders.html">
-
-      <div class="icon">
-        🛒
-      </div>
-
-      <div class="label">
-        Browse &amp; Order
-      </div>
-
-    </a>
-
-    <a class="card" href="student_history.html">
-
-      <div class="icon">
-        🕐
-      </div>
-
-      <div class="label">
-        Order History
-      </div>
-
-    </a>
-
-    <!-- TOP VENDORS CARD -->
-    <a class="card" href="student_analytics.html">
-
-      <div class="icon">
-        ⭐
-      </div>
-
-      <div class="label">
-        Top Vendors
-      </div>
-
-    </a>
-
-  </div>
-
-  <!-- TOP VENDORS PANEL -->
-  <div class="panel top-vendors-panel">
-
-    <div class="top-vendors-header">
-
-      <div>
-
-        <h3 style="margin-bottom:0.25rem;">
-          ⭐ Top Rated Vendors
-        </h3>
-
-        <p class="top-vendors-subtext">
-          Highest rated food vendors on campus.
+  <main class="page">
+    <section class="page-hero student-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Student dashboard</p>
+        <h2>Welcome, <span id="studentNameWelcome"></span></h2>
+        <p class="page-subtitle">
+          Find food, track active orders, and discover the vendors students are rating highest.
         </p>
-
       </div>
+      <div class="hero-badge" aria-hidden="true">🥘</div>
+    </section>
 
-      <a href="student_analytics.html" class="btn-top-vendors">
-        View Analytics
+    <section class="cards" aria-label="Student actions">
+      <a class="card" href="student_orders.html">
+        <div class="icon">🛒</div>
+        <div class="label">Browse &amp; Order</div>
       </a>
 
-    </div>
+      <a class="card" href="student_history.html">
+        <div class="icon">🕐</div>
+        <div class="label">Order History</div>
+      </a>
 
-    <div id="topVendorsContainer">
+      <a class="card" href="student_analytics.html">
+        <div class="icon">⭐</div>
+        <div class="label">Top Vendors</div>
+      </a>
+    </section>
 
-      <p class="top-vendors-empty">
-        Loading top vendors...
-      </p>
-
-    </div>
-
-  </div>
-
-  <!-- LIVE ORDERS -->
-  <div class="panel live-orders-panel">
-
-    <div class="live-orders-header">
-
-      <div>
-
-        <h3 style="margin-bottom:0.25rem;">
-          Live Orders
-        </h3>
-
-        <p class="live-orders-subtext">
-          Track your active orders in real time.
-        </p>
-
+    <section class="panel top-vendors-panel">
+      <div class="top-vendors-header">
+        <div>
+          <h3>⭐ Top Rated Vendors</h3>
+          <p class="top-vendors-subtext">Highest rated food vendors on campus.</p>
+        </div>
+        <a href="student_analytics.html" class="btn-top-vendors">View Analytics</a>
       </div>
 
+      <div id="topVendorsContainer">
+        <p class="top-vendors-empty">Loading top vendors...</p>
+      </div>
+    </section>
+
+    <section class="panel live-orders-panel">
+      <div class="live-orders-header">
+        <div>
+          <h3>Live Orders</h3>
+          <p class="live-orders-subtext">Track your active orders in real time.</p>
+        </div>
+      </div>
+
+      <div id="liveOrdersContainer">
+        <p class="live-orders-empty">Loading active orders...</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+
+  <button id="chatBtn" class="chat-btn" type="button">💬 Help</button>
+
+  <aside id="chatBox" class="chat-box" aria-label="Campus Food assistant">
+    <div class="chat-header">
+      <span>Uni-Eats Assistant</span>
+      <button id="closeChat" type="button" aria-label="Close chat">✕</button>
     </div>
 
-    <div id="liveOrdersContainer">
+    <div id="chatMessages" class="chat-messages"></div>
 
-      <p class="live-orders-empty">
-        Loading active orders...
-      </p>
-
+    <div id="nameArea">
+      <input id="studentNameInput" type="text" placeholder="Enter your name" />
+      <button id="saveNameBtn" type="button">Continue</button>
     </div>
 
-  </div>
+    <div id="questionArea" style="display:none;">
+      <select id="questionSelect">
+        <option value="">Choose a question</option>
+      </select>
+      <button id="askBtn" type="button">Ask</button>
+    </div>
+  </aside>
 
-</div>
-
-<div id="toast"></div>
-
-<script type="module" src="js/main.js"></script>
-
-<button id="chatBtn" class="chat-btn">💬 Help</button>
-
-<div id="chatBox" class="chat-box">
-  <div class="chat-header">
-    <span>Uni-Eats Assistant</span>
-    <button id="closeChat">✕</button>
-  </div>
-
-  <div id="chatMessages" class="chat-messages"></div>
-
-  <div id="nameArea">
-    <input id="studentNameInput" type="text" placeholder="Enter your name">
-    <button id="saveNameBtn">Continue</button>
-  </div>
-
-  <div id="questionArea" style="display:none;">
-    <select id="questionSelect">
-      <option value="">Choose a question</option>
-    </select>
-    <button id="askBtn">Ask</button>
-  </div>
-</div>
-
-
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

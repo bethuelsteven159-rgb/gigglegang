@@ -1,31 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Payment Success – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Payment Success | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+  <nav class="navbar">
+    <span class="brand">Payment</span>
+  </nav>
 
-<nav class="navbar">
-  <span class="brand">💳 Payment</span>
-</nav>
+  <main class="page payment-page">
+    <section class="panel payment-card">
+      <div class="payment-icon success" aria-hidden="true">✓</div>
+      <p class="eyebrow">Secure payment</p>
+      <h2>Payment Verification</h2>
+      <p id="paymentStatus">Please wait while we confirm your payment...</p>
 
-<div class="page">
-  <div class="panel">
-    <h2>Payment Verification</h2>
-    <p id="paymentStatus">Please wait while we confirm your payment...</p>
+      <div class="actions">
+        <a href="dashboard_student.html" id="continueBtn" class="btn btn-primary" hidden>Go to dashboard</a>
+      </div>
+    </section>
+  </main>
 
-    <a href="dashboard_student.html" id="continueBtn" class="btn btn-primary" hidden>
-      Go to dashboard
-    </a>
-  </div>
-</div>
-
-<div id="toast"></div>
-<script type="module" src="js/main.js"></script>
-
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

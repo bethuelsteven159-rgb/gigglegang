@@ -1,52 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Control – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Vendor Control | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-
-<nav class="navbar">
-  <span class="brand">🏪 Vendor Control</span>
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
-    <span>👤 <span id="adminName"></span></span>
-    <button onclick="logout()">Logout</button>
-  </div>
-</nav>
-
-<div class="page">
-  <div class="panel">
-    <h2>Add Vendor Account</h2>
-    <div class="form-row">
-      <div class="form-group">
-        <label for="newVendor">Username</label>
-        <input id="newVendor" type="text" placeholder="e.g. vendor2">
-      </div>
-      <button class="btn btn-primary" onclick="createVendor()">+ Add Vendor</button>
+  <nav class="navbar">
+    <span class="brand">Vendor Control</span>
+    <div class="user-info">
+      <a href="dashboard_admin.html" class="btn btn-sm">← Dashboard</a>
+      <span>🛡️ <span id="adminName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
     </div>
-  </div>
+  </nav>
 
-  <h2>All Vendors</h2>
-  <div class="panel" style="padding:0; overflow:hidden;">
-    <table style="width:100%">
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>Status</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="vendorBody">
-        <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--muted)">Loading…</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+  <main class="page">
+    <section class="page-hero vendor-control-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Admin vendors</p>
+        <h2>Vendor Control</h2>
+        <p class="page-subtitle">Approve, suspend, or remove vendor accounts.</p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">🏪</div>
+    </section>
 
-<div id="toast"></div>
-<script type="module" src="js/main.js"></script>
+    <section class="panel">
+      <h3>Add Vendor Account</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newVendor">Username</label>
+          <input id="newVendor" type="text" placeholder="e.g. vendor2" />
+        </div>
+        <button class="btn btn-primary" onclick="createVendor()" type="button">+ Add Vendor</button>
+      </div>
+    </section>
+
+    <section class="panel table-wrapper" style="padding:0;">
+      <table>
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="vendorBody">
+          <tr><td colspan="3" style="text-align:center;padding:1.5rem;color:var(--muted)">Loading…</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

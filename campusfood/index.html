@@ -3,27 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Campus Food - Login</title>
+  <meta name="theme-color" content="#f97316" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Campus Food | Login</title>
 </head>
 <body>
-  <div class="login-wrapper">
-    <div class="login-card">
-      <div class="logo">🍔</div>
-      <h2>Campus Food</h2>
-      <p class="sub">Sign in with Google to continue</p>
+  <main class="login-wrapper app-login">
+    <section class="login-copy" aria-label="Campus Food introduction">
+      <div class="brand-mark">🍔</div>
+      <p class="eyebrow">Campus Food</p>
+      <h1>Order campus meals without the queue drama.</h1>
+      <p>
+        Browse approved vendors, pay securely, track active orders, and keep your study day moving.
+      </p>
 
-      <button class="btn btn-primary btn-full" id="googleLoginBtn">
+      <div class="login-highlights" aria-label="App highlights">
+        <span>⚡ Fast ordering</span>
+        <span>💳 Payment ready</span>
+        <span>⭐ Vendor reviews</span>
+      </div>
+    </section>
+
+    <section class="login-card" aria-label="Sign in">
+      <div class="logo" aria-hidden="true">🍟</div>
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in with Google to continue to Campus Food.</p>
+
+      <button class="btn btn-primary btn-full" id="googleLoginBtn" type="button">
         Continue with Google
       </button>
 
       <p id="loadingText" class="sub" style="margin-top: 1rem; display: none;"></p>
 
       <div id="roleSection" style="display: none; margin-top: 1.5rem;">
-        <h3 style="margin-bottom: 0.5rem;">Choose your account type</h3>
-        <p class="sub" style="margin-bottom: 1rem;">
-          First time here? Select your role.
-        </p>
+        <h3>Choose your account type</h3>
+        <p class="sub">First time here? Select the role that fits you.</p>
 
         <div class="form-group">
           <label for="roleSelect">I am a...</label>
@@ -33,15 +48,14 @@
           </select>
         </div>
 
-        <button class="btn btn-primary btn-full" id="saveRoleBtn">
+        <button class="btn btn-primary btn-full" id="saveRoleBtn" type="button">
           Continue
         </button>
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 
   <div id="toast"></div>
-
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

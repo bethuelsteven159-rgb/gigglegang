@@ -1,34 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Order History – Campus Food</title>
-
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Supabase CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Order History | Campus Food</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-
 <body>
-
-  <!-- NAVBAR -->
   <nav class="navbar">
-    <span class="brand">🕐 Order History</span>
-
-    <div style="display:flex; gap:1rem; align-items:center;">
+    <span class="brand">Order History</span>
+    <div class="user-info">
+      <a href="dashboard_student.html" class="btn btn-sm">← Dashboard</a>
       <span>👤 <span id="studentName"></span></span>
-      <button onclick="logout()">Logout</button>
+      <button onclick="logout()" type="button">Logout</button>
     </div>
   </nav>
 
-  <!-- PAGE -->
-  <div class="page">
-    <h2>Your Order History</h2>
+  <main class="page">
+    <section class="page-hero history-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Student orders</p>
+        <h2>Your Order History</h2>
+        <p class="page-subtitle">
+          Review past orders, see status history, and rate your completed meals.
+        </p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">🕐</div>
+    </section>
 
-    <div class="panel table-wrapper" style="padding:0;">
-      <table style="width:100%">
+    <section class="panel table-wrapper" style="padding:0;">
+      <table>
         <thead>
           <tr>
             <th>Order #</th>
@@ -40,55 +44,32 @@
             <th>Review</th>
           </tr>
         </thead>
-
         <tbody id="historyBody">
           <tr>
-            <td colspan="7" style="text-align:center;padding:1.5rem;">
-              Loading...
-            </td>
+            <td colspan="7" style="text-align:center;padding:1.5rem;">Loading...</td>
           </tr>
         </tbody>
       </table>
-    </div>
-  </div>
+    </section>
+  </main>
 
-  <!-- REVIEW MODAL -->
   <div id="reviewModal" class="review-modal">
     <div class="review-box">
       <div class="review-header">
         <div>
           <h3>Rate Your Order</h3>
-          <p id="reviewOrderInfo" class="review-order-info">
-            You are reviewing this completed order
-          </p>
+          <p id="reviewOrderInfo" class="review-order-info">You are reviewing this completed order</p>
         </div>
-        <button type="button" class="review-close" onclick="closeModal()">✕</button>
+        <button type="button" class="review-close" onclick="closeModal()" aria-label="Close review modal">✕</button>
       </div>
 
-      <!-- ORDER SUMMARY -->
       <div class="review-summary">
-        <div class="review-summary-row">
-          <span class="label">Order</span>
-          <span id="reviewOrderNumber">-</span>
-        </div>
-
-        <div class="review-summary-row">
-          <span class="label">Vendor</span>
-          <span id="reviewVendorName">-</span>
-        </div>
-
-        <div class="review-summary-row">
-          <span class="label">Items</span>
-          <span id="reviewItems">-</span>
-        </div>
-
-        <div class="review-summary-row">
-          <span class="label">Total</span>
-          <span id="reviewTotal">-</span>
-        </div>
+        <div class="review-summary-row"><span class="label">Order</span><span id="reviewOrderNumber">-</span></div>
+        <div class="review-summary-row"><span class="label">Vendor</span><span id="reviewVendorName">-</span></div>
+        <div class="review-summary-row"><span class="label">Items</span><span id="reviewItems">-</span></div>
+        <div class="review-summary-row"><span class="label">Total</span><span id="reviewTotal">-</span></div>
       </div>
 
-      <!-- STARS -->
       <label class="review-subtitle">Your rating</label>
       <div id="starContainer" class="stars">
         <span class="star" data-value="1">☆</span>
@@ -98,7 +79,6 @@
         <span class="star" data-value="5">☆</span>
       </div>
 
-      <!-- QUICK REVIEW TAGS -->
       <label class="review-subtitle">Quick tags</label>
       <div class="tag-box">
         <button type="button" class="tag">Arrived on time</button>
@@ -113,11 +93,9 @@
         <button type="button" class="tag">Poor packaging</button>
       </div>
 
-      <!-- DESCRIPTION -->
       <label for="reviewText" class="review-subtitle">Comment</label>
       <textarea id="reviewText" placeholder="Tell us what you liked or didn’t like..."></textarea>
 
-      <!-- ACTIONS -->
       <div class="actions">
         <button type="button" class="btn" onclick="closeModal()">Cancel</button>
         <button type="button" class="btn btn-danger" onclick="deleteReview()">Delete</button>
@@ -126,11 +104,7 @@
     </div>
   </div>
 
-  <!-- TOAST CONTAINER -->
   <div id="toastContainer"></div>
-
-  <!-- JS -->
   <script type="module" src="js/main.js"></script>
-
 </body>
 </html>

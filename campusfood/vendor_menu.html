@@ -1,178 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Menu Management – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    /* ── shared modal backdrop ── */
-    .modal-backdrop {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 500;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-backdrop:not([hidden]) { display: flex; }
-
-    /* ── modal card ── */
-    .modal-card {
-      background: white;
-      border-radius: 14px;
-      padding: 2rem;
-      width: 90%;
-      max-width: 580px;
-      max-height: 90vh;
-      overflow-y: auto;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.2);
-    }
-    .modal-card h3 { margin: 0 0 1.25rem; font-size: 1.2rem; color: #111827; }
-    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
-
-    /* ── checkbox groups ── */
-    .section-label {
-      font-weight: 600;
-      font-size: 0.85rem;
-      color: #374151;
-      margin: 1rem 0 0.4rem;
-    }
-    .checkbox-group {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    .checkbox-group label {
-      display: flex;
-      align-items: center;
-      gap: 0.3rem;
-      font-size: 0.85rem;
-      cursor: pointer;
-      background: #f3f4f6;
-      padding: 0.3rem 0.65rem;
-      border-radius: 6px;
-      border: 1px solid #e5e7eb;
-      transition: background 0.15s;
-    }
-    .checkbox-group label:has(input:checked) {
-      background: #dbeafe;
-      border-color: #93c5fd;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Menu Management | Campus Food</title>
 </head>
 <body>
-
-<nav class="navbar">
-  <span class="brand">🍽️ Menu Management</span>
-  <div class="user-info" style="display:flex;gap:1rem;align-items:center;">
-    <span>👤 <span id="vendorName"></span></span>
-    <button onclick="logout()">Logout</button>
-  </div>
-</nav>
-
-<div class="page">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-    <h2 style="margin:0;">Your Menu</h2>
-    <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
-  </div>
-
-  <div id="vendorMenu" class="menu-grid">
-    <p style="color:var(--muted)">Loading…</p>
-  </div>
-</div>
-
-<!-- ══════════════ ADD ITEM MODAL ══════════════ -->
-<div id="addModal" class="modal-backdrop" hidden>
-  <div class="modal-card">
-    <h3>➕ Add Menu Item</h3>
-
-    <div class="form-group">
-      <label for="itemName">Item Name</label>
-      <input id="itemName" type="text" placeholder="e.g. Beef Burger">
+  <nav class="navbar">
+    <span class="brand">Menu Management</span>
+    <div class="user-info">
+      <a href="dashboard_vendor.html" class="btn btn-sm">← Dashboard</a>
+      <span>👤 <span id="vendorName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
     </div>
-    <div class="form-group">
-      <label for="itemPrice">Price (R)</label>
-      <input id="itemPrice" type="number" min="0" placeholder="e.g. 50">
-    </div>
-    <div class="form-group">
-      <label for="itemDescription">Description</label>
-      <input id="itemDescription" type="text" placeholder="e.g. Juicy beef burger with cheese">
-    </div>
-    <div class="form-group">
-      <label for="itemImage">Image (optional)</label>
-      <input id="itemImage" type="file" accept="image/*">
-    </div>
+  </nav>
 
-    <p class="section-label">⚠️ Contains Allergens</p>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="addContainsPeanuts"> 🥜 Peanuts</label>
-      <label><input type="checkbox" id="addContainsGluten"> 🌾 Gluten</label>
-      <label><input type="checkbox" id="addContainsDairy"> 🥛 Dairy</label>
-      <label><input type="checkbox" id="addContainsEggs"> 🥚 Eggs</label>
-      <label><input type="checkbox" id="addContainsSoy"> 🌱 Soy</label>
-      <label><input type="checkbox" id="addContainsShellfish"> 🦐 Shellfish</label>
-    </div>
+  <main class="page">
+    <section class="page-hero menu-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Vendor menu</p>
+        <h2>Your Menu</h2>
+        <p class="page-subtitle">
+          Add meals, manage prices, upload images, and label allergens clearly for student safety.
+        </p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="openAddModal()" type="button">+ Add Item</button>
+      </div>
+    </section>
 
-    <p class="section-label">✅ Dietary Labels</p>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="addIsHalal"> Halal</label>
-      <label><input type="checkbox" id="addIsVegetarian"> Vegetarian</label>
-      <label><input type="checkbox" id="addIsVegan"> Vegan</label>
-    </div>
+    <section id="vendorMenu" class="menu-grid">
+      <p class="top-vendors-empty">Loading…</p>
+    </section>
+  </main>
 
-    <div class="modal-actions">
-      <button class="btn" onclick="closeAddModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="addMenuItem()">Add Item</button>
-    </div>
-  </div>
-</div>
+  <div id="addModal" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <div class="review-header">
+        <div>
+          <h3>➕ Add Menu Item</h3>
+          <p class="review-order-info">Create a new item students can order.</p>
+        </div>
+        <button class="review-close" onclick="closeAddModal()" type="button" aria-label="Close add item modal">✕</button>
+      </div>
 
-<!-- ══════════════ EDIT ITEM MODAL ══════════════ -->
-<div id="editModal" class="modal-backdrop" hidden>
-  <div class="modal-card">
-    <h3>✏️ Edit Menu Item</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="itemName">Item Name</label>
+          <input id="itemName" type="text" placeholder="e.g. Beef Burger" />
+        </div>
+        <div class="form-group">
+          <label for="itemPrice">Price (R)</label>
+          <input id="itemPrice" type="number" min="0" placeholder="e.g. 50" />
+        </div>
+      </div>
 
-    <div class="form-group">
-      <label for="editItemName">Item Name</label>
-      <input id="editItemName" type="text">
-    </div>
-    <div class="form-group">
-      <label for="editItemPrice">Price (R)</label>
-      <input id="editItemPrice" type="number" min="0">
-    </div>
-    <div class="form-group">
-      <label for="editItemDescription">Description</label>
-      <input id="editItemDescription" type="text">
-    </div>
+      <div class="form-group">
+        <label for="itemDescription">Description</label>
+        <input id="itemDescription" type="text" placeholder="e.g. Juicy beef burger with cheese" />
+      </div>
+      <div class="form-group">
+        <label for="itemImage">Image (optional)</label>
+        <input id="itemImage" type="file" accept="image/*" />
+      </div>
 
-    <p class="section-label">⚠️ Contains Allergens</p>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="editContainsPeanuts"> 🥜 Peanuts</label>
-      <label><input type="checkbox" id="editContainsGluten"> 🌾 Gluten</label>
-      <label><input type="checkbox" id="editContainsDairy"> 🥛 Dairy</label>
-      <label><input type="checkbox" id="editContainsEggs"> 🥚 Eggs</label>
-      <label><input type="checkbox" id="editContainsSoy"> 🌱 Soy</label>
-      <label><input type="checkbox" id="editContainsShellfish"> 🦐 Shellfish</label>
-    </div>
+      <p class="section-label">⚠️ Contains Allergens</p>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="addContainsPeanuts" /> 🥜 Peanuts</label>
+        <label><input type="checkbox" id="addContainsGluten" /> 🌾 Gluten</label>
+        <label><input type="checkbox" id="addContainsDairy" /> 🥛 Dairy</label>
+        <label><input type="checkbox" id="addContainsEggs" /> 🥚 Eggs</label>
+        <label><input type="checkbox" id="addContainsSoy" /> 🌱 Soy</label>
+        <label><input type="checkbox" id="addContainsShellfish" /> 🦐 Shellfish</label>
+      </div>
 
-    <p class="section-label">✅ Dietary Labels</p>
-    <div class="checkbox-group">
-      <label><input type="checkbox" id="editIsHalal"> Halal</label>
-      <label><input type="checkbox" id="editIsVegetarian"> Vegetarian</label>
-      <label><input type="checkbox" id="editIsVegan"> Vegan</label>
-    </div>
+      <p class="section-label">✅ Dietary Labels</p>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="addIsHalal" /> Halal</label>
+        <label><input type="checkbox" id="addIsVegetarian" /> Vegetarian</label>
+        <label><input type="checkbox" id="addIsVegan" /> Vegan</label>
+      </div>
 
-    <div class="modal-actions">
-      <button class="btn" onclick="closeEditModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeAddModal()" type="button">Cancel</button>
+        <button class="btn btn-primary" onclick="addMenuItem()" type="button">Add Item</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div id="toast"></div>
-<script type="module" src="js/main.js"></script>
+  <div id="editModal" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <div class="review-header">
+        <div>
+          <h3>✏️ Edit Menu Item</h3>
+          <p class="review-order-info">Update item details and safety labels.</p>
+        </div>
+        <button class="review-close" onclick="closeEditModal()" type="button" aria-label="Close edit item modal">✕</button>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="editItemName">Item Name</label>
+          <input id="editItemName" type="text" />
+        </div>
+        <div class="form-group">
+          <label for="editItemPrice">Price (R)</label>
+          <input id="editItemPrice" type="number" min="0" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="editItemDescription">Description</label>
+        <input id="editItemDescription" type="text" />
+      </div>
+
+      <p class="section-label">⚠️ Contains Allergens</p>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="editContainsPeanuts" /> 🥜 Peanuts</label>
+        <label><input type="checkbox" id="editContainsGluten" /> 🌾 Gluten</label>
+        <label><input type="checkbox" id="editContainsDairy" /> 🥛 Dairy</label>
+        <label><input type="checkbox" id="editContainsEggs" /> 🥚 Eggs</label>
+        <label><input type="checkbox" id="editContainsSoy" /> 🌱 Soy</label>
+        <label><input type="checkbox" id="editContainsShellfish" /> 🦐 Shellfish</label>
+      </div>
+
+      <p class="section-label">✅ Dietary Labels</p>
+      <div class="checkbox-group">
+        <label><input type="checkbox" id="editIsHalal" /> Halal</label>
+        <label><input type="checkbox" id="editIsVegetarian" /> Vegetarian</label>
+        <label><input type="checkbox" id="editIsVegan" /> Vegan</label>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" onclick="closeEditModal()" type="button">Cancel</button>
+        <button class="btn btn-primary" onclick="saveEdit()" type="button">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

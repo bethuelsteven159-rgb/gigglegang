@@ -1,46 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vendor Dashboard – Campus Food</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Vendor Dashboard | Campus Food</title>
 </head>
 <body>
+  <nav class="navbar">
+    <span class="brand">Campus Food — Vendor</span>
+    <div class="user-info">
+      <span>👤 <span id="vendorName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
+    </div>
+  </nav>
 
-<nav class="navbar">
-  <span class="brand">🍔 Campus Food — Vendor</span>
+  <main class="page">
+    <section class="page-hero vendor-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Vendor dashboard</p>
+        <h2>Welcome, <span id="vendorNameWelcome"></span></h2>
+        <p class="page-subtitle">
+          Manage your menu, process incoming orders, and check how your food business is performing.
+        </p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">🍽️</div>
+    </section>
 
-  <div class="user-info" style="display: flex; gap: 1rem; align-items: center;">
-    <span>👤 <span id="vendorName"></span></span>
-    <button onclick="logout()">Logout</button>
-  </div>
-</nav>
+    <section class="cards" aria-label="Vendor actions">
+      <a class="card" href="vendor_menu.html">
+        <div class="icon">🍽️</div>
+        <div class="label">Manage Menu</div>
+      </a>
 
-<div class="page">
-  <h2>Welcome, <span id="vendorNameWelcome"></span></h2>
+      <a class="card" href="vendor_orders.html">
+        <div class="icon">📦</div>
+        <div class="label">My Orders</div>
+      </a>
 
-  <div class="cards">
-    <a class="card" href="vendor_menu.html">
-      <div class="icon">🍽️</div>
-      <div class="label">Manage Menu</div>
-    </a>
+      <a class="card" href="vendor_analytics.html">
+        <div class="icon">📊</div>
+        <div class="label">Analytics</div>
+      </a>
+    </section>
+  </main>
 
-    <a class="card" href="vendor_orders.html">
-      <div class="icon">📦</div>
-      <div class="label">My Orders</div>
-    </a>
-
-    <a class="card" href="vendor_analytics.html">
-      <div class="icon">📊</div>
-      <div class="label">Analytics</div>
-    </a>
-  </div>
-</div>
-
-<div id="toast"></div>
-
-<script type="module" src="js/main.js"></script>
-
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
