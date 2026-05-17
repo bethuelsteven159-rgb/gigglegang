@@ -345,9 +345,67 @@ window.exportCSV = (type) => {
   showToast('CSV downloaded', 'success');
 };
 
-window.exportPDF = () => {
-  showToast('Opening print dialog — choose "Save as PDF"', 'info');
-  window.print();
+window.exportPDF = async (type) => {
+  const from = document.getElementById('filterFrom').value;
+  const to   = document.getElementById('filterTo').value;
+
+  const cardMap = {
+    sales: { cardId: 'card-sales', title: 'Sales per Vendor Over Time' },
+    peak:  { cardId: 'card-peak',  title: 'Peak Ordering Hours' },
+    share: { cardId: 'card-share', title: 'Revenue Share by Vendor' },
+    table: { cardId: 'card-table', title: 'Vendor Breakdown' },
+  };
+
+  const target = cardMap[type];
+  if (!target) return;
+
+  const el = document.getElementById(target.cardId);
+  if (!el) { showToast('Nothing to export', 'error'); return; }
+
+  showToast('Generating PDF…', 'info');
+
+  try {
+    const canvas = await html2canvas(el, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    const pageW  = pdf.internal.pageSize.getWidth();
+    const pageH  = pdf.internal.pageSize.getHeight();
+    const margin = 12;
+
+    pdf.setFillColor(249, 115, 22);
+    pdf.rect(0, 0, pageW, 18, 'F');
+    pdf.setFontSize(13);
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Campus Food — Admin Analytics', margin, 11);
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`${target.title}   |   Period: ${from} to ${to}`, margin, 16);
+
+    const imgY  = 22;
+    const imgW  = pageW - margin * 2;
+    const ratio = canvas.height / canvas.width;
+    const imgH  = Math.min(imgW * ratio, pageH - imgY - margin);
+    pdf.addImage(imgData, 'PNG', margin, imgY, imgW, imgH);
+
+    pdf.setFontSize(8);
+    pdf.setTextColor(160);
+    pdf.text(`Generated on ${new Date().toLocaleString('en-ZA')}`, margin, pageH - 5);
+
+    pdf.save(`${type}_report_${from}_${to}.pdf`);
+    showToast('PDF downloaded', 'success');
+
+  } catch (err) {
+    console.error('PDF export error:', err);
+    showToast('PDF export failed', 'error');
+  }
 };
 
 function showToast(msg, kind = 'info') {
