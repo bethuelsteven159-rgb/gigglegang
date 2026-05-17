@@ -315,17 +315,28 @@ window.exportCSV = (type) => {
   let filename = '';
 
   if (type === 'sales') {
-    rows = [['Vendor','Date','Amount (R)'], ...cachedSalesRows.map(r => [r.vendor, r.date, r.amount])];
+    rows = [
+      ['Vendor', 'Date', 'Amount (R)'],
+      ...cachedSalesRows.map(r => [r.vendor, r.date, r.amount])
+    ];
     filename = `sales_report_${from}_${to}.csv`;
   } else if (type === 'peak') {
-    rows = [['Hour','Order count'], ...cachedPeakRows.map(r => [`${r.hour}:00`, 1])];
+    const hourCounts = Array(24).fill(0);
+    cachedPeakRows.forEach(r => { hourCounts[r.hour] += 1; });
+    rows = [
+      ['Hour', 'Order Count'],
+      ...hourCounts.map((count, h) => [`${String(h).padStart(2,'0')}:00`, count])
+    ];
     filename = `peak_hours_${from}_${to}.csv`;
   } else if (type === 'share' || type === 'table') {
-    rows = [['Vendor','Orders','Revenue (R)'], ...cachedTableRows.map(r => [r.vendor, r.orders, r.total])];
+    rows = [
+      ['Vendor', 'Orders', 'Revenue (R)'],
+      ...cachedTableRows.map(r => [r.vendor, r.orders, r.total.toFixed(2)])
+    ];
     filename = `vendor_breakdown_${from}_${to}.csv`;
   }
 
-  const csv  = rows.map(r => r.join(',')).join('\n');
+  const csv  = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
   const blob = new Blob([csv], { type: 'text/csv' });
   const url  = URL.createObjectURL(blob);
   const a    = Object.assign(document.createElement('a'), { href: url, download: filename });
