@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Student Profile | Campus Food</title>
+</head>
+<body>
+  <nav class="navbar">
+    <a class="brand" href="dashboard_student.html">Campus Food — Profile</a>
+    <div class="user-info">
+      <a href="dashboard_student.html" class="profile-chip profile-chip-muted">
+        ← Dashboard
+      </a>
+      <button onclick="logout()" type="button">Logout</button>
+    </div>
+  </nav>
+
+  <main class="page profile-page">
+    <section class="page-hero profile-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Student profile</p>
+        <h2 id="profileGreeting">Your campus food passport</h2>
+        <p class="page-subtitle">
+          View your account details, order activity, and quick links from one neat little control room.
+        </p>
+      </div>
+      <div class="profile-avatar-xl" id="profileAvatar" aria-hidden="true">👤</div>
+    </section>
+
+    <section class="profile-layout">
+      <article class="panel profile-card-main">
+        <div class="profile-card-head">
+          <div>
+            <p class="eyebrow">Account</p>
+            <h3 id="profileName">Loading profile...</h3>
+            <p id="profileEmail" class="profile-muted">Checking your signed-in account.</p>
+          </div>
+          <span class="profile-status">Student</span>
+        </div>
+
+        <div class="profile-detail-grid">
+          <div class="profile-detail">
+            <span>Username</span>
+            <strong id="profileUsername">—</strong>
+          </div>
+
+          <div class="profile-detail">
+            <span>Email</span>
+            <strong id="profileEmailDetail">—</strong>
+          </div>
+
+          <div class="profile-detail">
+            <span>Student ID</span>
+            <strong id="profileStudentId">—</strong>
+          </div>
+
+          <div class="profile-detail">
+            <span>Joined</span>
+            <strong id="profileJoined">—</strong>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <a class="btn btn-primary" href="student_orders.html">🛒 Browse food</a>
+          <a class="btn" href="student_history.html">🕐 Order history</a>
+          <a class="btn" href="dashboard_student.html">← Back to dashboard</a>
+        </div>
+      </article>
+
+      <aside class="profile-side">
+        <article class="stat-chip profile-stat">
+          <div class="stat-label">Total orders</div>
+          <div class="stat-value" id="profileOrders">0</div>
+          <div class="stat-sub">All orders linked to you</div>
+        </article>
+
+        <article class="stat-chip profile-stat">
+          <div class="stat-label">Active orders</div>
+          <div class="stat-value" id="profileActiveOrders">0</div>
+          <div class="stat-sub">Still being prepared or collected</div>
+        </article>
+
+        <article class="stat-chip profile-stat">
+          <div class="stat-label">Total spent</div>
+          <div class="stat-value" id="profileSpent">R0</div>
+          <div class="stat-sub">Based on paid or recorded orders</div>
+        </article>
+      </aside>
+    </section>
+
+    <section class="panel profile-latest-panel">
+      <div class="section-header">
+        <div>
+          <h3>Latest order</h3>
+          <p class="profile-muted">Your most recent order appears here.</p>
+        </div>
+        <a class="btn btn-sm" href="student_history.html">View all</a>
+      </div>
+
+      <div id="profileLatestOrder" class="profile-latest-empty">
+        Loading latest order...
+      </div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

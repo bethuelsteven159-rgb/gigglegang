@@ -13,7 +13,15 @@
   <nav class="navbar">
     <span class="brand">Campus Food — Student</span>
     <div class="user-info">
-      <span>👤 <span id="studentName"></span></span>
+      <a
+        href="student_profile.html"
+        class="profile-chip"
+        id="studentProfileChip"
+        aria-label="Open student profile"
+        title="Open profile"
+      >
+        👤 <strong id="studentName"></strong>
+      </a>
       <button onclick="logout()" type="button">Logout</button>
     </div>
   </nav>

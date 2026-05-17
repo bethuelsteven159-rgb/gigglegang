@@ -14,6 +14,7 @@ import { initVendorAnalyticsPage } from './pages/vendor-analytics-page.js';
 import { initStudentDashboardPage } from './pages/student-dashboard-page.js';
 import { initStudentOrdersPage } from './pages/student-orders-page.js';
 import { initStudentHistoryPage } from './pages/student-history-page.js';
+import { initStudentProfilePage } from './pages/student-profile-page.js';
 import { initPaymentSuccessPage } from './pages/payment-success-page.js';
 import { initPaymentCancelledPage } from './pages/payment-cancelled-page.js';
 
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'dashboard_student.html': initStudentDashboardPage,
     'student_orders.html': initStudentOrdersPage,
     'student_history.html': initStudentHistoryPage,
+    'student_profile.html': initStudentProfilePage,
     'payment_success.html': initPaymentSuccessPage,
     'payment_cancelled.html': initPaymentCancelledPage
   };
