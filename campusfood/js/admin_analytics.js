@@ -27,7 +27,7 @@ async function requireAdmin() {
 
 window.logout = async () => {
   await supabase.auth.signOut();
-  window.location.href = '../index.html';
+  window.location.href = 'index.html';
 };
 
 let chartSales = null;
@@ -365,7 +365,7 @@ window.exportPDF = async (type) => {
   showToast('Generating PDF…', 'info');
 
   try {
-    el.querySelectorAll('.btn-export').forEach(b => b.style.display = '');
+    el.querySelectorAll('.btn-export').forEach(b => b.style.display = 'none');
     const canvas = await html2canvas(el, {
       scale: 2,
       backgroundColor: '#ffffff',
