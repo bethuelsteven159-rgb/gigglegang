@@ -11,6 +11,7 @@
 <body>
   <nav class="navbar">
     <span class="brand">Order Food</span>
+
     <div class="user-info">
       <a href="dashboard_student.html" class="btn btn-sm">← Dashboard</a>
       <span>👤 <span id="studentName"></span></span>
@@ -22,30 +23,43 @@
     <section class="page-hero order-hero">
       <div class="hero-content">
         <p class="eyebrow">Student ordering</p>
+
         <h2>Choose your next campus meal</h2>
+
         <p class="page-subtitle">
           Browse all menu items or pick a specific vendor. Keep one vendor per cart so the kitchen can move fast.
         </p>
       </div>
+
       <div class="hero-badge" aria-hidden="true">🛒</div>
     </section>
 
     <section class="panel toolbar-panel" aria-label="Browse controls">
       <div class="toolbar">
         <div class="toolbar-group">
-          <button id="browseByMenuBtn" class="btn btn-primary" type="button">Browse by Menu</button>
-          <button id="browseByVendorBtn" class="btn" type="button">Browse by Vendor</button>
+          <button id="browseByMenuBtn" class="btn btn-primary" type="button">
+            Browse by Menu
+          </button>
+
+          <button id="browseByVendorBtn" class="btn" type="button">
+            Browse by Vendor
+          </button>
         </div>
       </div>
 
       <div id="searchContainer" style="margin-top: 1rem; display: none;">
-        <input type="text" id="searchInput" placeholder="🔍 Search menu items..." />
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="🔍 Search menu items..."
+        />
       </div>
 
       <div id="filterPanel" style="margin-top: 1rem; display: none;">
         <div class="filters compact-filters">
           <div class="filter-group">
             <label for="priceFilter">Price</label>
+
             <select id="priceFilter">
               <option value="">All prices</option>
               <option value="low-high">Low to High</option>
@@ -55,6 +69,7 @@
 
           <div class="filter-group">
             <label for="ratingFilter">Rating</label>
+
             <select id="ratingFilter">
               <option value="">All ratings</option>
               <option value="1">★ 1 star &amp; up</option>
@@ -64,109 +79,62 @@
               <option value="5">★★★★★ 5 stars only</option>
             </select>
           </div>
- <!-- DIETARY FILTER -->
-          <div class="filter-group">
 
-            <label for="dietaryFilter">
-              Dietary
-            </label>
+          <div class="filter-group">
+            <label for="dietaryFilter">Dietary</label>
 
             <select id="dietaryFilter">
-
-              <option value="">
-                All Items
-              </option>
-
-              <option value="halal">
-                Halal
-              </option>
-
-              <option value="vegan">
-                Vegan
-              </option>
-
-              <option value="vegetarian">
-                Vegetarian
-              </option>
-
+              <option value="">All Items</option>
+              <option value="halal">Halal</option>
+              <option value="vegan">Vegan</option>
+              <option value="vegetarian">Vegetarian</option>
             </select>
-
           </div>
-
         </div>
 
-        <!-- ALLERGEN FILTERS -->
         <div class="allergen-filter-section">
-
-          <p class="filter-title">
-            Avoid Allergens
-          </p>
+          <p class="filter-title">Avoid Allergens</p>
 
           <div class="allergen-filters">
-
             <label>
-              <input
-                type="checkbox"
-                value="gluten"
-                class="allergenFilter"
-              />
+              <input type="checkbox" value="gluten" class="allergenFilter" />
               🌾 Gluten
             </label>
 
             <label>
-              <input
-                type="checkbox"
-                value="shellfish"
-                class="allergenFilter"
-              />
+              <input type="checkbox" value="shellfish" class="allergenFilter" />
               🦐 Shellfish
             </label>
 
             <label>
-              <input
-                type="checkbox"
-                value="eggs"
-                class="allergenFilter"
-              />
+              <input type="checkbox" value="eggs" class="allergenFilter" />
               🥚 Eggs
             </label>
 
-   
-
             <label>
-              <input
-                type="checkbox"
-                value="peanuts"
-                class="allergenFilter"
-              />
+              <input type="checkbox" value="peanuts" class="allergenFilter" />
               🥜 Peanuts
             </label>
 
             <label>
-              <input
-                type="checkbox"
-                value="soy"
-                class="allergenFilter"
-              />
+              <input type="checkbox" value="soy" class="allergenFilter" />
               🌱 Soy
             </label>
 
             <label>
-              <input
-                type="checkbox"
-                value="dairy"
-                class="allergenFilter"
-              />
+              <input type="checkbox" value="dairy" class="allergenFilter" />
               🥛 Dairy
             </label>
-
-            
           </div>
+        </div>
 
-        </div>
-          <button id="mostOrderedBtn" class="btn btn-primary btn-sm" type="button">🔥 Most Ordered</button>
-          <button id="resetFiltersBtn" class="btn btn-sm" type="button">Reset Filters</button>
-        </div>
+        <button id="mostOrderedBtn" class="btn btn-primary btn-sm" type="button">
+          🔥 Most Ordered
+        </button>
+
+        <button id="resetFiltersBtn" class="btn btn-sm" type="button">
+          Reset Filters
+        </button>
       </div>
     </section>
 
@@ -174,6 +142,7 @@
       <div class="section-title-row">
         <h2>Available Menu</h2>
       </div>
+
       <div id="menuContainer" class="menu-grid">
         <p class="top-vendors-empty">Loading menu…</p>
       </div>
@@ -183,8 +152,13 @@
       <div class="section-title-row">
         <h2>All Vendors</h2>
       </div>
+
       <div id="vendorsContainer" class="menu-grid">
         <p class="top-vendors-empty">Loading vendors…</p>
       </div>
     </section>
+  </main>
 
+  <script type="module" src="./menu.js"></script>
+</body>
+</html>
