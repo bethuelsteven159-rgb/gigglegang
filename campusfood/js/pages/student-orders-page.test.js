@@ -1,63 +1,145 @@
-import { renderStudentName } from '../student/dashboard.js';
-import { requireRole } from '../shared/guards.js';
-import { loadStudentMenu } from '../student/menu.js';
-import { loadVendorsList, showVendorMenu, resetToAllMenu } from '../student/browse-vendors.js';
-import { addToCart, removeFromCart } from '../student/cart.js';
-import { placeOrder } from '../student/checkout.js';
-import { logout } from '../shared/session.js';
+/**
+ * @jest-environment jsdom
+ */
 
-export function initStudentOrdersPage() {
-  // Protect page
-  requireRole('student');
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 
-  // Show username
-  renderStudentName();
+const mockRenderStudentName = jest.fn();
+const mockRequireRole = jest.fn();
+const mockLoadStudentMenu = jest.fn();
+const mockLoadVendorsList = jest.fn();
+const mockShowVendorMenu = jest.fn();
+const mockResetToAllMenu = jest.fn();
+const mockAddToCart = jest.fn();
+const mockRemoveFromCart = jest.fn();
+const mockPlaceOrder = jest.fn();
+const mockLogout = jest.fn();
 
-  // Load default menu
-  loadStudentMenu();
+jest.unstable_mockModule('../student/dashboard.js', () => ({
+  renderStudentName: mockRenderStudentName
+}));
 
-  const menuView = document.getElementById('menuView');
-  const vendorsView = document.getElementById('vendorsView');
-  const browseByMenuBtn = document.getElementById('browseByMenuBtn');
-  const browseByVendorBtn = document.getElementById('browseByVendorBtn');
+jest.unstable_mockModule('../shared/guards.js', () => ({
+  requireRole: mockRequireRole
+}));
 
-  if (browseByMenuBtn) {
-    browseByMenuBtn.addEventListener('click', () => {
-      if (menuView) menuView.style.display = 'block';
-      if (vendorsView) vendorsView.style.display = 'none';
+jest.unstable_mockModule('../student/menu.js', () => ({
+  loadStudentMenu: mockLoadStudentMenu
+}));
 
-      browseByMenuBtn.className = 'btn btn-primary';
-      if (browseByVendorBtn) {
-        browseByVendorBtn.className = 'btn';
-        browseByVendorBtn.style.background = 'var(--surface-alt)';
-        browseByVendorBtn.style.color = 'var(--text)';
-      }
+jest.unstable_mockModule('../student/browse-vendors.js', () => ({
+  loadVendorsList: mockLoadVendorsList,
+  showVendorMenu: mockShowVendorMenu,
+  resetToAllMenu: mockResetToAllMenu
+}));
 
-      loadStudentMenu();
-    });
-  }
+jest.unstable_mockModule('../student/cart.js', () => ({
+  addToCart: mockAddToCart,
+  removeFromCart: mockRemoveFromCart
+}));
 
-  if (browseByVendorBtn) {
-    browseByVendorBtn.addEventListener('click', () => {
-      if (menuView) menuView.style.display = 'none';
-      if (vendorsView) vendorsView.style.display = 'block';
+jest.unstable_mockModule('../student/checkout.js', () => ({
+  placeOrder: mockPlaceOrder
+}));
 
-      browseByVendorBtn.className = 'btn btn-primary';
-      if (browseByMenuBtn) {
-        browseByMenuBtn.className = 'btn';
-        browseByMenuBtn.style.background = 'var(--surface-alt)';
-        browseByMenuBtn.style.color = 'var(--text)';
-      }
+jest.unstable_mockModule('../shared/session.js', () => ({
+  logout: mockLogout
+}));
 
-      loadVendorsList();
-    });
-  }
+const { initStudentOrdersPage } = await import('./student-orders-page.js');
 
-  // Expose functions still used by inline onclick in HTML
-  window.addToCart = addToCart;
-  window.removeFromCart = removeFromCart;
-  window.placeOrder = placeOrder;
-  window.showVendorMenu = showVendorMenu;
-  window.resetToAllMenu = resetToAllMenu;
-  window.logout = logout;
+function setupDOM() {
+  document.body.innerHTML = `
+    <section id="menuView" style="display: block;"></section>
+    <section id="vendorsView" style="display: none;"></section>
+
+    <button id="browseByMenuBtn" class="btn btn-primary">Browse menu</button>
+    <button id="browseByVendorBtn" class="btn">Browse vendor</button>
+  `;
 }
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  setupDOM();
+
+  delete window.addToCart;
+  delete window.removeFromCart;
+  delete window.placeOrder;
+  delete window.showVendorMenu;
+  delete window.resetToAllMenu;
+  delete window.logout;
+});
+
+describe('student-orders-page.js', () => {
+  test('protects the page, renders the student name, and loads the default menu', () => {
+    initStudentOrdersPage();
+
+    expect(mockRequireRole).toHaveBeenCalledWith('student');
+    expect(mockRenderStudentName).toHaveBeenCalledTimes(1);
+    expect(mockLoadStudentMenu).toHaveBeenCalledTimes(1);
+  });
+
+  test('exposes inline HTML functions on window', () => {
+    initStudentOrdersPage();
+
+    expect(window.addToCart).toBe(mockAddToCart);
+    expect(window.removeFromCart).toBe(mockRemoveFromCart);
+    expect(window.placeOrder).toBe(mockPlaceOrder);
+    expect(window.showVendorMenu).toBe(mockShowVendorMenu);
+    expect(window.resetToAllMenu).toBe(mockResetToAllMenu);
+    expect(window.logout).toBe(mockLogout);
+  });
+
+  test('switches to vendor view when browse by vendor is clicked', () => {
+    initStudentOrdersPage();
+
+    const menuView = document.getElementById('menuView');
+    const vendorsView = document.getElementById('vendorsView');
+    const browseByMenuBtn = document.getElementById('browseByMenuBtn');
+    const browseByVendorBtn = document.getElementById('browseByVendorBtn');
+
+    browseByVendorBtn.click();
+
+    expect(menuView.style.display).toBe('none');
+    expect(vendorsView.style.display).toBe('block');
+
+    expect(browseByVendorBtn.className).toBe('btn btn-primary');
+    expect(browseByMenuBtn.className).toBe('btn');
+    expect(browseByMenuBtn.style.background).toBe('var(--surface-alt)');
+    expect(browseByMenuBtn.style.color).toBe('var(--text)');
+
+    expect(mockLoadVendorsList).toHaveBeenCalledTimes(1);
+  });
+
+  test('switches back to menu view when browse by menu is clicked', () => {
+    initStudentOrdersPage();
+
+    const menuView = document.getElementById('menuView');
+    const vendorsView = document.getElementById('vendorsView');
+    const browseByMenuBtn = document.getElementById('browseByMenuBtn');
+    const browseByVendorBtn = document.getElementById('browseByVendorBtn');
+
+    browseByVendorBtn.click();
+    browseByMenuBtn.click();
+
+    expect(menuView.style.display).toBe('block');
+    expect(vendorsView.style.display).toBe('none');
+
+    expect(browseByMenuBtn.className).toBe('btn btn-primary');
+    expect(browseByVendorBtn.className).toBe('btn');
+    expect(browseByVendorBtn.style.background).toBe('var(--surface-alt)');
+    expect(browseByVendorBtn.style.color).toBe('var(--text)');
+
+    expect(mockLoadStudentMenu).toHaveBeenCalledTimes(2);
+  });
+
+  test('does not crash when optional buttons or views are missing', () => {
+    document.body.innerHTML = '';
+
+    expect(() => initStudentOrdersPage()).not.toThrow();
+
+    expect(mockRequireRole).toHaveBeenCalledWith('student');
+    expect(mockRenderStudentName).toHaveBeenCalledTimes(1);
+    expect(mockLoadStudentMenu).toHaveBeenCalledTimes(1);
+  });
+});
