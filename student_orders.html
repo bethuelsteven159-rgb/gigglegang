@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Order Food | Campus Food</title>
+</head>
+<body>
+  <nav class="navbar">
+    <span class="brand">Order Food</span>
+    <div class="user-info">
+      <a href="dashboard_student.html" class="btn btn-sm">← Dashboard</a>
+      <span>👤 <span id="studentName"></span></span>
+      <button onclick="logout()" type="button">Logout</button>
+    </div>
+  </nav>
+
+  <main class="page">
+    <section class="page-hero order-hero">
+      <div class="hero-content">
+        <p class="eyebrow">Student ordering</p>
+        <h2>Choose your next campus meal</h2>
+        <p class="page-subtitle">
+          Browse all menu items or pick a specific vendor. Keep one vendor per cart so the kitchen can move fast.
+        </p>
+      </div>
+      <div class="hero-badge" aria-hidden="true">🛒</div>
+    </section>
+
+    <section class="panel toolbar-panel" aria-label="Browse controls">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <button id="browseByMenuBtn" class="btn btn-primary" type="button">Browse by Menu</button>
+          <button id="browseByVendorBtn" class="btn" type="button">Browse by Vendor</button>
+        </div>
+      </div>
+
+      <div id="searchContainer" style="margin-top: 1rem; display: none;">
+        <input type="text" id="searchInput" placeholder="🔍 Search menu items..." />
+      </div>
+
+      <div id="filterPanel" style="margin-top: 1rem; display: none;">
+        <div class="filters compact-filters">
+          <div class="filter-group">
+            <label for="priceFilter">Price</label>
+            <select id="priceFilter">
+              <option value="">All prices</option>
+              <option value="low-high">Low to High</option>
+              <option value="high-low">High to Low</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="ratingFilter">Rating</label>
+            <select id="ratingFilter">
+              <option value="">All ratings</option>
+              <option value="1">★ 1 star &amp; up</option>
+              <option value="2">★★ 2 stars &amp; up</option>
+              <option value="3">★★★ 3 stars &amp; up</option>
+              <option value="4">★★★★ 4 stars &amp; up</option>
+              <option value="5">★★★★★ 5 stars only</option>
+            </select>
+          </div>
+ <!-- DIETARY FILTER -->
+          <div class="filter-group">
+
+            <label for="dietaryFilter">
+              Dietary
+            </label>
+
+            <select id="dietaryFilter">
+
+              <option value="">
+                All Items
+              </option>
+
+              <option value="halal">
+                Halal
+              </option>
+
+              <option value="vegan">
+                Vegan
+              </option>
+
+              <option value="vegetarian">
+                Vegetarian
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <!-- ALLERGEN FILTERS -->
+        <div class="allergen-filter-section">
+
+          <p class="filter-title">
+            Avoid Allergens
+          </p>
+
+          <div class="allergen-filters">
+
+            <label>
+              <input
+                type="checkbox"
+                value="gluten"
+                class="allergenFilter"
+              />
+              🌾 Gluten
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Shellfish"
+                class="allergenFilter"
+              />
+              🦐 Shellfish
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="eggs"
+                class="allergenFilter"
+              />
+              🥚 Eggs
+            </label>
+
+   
+
+            <label>
+              <input
+                type="checkbox"
+                value="peanuts"
+                class="allergenFilter"
+              />
+              🥜 Peanuts
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="soy"
+                class="allergenFilter"
+              />
+              🌱 Soy
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="Dairy"
+                class="allergenFilter"
+              />
+              🥛 Dairy
+            </label>
+
+            
+          </div>
+
+        </div>
+          <button id="mostOrderedBtn" class="btn btn-primary btn-sm" type="button">🔥 Most Ordered</button>
+          <button id="resetFiltersBtn" class="btn btn-sm" type="button">Reset Filters</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="menuView">
+      <div class="section-title-row">
+        <h2>Available Menu</h2>
+      </div>
+      <div id="menuContainer" class="menu-grid">
+        <p class="top-vendors-empty">Loading menu…</p>
+      </div>
+    </section>
+
+    <section id="vendorsView" style="display: none;">
+      <div class="section-title-row">
+        <h2>All Vendors</h2>
+      </div>
+      <div id="vendorsContainer" class="menu-grid">
+        <p class="top-vendors-empty">Loading vendors…</p>
+      </div>
+    </section>
+
+    <section class="panel" id="cartPanel" style="margin-top:2rem; display:none;" aria-label="Cart">
+      <div class="section-title-row">
+        <h2>Your Cart</h2>
+        <strong>Total: <span id="cartTotal">R0</span></strong>
+      </div>
+      <div id="cartItems"></div>
+      <div class="actions" style="margin-top:1rem;">
+        <button class="btn btn-primary" onclick="placeOrder()" type="button">Place Order</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

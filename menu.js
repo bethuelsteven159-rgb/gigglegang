@@ -1,180 +1,263 @@
-
 import { sb } from '../config/supabase.js';
-import { toast } from '../shared/notifications.js';
-import { getVendorId } from '../shared/auth-helpers.js';
+import { setCart, updateCartDisplay } from './cart.js';
 
-export async function loadVendorMenu() {
-  const container = document.getElementById('vendorMenu');
+const ALLERGENS = [
+  { id: 'gluten', label: 'Gluten', emoji: '🌾' },
+  { id: 'Shellfish', label: 'Shellfish', emoji: '🦐' },
+  { id: 'eggs', label: 'Eggs', emoji: '🥚' },
+  { id: 'peanuts', label: 'Peanuts', emoji: '🥜' },
+  { id: 'soy', label: 'Soy', emoji: '🌱' },
+  { id: 'milk', label: 'Dairy', emoji: '🥛' }
+];
+
+const DIETARY_LABELS = [
+  { id: 'halal', label: 'Halal' },
+  { id: 'vegetarian', label: 'Vegetarian' },
+  { id: 'vegan', label: 'Vegan' }
+];
+
+let allMenuItems = [];
+
+function escapeHtml(value = '') {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function renderBadges(item) {
+  const allergenBadges = (Array.isArray(item.allergens) ? item.allergens : [])
+    .map(allergen => {
+      const meta = ALLERGENS.find(a => a.id === allergen);
+      const label = meta ? `${meta.emoji} ${meta.label}` : allergen;
+
+      return `
+        <span class="badge badge-warning">
+          ${escapeHtml(label)}
+        </span>
+      `;
+    });
+
+  const dietaryBadges = (Array.isArray(item.dietary_labels)
+    ? item.dietary_labels
+    : []
+  ).map(label => {
+    const meta = DIETARY_LABELS.find(d => d.id === label);
+    const text = meta ? `✓ ${meta.label}` : `✓ ${label}`;
+
+    return `
+      <span class="badge badge-success">
+        ${escapeHtml(text)}
+      </span>
+    `;
+  });
+
+  const badges = [...allergenBadges, ...dietaryBadges];
+
+  if (badges.length === 0) return '';
+
+  return `
+    <div class="menu-badges">
+      ${badges.join('')}
+    </div>
+  `;
+}
+
+function renderMenuItems(items) {
+  const container = document.getElementById('menuContainer');
+
   if (!container) return;
 
-  const username = sessionStorage.getItem('username');
-  const vendorId = await getVendorId(username);
-
-  if (!vendorId) {
-    container.innerHTML = '<p>Vendor not found</p>';
+  if (items.length === 0) {
+    container.innerHTML = `
+      <p class="top-vendors-empty">
+        No menu items match your filters.
+      </p>
+    `;
     return;
   }
 
-  const { data, error } = await sb
-    .from('menu')
-    .select('*')
-    .eq('vendor_id', vendorId)
-    .order('created_at', { ascending: true });
-
-  if (error) {
-    container.innerHTML = '<p>Failed to load menu</p>';
-    return;
-  }
-
-  if (!data || data.length === 0) {
-    container.innerHTML = '<p>No items yet.</p>';
-    return;
-  }
-
-  container.innerHTML = data.map(item => `
+  container.innerHTML = items.map(item => `
     <div class="menu-item">
-      <div style="font-weight:bold">${item.name}</div>
+
+      <div class="menu-item-title">
+        ${escapeHtml(item.name)}
+      </div>
+
       ${item.image_url ? `
-        <img src="${item.image_url}" style="display: block; margin: 10px auto; width: 180px; height: 180px; object-fit: cover; border-radius: 10px;" />
+        <img
+          src="${escapeHtml(item.image_url)}"
+          alt="${escapeHtml(item.name)}"
+          class="menu-item-image"
+        />
       ` : ''}
-      <div>${item.description || ''}</div>
-      <div>R${item.price}</div>
 
-      <div>
-  <strong>Allergens:</strong>
-  ${item.allergens && item.allergens.length > 0
-    ? item.allergens.join(', ')
-    : 'None'}
-</div>
+      <div class="menu-item-price">
+        R${escapeHtml(String(item.price))}
+      </div>
 
-<div>
-  <strong>Dietary:</strong>
-  ${item.dietary && item.dietary.length > 0
-    ? item.dietary.join(', ')
-    : 'None'}
-</div>
+      <div class="menu-item-vendor">
+        ${escapeHtml(item.vendor_name)}
+      </div>
 
-      <div>${item.status}</div>
-      <button onclick="toggleSoldOut(${item.id}, ${item.status === 'sold_out'})">
-        ${item.status === 'sold_out' ? 'Mark Available' : 'Mark Sold Out'}
+      <div class="menu-item-description">
+        ${escapeHtml(item.description || '')}
+      </div>
+
+      ${renderBadges(item)}
+
+      <button
+        class="btn btn-primary btn-sm"
+        data-item-id="${escapeHtml(String(item.id))}"
+        data-item-name="${escapeHtml(item.name)}"
+        data-item-price="${escapeHtml(String(item.price))}"
+        data-vendor-id="${escapeHtml(String(item.vendor_id))}"
+        onclick="addToCart(this.dataset.itemId, this.dataset.itemName, Number(this.dataset.itemPrice), this.dataset.vendorId)"
+      >
+        + Add to Cart
       </button>
-      <button onclick="deleteMenuItem(${item.id})">Delete</button>
+
     </div>
   `).join('');
 }
 
-export async function addMenuItem() {
-  const nameEl = document.getElementById('itemName');
-  const priceEl = document.getElementById('itemPrice');
-  const descEl = document.getElementById('itemDescription');
-  const imageEl = document.getElementById('itemImage');
+function applyFilters() {
 
-  const allergenCheckboxes = document.querySelectorAll('.allergen-checkbox:checked');
-  const dietaryCheckboxes = document.querySelectorAll('.dietary-checkbox:checked');
+  const dietaryFilter =
+    document.getElementById('dietaryFilter')?.value || '';
 
-   const allergens = Array.from(allergenCheckboxes).map(cb => cb.value);
-  const dietary = Array.from(dietaryCheckboxes).map(cb => cb.value);
+  const allergenCheckboxes =
+    document.querySelectorAll('.allergenFilter:checked');
 
-  const name = nameEl?.value.trim();
-  const price = Number(priceEl?.value);
-  const description = descEl?.value.trim();
-  const file = imageEl?.files[0];
+  const excludedAllergens =
+    Array.from(allergenCheckboxes).map(cb => cb.value);
 
-  const username = sessionStorage.getItem('username');
+  let filtered = [...allMenuItems];
 
-  if (!name || !price || !description) {
-    toast('Fill in all fields', 'error');
+  // Dietary filter
+  if (dietaryFilter) {
+    filtered = filtered.filter(item =>
+      Array.isArray(item.dietary_labels) &&
+      item.dietary_labels.includes(dietaryFilter)
+    );
+  }
+
+  // Allergen exclusion filter
+  if (excludedAllergens.length > 0) {
+    filtered = filtered.filter(item => {
+
+      const allergens =
+        Array.isArray(item.allergens)
+          ? item.allergens
+          : [];
+
+      return !excludedAllergens.some(allergen =>
+        allergens.includes(allergen)
+      );
+    });
+  }
+
+  renderMenuItems(filtered);
+}
+
+function setupFilters() {
+
+  const dietaryFilter =
+    document.getElementById('dietaryFilter');
+
+  if (dietaryFilter) {
+    dietaryFilter.addEventListener('change', applyFilters);
+  }
+
+  const allergenCheckboxes =
+    document.querySelectorAll('.allergenFilter');
+
+  allergenCheckboxes.forEach(cb => {
+    cb.addEventListener('change', applyFilters);
+  });
+
+  const resetBtn =
+    document.getElementById('resetFiltersBtn');
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+
+      if (dietaryFilter) {
+        dietaryFilter.value = '';
+      }
+
+      allergenCheckboxes.forEach(cb => {
+        cb.checked = false;
+      });
+
+      applyFilters();
+    });
+  }
+}
+
+export async function loadStudentMenu() {
+
+  const container =
+    document.getElementById('menuContainer');
+
+  if (!container) return;
+
+  container.innerHTML = '<p>Loading menu…</p>';
+
+  const { data: vendors, error: vendorError } =
+    await sb
+      .from('vendors')
+      .select('id, username')
+      .eq('status', 'approved');
+
+  if (vendorError || !vendors) {
+    container.innerHTML = '<p>Failed to load menu</p>';
     return;
   }
 
-  const vendorId = await getVendorId(username);
-  if (!vendorId) {
-    toast('Vendor not found', 'error');
-    return;
-  }
+  const allMenu = [];
 
-  let imageUrl = null;
+  for (const vendor of vendors) {
 
-  if (file) {
-    const fileName = `${Date.now()}-${file.name}`;
+    const { data: menu, error: menuError } =
+      await sb
+        .from('menu')
+        .select('*')
+        .eq('vendor_id', vendor.id)
+        .eq('status', 'available');
 
-    const { error: uploadError } = await sb
-      .storage
-      .from('menu_images')
-      .upload(fileName, file);
+    if (!menuError && menu) {
 
-    if (uploadError) {
-      console.error(uploadError);
-      toast('Image upload failed', 'error');
-      return;
+      allMenu.push(...menu.map(item => ({
+        ...item,
+        vendor_name: vendor.username,
+        vendor_id: vendor.id
+      })));
     }
-
-    const { data: urlData } = sb
-      .storage
-      .from('menu_images')
-      .getPublicUrl(fileName);
-
-    imageUrl = urlData.publicUrl;
   }
 
-  const { error } = await sb
-    .from('menu')
-    .insert([{
-      vendor_id: vendorId,
-      name,
-      price,
-      description,
-      image_url: imageUrl,
-      status: 'available',
-        allergens: allergens,
-      dietary: dietary
-    }]);
-
-  if (error) {
-    console.error(error);
-    toast('Failed to add item', 'error');
-  } else {
-    toast('Item added successfully');
-    nameEl.value = '';
-    priceEl.value = '';
-    descEl.value = '';
-    imageEl.value = '';
-
-      document.querySelectorAll('.allergen-checkbox').forEach(cb => cb.checked = false);
-    document.querySelectorAll('.dietary-checkbox').forEach(cb => cb.checked = false);
-
-    loadVendorMenu();
+  if (allMenu.length === 0) {
+    container.innerHTML = '<p>No menu available yet.</p>';
+    return;
   }
-}
 
-export async function toggleSoldOut(itemId, currentlySoldOut) {
-  const newStatus = currentlySoldOut ? 'available' : 'sold_out';
+  allMenuItems = allMenu;
 
-  const { error } = await sb
-    .from('menu')
-    .update({ status: newStatus })
-    .eq('id', itemId);
+  renderMenuItems(allMenuItems);
 
-  if (error) {
-    toast('Update failed', 'error');
-  } else {
-    toast('Item updated');
-    loadVendorMenu();
-  }
-}
+  setupFilters();
 
-export async function deleteMenuItem(itemId) {
-  if (!confirm('Delete this item?')) return;
+  // Restore cart
+  const savedCart = sessionStorage.getItem('cart');
 
-  const { error } = await sb
-    .from('menu')
-    .delete()
-    .eq('id', itemId);
-
-  if (error) {
-    toast('Delete failed', 'error');
-  } else {
-    toast('Item deleted');
-    loadVendorMenu();
+  if (savedCart) {
+    try {
+      setCart(JSON.parse(savedCart));
+      updateCartDisplay();
+    } catch {
+      // ignore invalid JSON
+    }
   }
 }
