@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:," />
+  <title>Shop Profile | Campus Food</title>
+  <style>
+    .profile-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .profile-layout { grid-template-columns: 1fr; }
+    }
+
+    .profile-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+    }
+
+    .profile-panel h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 1.5rem;
+      color: var(--text);
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface-alt);
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      transition: border-color 0.15s;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(249,115,22,0.12);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .save-row {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+
+    /* ── Preview card ── */
+    .preview-panel h2 {
+      margin-bottom: 1rem;
+    }
+
+    .profile-card-preview {
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+    }
+
+    .preview-shop-name {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .preview-description {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 0 0 1rem;
+      line-height: 1.5;
+    }
+
+    .preview-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .preview-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .preview-row span {
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="brand">Campus Food — Vendor</span>
+  <div class="user-info">
+    <span>👤 <span id="vendorName"></span></span>
+    <button onclick="logout()" type="button">Logout</button>
+  </div>
+</nav>
+
+<main class="page">
+
+  <section class="page-hero vendor-hero">
+    <div class="hero-content">
+      <p class="eyebrow"><a href="dashboard_vendor.html" style="color:inherit;text-decoration:none;">← Dashboard</a></p>
+      <h2>Shop Profile</h2>
+      <p class="page-subtitle">
+        Update your shop details so students know who you are and when you're open.
+      </p>
+    </div>
+    <div class="hero-badge" aria-hidden="true">🏪</div>
+  </section>
+
+  <div class="profile-layout">
+
+    <!-- ── Edit form ── -->
+    <div class="profile-panel">
+      <h2>Edit Details</h2>
+
+      <div class="form-group">
+        <label for="shopName">Shop Name <span style="color:var(--danger)">*</span></label>
+        <input
+          id="shopName"
+          type="text"
+          placeholder="e.g. Bob's Burgers"
+          maxlength="80"
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea
+          id="description"
+          placeholder="Tell students what makes your food special…"
+          maxlength="300"
+        ></textarea>
+        <span class="field-hint">Max 300 characters</span>
+      </div>
+
+      <div class="form-group">
+        <label for="openingHours">Opening Hours</label>
+        <input
+          id="openingHours"
+          type="text"
+          placeholder="e.g. Mon–Fri 08:00–17:00, Sat 09:00–13:00"
+          maxlength="120"
+        />
+        <span class="field-hint">Free text — be as specific as you like</span>
+      </div>
+
+      <div class="form-group">
+        <label for="contact">Contact</label>
+        <input
+          id="contact"
+          type="text"
+          placeholder="e.g. 011 123 4567 or shop@campus.ac.za"
+          maxlength="100"
+        />
+      </div>
+
+      <div class="save-row">
+        <button class="btn btn-primary" onclick="saveVendorProfile()">
+          💾 Save Profile
+        </button>
+      </div>
+    </div>
+
+    <!-- ── Live preview ── -->
+    <div class="profile-panel preview-panel">
+      <h2>Preview</h2>
+      <div id="profilePreview">
+        <p style="color:var(--text-muted)">Fill in your details and save to see a preview.</p>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<div id="toast"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
