@@ -26,7 +26,6 @@ function escapeHtml(value = '') {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
 }
-
 function renderBadges(item) {
   const allergenBadges = (Array.isArray(item.allergens) ? item.allergens : [])
     .map(allergen => {
