@@ -6,8 +6,6 @@ const mockLoadStudentMenu = jest.fn();
 const mockLoadVendorsList = jest.fn();
 const mockShowVendorMenu = jest.fn();
 const mockResetToAllMenu = jest.fn();
-const mockShowVendorProfile = jest.fn();
-const mockCloseVendorProfile = jest.fn();
 const mockAddToCart = jest.fn();
 const mockRemoveFromCart = jest.fn();
 const mockPlaceOrder = jest.fn();
@@ -28,9 +26,7 @@ jest.unstable_mockModule('../student/menu.js', () => ({
 jest.unstable_mockModule('../student/browse-vendors.js', () => ({
   loadVendorsList: mockLoadVendorsList,
   showVendorMenu: mockShowVendorMenu,
-  resetToAllMenu: mockResetToAllMenu,
-  showVendorProfile: mockShowVendorProfile,
-  closeVendorProfile: mockCloseVendorProfile
+  resetToAllMenu: mockResetToAllMenu
 }));
 
 jest.unstable_mockModule('../student/cart.js', () => ({
@@ -60,8 +56,6 @@ describe('student-orders-page.js', () => {
     delete window.placeOrder;
     delete window.showVendorMenu;
     delete window.resetToAllMenu;
-    delete window.showVendorProfile;
-    delete window.closeVendorProfile;
     delete window.logout;
   });
 
@@ -86,8 +80,6 @@ describe('student-orders-page.js', () => {
     expect(window.placeOrder).toBe(mockPlaceOrder);
     expect(window.showVendorMenu).toBe(mockShowVendorMenu);
     expect(window.resetToAllMenu).toBe(mockResetToAllMenu);
-    expect(window.showVendorProfile).toBe(mockShowVendorProfile);
-    expect(window.closeVendorProfile).toBe(mockCloseVendorProfile);
     expect(window.logout).toBe(mockLogout);
   });
 

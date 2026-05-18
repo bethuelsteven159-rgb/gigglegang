@@ -211,7 +211,7 @@ describe('student/browse-vendors.js', () => {
     );
 
     expect(mockFrom).toHaveBeenCalledWith('vendors');
-    expect(queriesByTable.vendors[0].selected).toBe('id, username, shop_name, description, opening_hours, contact');
+    expect(queriesByTable.vendors[0].selected).toBe('id, username');
     expect(queriesByTable.vendors[0].filters).toEqual([
       ['status', 'approved']
     ]);
@@ -269,8 +269,8 @@ describe('student/browse-vendors.js', () => {
 
     expect(html).toContain('Kota Palace');
     expect(html).toContain('Burger Spot');
-    expect(html).toContain('View Menu');
-    expect(html).toContain('showVendorMenu');
+    expect(html).toContain('Click to view menu');
+    expect(html).toContain("window.showVendorMenu('v1', 'Kota Palace')");
   });
 
   test('showVendorMenu returns early if menu container is missing', async () => {
