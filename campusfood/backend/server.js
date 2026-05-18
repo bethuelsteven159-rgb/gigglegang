@@ -148,6 +148,73 @@ app.get("/api/paystack/verify/:reference", async (req, res) => {
   }
 });
 
+
+app.post("/api/paystack/refund", async (req, res) => {
+  try {
+    const { orderId, paymentId, amount, reason } = req.body;
+
+    if (!paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment reference is required"
+      });
+    }
+
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      return res.status(500).json({
+        success: false,
+        message: "Paystack secret key is not configured"
+      });
+    }
+
+    const refundBody = {
+      transaction: paymentId
+    };
+
+    const amountInCents = amount === undefined || amount === null || amount === ""
+      ? null
+      : Math.round(Number(amount) * 100);
+
+    if (amountInCents !== null) {
+      if (!Number.isFinite(amountInCents) || amountInCents <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Amount must be a valid positive number"
+        });
+      }
+
+      refundBody.amount = amountInCents;
+    }
+
+    if (reason) {
+      refundBody.customer_note = reason;
+      refundBody.merchant_note = orderId
+        ? `${reason} | Order: ${orderId}`
+        : reason;
+    }
+
+    const response = await fetch("https://api.paystack.co/refund", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(refundBody)
+    });
+
+    const data = await response.json();
+
+    return res.status(response.ok ? 200 : response.status).json(data);
+  } catch (error) {
+    console.error("Paystack refund error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Refund request failed"
+    });
+  }
+});
+
 if (process.env.NODE_ENV !== "test") {
   const PORT = process.env.PORT || 5000;
 
