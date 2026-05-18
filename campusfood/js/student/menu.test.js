@@ -33,7 +33,7 @@ jest.unstable_mockModule('./cart.js', () => ({
 
 // ── Import SUT ────────────────────────────────────────────────────────────────
 
-const { loadStudentMenu } = await import('./menu.js');
+const { loadStudentMenu, filterItems } = await import('./menu.js');
 
 // ── Test suite ────────────────────────────────────────────────────────────────
 
@@ -612,6 +612,88 @@ describe('student/menu.js', () => {
 
     expect(nameDiv?.textContent)
       .toContain('<script>alert(1)</script>');
+  });
+
+
+  // ── filter logic (pure filterItems function) ─────────────────────────────────
+
+  const item = (overrides = {}) => ({
+    id: 1, name: 'Burger', price: 50, image_url: '', description: '',
+    vendor_id: 'v1', status: 'available',
+    allergens: [], dietary_labels: [],
+    ...overrides
+  });
+
+  test('filterItems: shows only items matching dietary filter', () => {
+    const items = [
+      item({ id: 1, name: 'Halal Burger', dietary_labels: ['halal'] }),
+      item({ id: 2, name: 'Plain Pizza',  dietary_labels: [] })
+    ];
+    const result = filterItems(items, { dietaryFilter: 'halal' });
+    expect(result.map(i => i.name)).toEqual(['Halal Burger']);
+  });
+
+  test('filterItems: empty dietary filter returns all items', () => {
+    const items = [
+      item({ id: 1, name: 'Halal Burger', dietary_labels: ['halal'] }),
+      item({ id: 2, name: 'Plain Pizza',  dietary_labels: [] })
+    ];
+    const result = filterItems(items, { dietaryFilter: '' });
+    expect(result).toHaveLength(2);
+  });
+
+  test('filterItems: excludes items containing specified allergen', () => {
+    const items = [
+      item({ id: 1, name: 'Peanut Burger', allergens: ['peanuts'] }),
+      item({ id: 2, name: 'Safe Wrap',     allergens: [] })
+    ];
+    const result = filterItems(items, { excludedAllergens: ['peanuts'] });
+    expect(result.map(i => i.name)).toEqual(['Safe Wrap']);
+  });
+
+  test('filterItems: combines dietary and allergen filters', () => {
+    const items = [
+      item({ id: 1, name: 'Halal Gluten Burger', dietary_labels: ['halal'], allergens: ['gluten'] }),
+      item({ id: 2, name: 'Halal Safe Wrap',     dietary_labels: ['halal'], allergens: [] }),
+      item({ id: 3, name: 'Vegan Wrap',           dietary_labels: ['vegan'], allergens: [] })
+    ];
+    const result = filterItems(items, { dietaryFilter: 'halal', excludedAllergens: ['gluten'] });
+    expect(result.map(i => i.name)).toEqual(['Halal Safe Wrap']);
+  });
+
+  test('filterItems: handles JSON-string dietary_labels from Supabase', () => {
+    const items = [
+      item({ id: 1, name: 'Vegan Bowl', dietary_labels: '["vegan","vegetarian"]' }),
+      item({ id: 2, name: 'Meat Wrap',  dietary_labels: '[]' })
+    ];
+    const result = filterItems(items, { dietaryFilter: 'vegan' });
+    expect(result.map(i => i.name)).toEqual(['Vegan Bowl']);
+  });
+
+  test('filterItems: handles JSON-string allergens from Supabase', () => {
+    const items = [
+      item({ id: 1, name: 'Peanut Wrap', allergens: '["peanuts","gluten"]' }),
+      item({ id: 2, name: 'Safe Salad',  allergens: '[]' })
+    ];
+    const result = filterItems(items, { excludedAllergens: ['peanuts'] });
+    expect(result.map(i => i.name)).toEqual(['Safe Salad']);
+  });
+
+  test('filterItems: returns empty array when no items match', () => {
+    const items = [
+      item({ id: 1, name: 'Burger', dietary_labels: [] })
+    ];
+    const result = filterItems(items, { dietaryFilter: 'vegan' });
+    expect(result).toHaveLength(0);
+  });
+
+  test('filterItems: returns all items when no filters applied', () => {
+    const items = [
+      item({ id: 1, name: 'Burger' }),
+      item({ id: 2, name: 'Pizza' })
+    ];
+    const result = filterItems(items);
+    expect(result).toHaveLength(2);
   });
 
 });
