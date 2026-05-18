@@ -27,23 +27,40 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
+function normalizeArray(value) {
+  if (Array.isArray(value)) return value;
+  if (!value) return [];
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // Not JSON, continue below.
+    }
+
+    return value
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
 function renderBadges(item) {
-  const allergenBadges = (Array.isArray(item.allergens) ? item.allergens : [])
-    .map(allergen => {
-      const meta = ALLERGENS.find(a => a.id === allergen);
-      const label = meta ? `${meta.emoji} ${meta.label}` : allergen;
+  const allergenBadges = normalizeArray(item.allergens).map(allergen => {
+    const meta = ALLERGENS.find(a => a.id === allergen);
+    const label = meta ? `${meta.emoji} ${meta.label}` : allergen;
 
-      return `
-        <span class="badge badge-warning">
-          ${escapeHtml(label)}
-        </span>
-      `;
-    });
+    return `
+      <span class="badge badge-warning">
+        ${escapeHtml(label)}
+      </span>
+    `;
+  });
 
-  const dietaryBadges = (Array.isArray(item.dietary_labels)
-    ? item.dietary_labels
-    : []
-  ).map(label => {
+  const dietaryBadges = normalizeArray(item.dietary_labels).map(label => {
     const meta = DIETARY_LABELS.find(d => d.id === label);
     const text = meta ? `✓ ${meta.label}` : `✓ ${label}`;
 
@@ -81,7 +98,6 @@ function renderMenuItems(items) {
 
   container.innerHTML = items.map(item => `
     <div class="menu-item">
-
       <div class="menu-item-title">
         ${escapeHtml(item.name)}
       </div>
@@ -118,13 +134,11 @@ function renderMenuItems(items) {
       >
         + Add to Cart
       </button>
-
     </div>
   `).join('');
 }
 
 function applyFilters() {
-
   const dietaryFilter =
     document.getElementById('dietaryFilter')?.value || '';
 
@@ -136,22 +150,15 @@ function applyFilters() {
 
   let filtered = [...allMenuItems];
 
-  // Dietary filter
   if (dietaryFilter) {
     filtered = filtered.filter(item =>
-      Array.isArray(item.dietary_labels) &&
-      item.dietary_labels.includes(dietaryFilter)
+      normalizeArray(item.dietary_labels).includes(dietaryFilter)
     );
   }
 
-  // Allergen exclusion filter
   if (excludedAllergens.length > 0) {
     filtered = filtered.filter(item => {
-
-      const allergens =
-        Array.isArray(item.allergens)
-          ? item.allergens
-          : [];
+      const allergens = normalizeArray(item.allergens);
 
       return !excludedAllergens.some(allergen =>
         allergens.includes(allergen)
@@ -163,9 +170,7 @@ function applyFilters() {
 }
 
 function setupFilters() {
-
-  const dietaryFilter =
-    document.getElementById('dietaryFilter');
+  const dietaryFilter = document.getElementById('dietaryFilter');
 
   if (dietaryFilter) {
     dietaryFilter.addEventListener('change', applyFilters);
@@ -178,12 +183,10 @@ function setupFilters() {
     cb.addEventListener('change', applyFilters);
   });
 
-  const resetBtn =
-    document.getElementById('resetFiltersBtn');
+  const resetBtn = document.getElementById('resetFiltersBtn');
 
   if (resetBtn) {
     resetBtn.addEventListener('click', () => {
-
       if (dietaryFilter) {
         dietaryFilter.value = '';
       }
@@ -198,21 +201,19 @@ function setupFilters() {
 }
 
 export async function loadStudentMenu() {
-
-  const container =
-    document.getElementById('menuContainer');
+  const container = document.getElementById('menuContainer');
 
   if (!container) return;
 
   container.innerHTML = '<p>Loading menu…</p>';
 
-  const { data: vendors, error: vendorError } =
-    await sb
-      .from('vendors')
-      .select('id, username')
-      .eq('status', 'approved');
+  const { data: vendors, error: vendorError } = await sb
+    .from('vendors')
+    .select('id, username')
+    .eq('status', 'approved');
 
   if (vendorError || !vendors) {
+    console.error('Vendor load error:', vendorError);
     container.innerHTML = '<p>Failed to load menu</p>';
     return;
   }
@@ -220,18 +221,17 @@ export async function loadStudentMenu() {
   const allMenu = [];
 
   for (const vendor of vendors) {
-
-    const { data: menu, error: menuError } =
-      await sb
-        .from('menu')
-        .select('*')
-        .eq('vendor_id', vendor.id)
-        .eq('status', 'available');
+    const { data: menu, error: menuError } = await sb
+      .from('menu')
+      .select('*')
+      .eq('vendor_id', vendor.id)
+      .eq('status', 'available');
 
     if (!menuError && menu) {
-
       allMenu.push(...menu.map(item => ({
         ...item,
+        allergens: normalizeArray(item.allergens),
+        dietary_labels: normalizeArray(item.dietary_labels),
         vendor_name: vendor.username,
         vendor_id: vendor.id
       })));
@@ -246,19 +246,8 @@ export async function loadStudentMenu() {
   allMenuItems = allMenu;
 
   renderMenuItems(allMenuItems);
-
   setupFilters();
-const browseByMenuBtn = document.getElementById('browseByMenuBtn');
-const filterPanel = document.getElementById('filterPanel');
-const searchContainer = document.getElementById('searchContainer');
 
-if (browseByMenuBtn && filterPanel && searchContainer) {
-  browseByMenuBtn.addEventListener('click', () => {
-    filterPanel.style.display = 'block';
-    searchContainer.style.display = 'block';
-  });
-}
-  // Restore cart
   const savedCart = sessionStorage.getItem('cart');
 
   if (savedCart) {
@@ -266,7 +255,25 @@ if (browseByMenuBtn && filterPanel && searchContainer) {
       setCart(JSON.parse(savedCart));
       updateCartDisplay();
     } catch {
-      // ignore invalid JSON
+      // Ignore invalid saved cart.
     }
   }
+}
+
+function bootStudentMenuPage() {
+  loadStudentMenu().catch(error => {
+    console.error('Failed to load student menu:', error);
+
+    const container = document.getElementById('menuContainer');
+
+    if (container) {
+      container.innerHTML = '<p>Failed to load menu</p>';
+    }
+  });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', bootStudentMenuPage);
+} else {
+  bootStudentMenuPage();
 }
