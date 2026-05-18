@@ -88,36 +88,7 @@ async function renderVendorMenu() {
       <div>R${item.price}</div>
       <div style="font-size: 12px; color: var(--text-muted);">${item.description || ''}</div>
       ${item.image_url ? `<img src="${item.image_url}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; margin-top: 8px;">` : ''}
-      <button class="btn btn-primary btn-sm" onclick="
-export function showVendorProfile(dataset) {
-  const modal   = document.getElementById('vendorProfileModal');
-  const name    = document.getElementById('vpm-name');
-  const desc    = document.getElementById('vpm-desc');
-  const hours   = document.getElementById('vpm-hours');
-  const contact = document.getElementById('vpm-contact');
-
-  if (!modal) return;
-
-  if (name)    name.textContent    = dataset.vendorName    || '';
-  if (desc)    desc.textContent    = dataset.vendorDesc    || '';
-  if (hours)   hours.textContent   = dataset.vendorHours   || '';
-  if (contact) contact.textContent = dataset.vendorContact || '';
-
-  // Show/hide rows based on data
-  const hoursRow   = document.getElementById('vpm-hours-row');
-  const contactRow = document.getElementById('vpm-contact-row');
-  if (hoursRow)   hoursRow.hidden   = !dataset.vendorHours;
-  if (contactRow) contactRow.hidden = !dataset.vendorContact;
-
-  modal.hidden = false;
-}
-
-export function closeVendorProfile() {
-  const modal = document.getElementById('vendorProfileModal');
-  if (modal) modal.hidden = true;
-}
-
-window.addToCartFromVendor('${item.id}', '${item.name}', ${item.price}, '${currentVendorId}')">
+      <button class="btn btn-primary btn-sm" onclick="window.addToCartFromVendor('${item.id}', '${item.name}', ${item.price}, '${currentVendorId}')">
         + Add to Cart
       </button>
     </div>
@@ -200,7 +171,7 @@ export async function loadVendorsList() {
 
   const { data: vendors, error } = await sb
     .from('vendors')
-    .select('id, username, shop_name, description, opening_hours, contact')
+    .select('id, username')
     .eq('status', 'approved');
 
   if (error || !vendors || vendors.length === 0) {
@@ -208,42 +179,12 @@ export async function loadVendorsList() {
     return;
   }
 
-  container.innerHTML = vendors.map(vendor => {
-    const displayName = vendor.shop_name || vendor.username;
-    const hasProfile  = vendor.description || vendor.opening_hours || vendor.contact;
-
-    const esc = v => String(v || '').replaceAll('"', '&quot;').replaceAll("'", '&#039;');
-
-    return `
-      <div class="menu-item">
-        <div
-          style="font-weight:bold;font-size:1.1rem;"
-          title="${[vendor.opening_hours ? '🕐 ' + esc(vendor.opening_hours) : '', vendor.contact ? '📞 ' + esc(vendor.contact) : ''].filter(Boolean).join('  |  ')}"
-        >🏪 ${esc(displayName)}</div>
-        ${vendor.description
-          ? `<div style="font-size:0.875rem;color:var(--text-muted);margin:0.35rem 0;">${esc(vendor.description)}</div>`
-          : ''}
-        <div style="display:flex;gap:0.5rem;margin-top:0.75rem;flex-wrap:wrap;">
-          <button
-            class="btn btn-primary btn-sm"
-            onclick="window.showVendorMenu('${esc(vendor.id)}', '${esc(displayName)}')"
-          >View Menu →</button>
-          ${hasProfile ? `
-          <button
-            class="btn btn-sm"
-            style="background:var(--surface-alt);border:1px solid var(--border);"
-            data-vendor-id="${esc(vendor.id)}"
-            data-vendor-name="${esc(displayName)}"
-            data-vendor-desc="${esc(vendor.description)}"
-            data-vendor-hours="${esc(vendor.opening_hours)}"
-            data-vendor-contact="${esc(vendor.contact)}"
-            onclick="window.showVendorProfile(this.dataset)"
-          >ℹ️ Profile</button>
-          ` : ''}
-        </div>
-      </div>
-    `;
-  }).join('');
+  container.innerHTML = vendors.map(vendor => `
+    <div class="menu-item" style="cursor: pointer;" onclick="window.showVendorMenu('${vendor.id}', '${vendor.username}')">
+      <div style="font-weight: bold; font-size: 1.2rem;">🏪 ${vendor.username}</div>
+      <div style="color: var(--accent); margin-top: 0.5rem;">Click to view menu →</div>
+    </div>
+  `).join('');
 }
 
 // Show menu for a specific vendor
