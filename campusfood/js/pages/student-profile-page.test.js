@@ -63,7 +63,7 @@ jest.unstable_mockModule('../config/supabase.js', () => ({ sb }));
 jest.unstable_mockModule('../shared/guards.js', () => ({ requireRole }));
 jest.unstable_mockModule('../shared/session.js', () => ({ logout }));
 
-const { initStudentProfilePage } = await import('./profile.js');
+const { initStudentProfilePage } = await import('../student/profile.js');
 
 function text(id) {
   return document.getElementById(id)?.textContent || '';
@@ -100,16 +100,19 @@ beforeEach(() => {
   db.eqCalls = [];
 
   sessionStorage.clear();
+
+  delete window.logout;
 });
 
 describe('initStudentProfilePage', () => {
-  test('does nothing when the user is not a student', async () => {
+  test('does nothing when the current user is not a student', async () => {
     requireRole.mockReturnValue(false);
 
     await initStudentProfilePage();
 
     expect(requireRole).toHaveBeenCalledWith('student');
     expect(sb.auth.getUser).not.toHaveBeenCalled();
+    expect(window.logout).toBeUndefined();
   });
 
   test('renders login fallback when there is no active user session', async () => {
@@ -129,8 +132,9 @@ describe('initStudentProfilePage', () => {
     expect(text('profileOrders')).toBe('0');
     expect(text('profileActiveOrders')).toBe('0');
     expect(text('profileSpent')).toBe('R0');
-
     expect(text('profileLatestOrder')).toContain('No orders yet');
+
+    expect(window.logout).toBe(logout);
   });
 
   test('renders student profile details and order stats', async () => {
@@ -231,6 +235,8 @@ describe('initStudentProfilePage', () => {
     expect(text('profileName')).toBe('studentuser');
     expect(text('profileEmail')).toBe('student-profile@example.com');
     expect(text('profileStudentId')).toBe('student-2');
+
+    expect(window.logout).toBe(logout);
   });
 
   test('falls back through order lookup columns until orders are found', async () => {
@@ -281,6 +287,8 @@ describe('initStudentProfilePage', () => {
     expect(text('profileActiveOrders')).toBe('1');
     expect(text('profileSpent')).toBe('R45');
     expect(text('profileLatestOrder')).toContain('Pizza');
+
+    expect(window.logout).toBe(logout);
   });
 
   test('renders empty order state when the student has no orders', async () => {
@@ -315,5 +323,7 @@ describe('initStudentProfilePage', () => {
     expect(text('profileLatestOrder')).toBe(
       'No orders yet. Your first campus feast will appear here.'
     );
+
+    expect(window.logout).toBe(logout);
   });
 });
