@@ -248,7 +248,16 @@ export async function loadStudentMenu() {
   renderMenuItems(allMenuItems);
 
   setupFilters();
+const browseByMenuBtn = document.getElementById('browseByMenuBtn');
+const filterPanel = document.getElementById('filterPanel');
+const searchContainer = document.getElementById('searchContainer');
 
+if (browseByMenuBtn && filterPanel && searchContainer) {
+  browseByMenuBtn.addEventListener('click', () => {
+    filterPanel.style.display = 'block';
+    searchContainer.style.display = 'block';
+  });
+}
   // Restore cart
   const savedCart = sessionStorage.getItem('cart');
 
