@@ -25,10 +25,10 @@ async function requireAdmin() {
   return session;
 }
 
-window.logout = async () => {
+document.getElementById('logoutBtn').addEventListener('click', async () => {
   await supabase.auth.signOut();
   window.location.href = 'index.html';
-};
+});
 
 let chartSales = null;
 let chartPeak  = null;
