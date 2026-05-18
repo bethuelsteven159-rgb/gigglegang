@@ -25,11 +25,6 @@ async function requireAdmin() {
   return session;
 }
 
-document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await supabase.auth.signOut();
-  window.location.href = 'index.html';
-});
-
 let chartSales = null;
 let chartPeak  = null;
 let chartShare = null;
@@ -371,8 +366,8 @@ window.exportPDF = async (type) => {
       backgroundColor: '#ffffff',
       useCORS: true,
     });
+    el.querySelectorAll('.btn-export').forEach(b => b.style.display = '');
 
-    
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
@@ -423,4 +418,9 @@ function showToast(msg, kind = 'info') {
   initDateDefaults();
   await loadVendorOptions();
   await loadAnalytics();
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    window.location.href = 'index.html';
+  });
 })();
