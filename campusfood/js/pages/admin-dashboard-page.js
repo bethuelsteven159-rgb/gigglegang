@@ -1,23 +1,12 @@
 import { renderAdminName } from '../admin/dashboard.js';
 import { requireRole, requireAdmin } from '../shared/guards.js';
-import { logout } from '../shared/session.js';
 
 export async function initAdminDashboardPage() {
-  // Connect logout immediately, before any guard can stop the page
-  const logoutBtn = document.getElementById('logoutBtn');
-
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', logout);
-  }
-
-  // Optional safety bridge, in case old HTML still uses onclick="logout()"
-  window.logout = logout;
-
-  // Step 1: quick check
+  // Step 1: quick check (fast, UI-level)
   const roleOk = requireRole('admin');
   if (!roleOk) return;
 
-  // Step 2: real database-level check
+  // Step 2: real check (database-level 🔒)
   const adminOk = await requireAdmin();
   if (!adminOk) return;
 
