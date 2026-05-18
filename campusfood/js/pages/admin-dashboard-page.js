@@ -1,5 +1,6 @@
 import { renderAdminName } from '../admin/dashboard.js';
 import { requireRole, requireAdmin } from '../shared/guards.js';
+import { logout } from '../shared/session.js';
 
 export async function initAdminDashboardPage() {
   // Step 1: quick check (fast, UI-level)
@@ -12,4 +13,7 @@ export async function initAdminDashboardPage() {
 
   // Step 3: page logic
   renderAdminName();
+
+  // Make logout available to the HTML onclick="logout()"
+  window.logout = logout;
 }
