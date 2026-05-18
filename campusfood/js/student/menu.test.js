@@ -13,7 +13,7 @@ const mockMenuSelect = jest.fn(() => ({ eq: mockMenuVendorEq }));
 
 const mockFrom = jest.fn((table) => {
   if (table === 'vendors') return { select: mockVendorSelect };
-  if (table === 'menu')    return { select: mockMenuSelect };
+  if (table === 'menu') return { select: mockMenuSelect };
   return {};
 });
 
@@ -38,13 +38,16 @@ const { loadStudentMenu } = await import('./menu.js');
 // ── Test suite ────────────────────────────────────────────────────────────────
 
 describe('student/menu.js', () => {
+
   beforeEach(() => {
+
     document.body.innerHTML = '';
     sessionStorage.clear();
 
     mockFrom.mockClear();
     mockVendorSelect.mockClear();
     mockVendorEq.mockReset();
+
     mockMenuSelect.mockClear();
     mockMenuVendorEq.mockClear();
     mockMenuStatusEq.mockReset();
@@ -58,15 +61,22 @@ describe('student/menu.js', () => {
   // ── early returns ───────────────────────────────────────────────────────────
 
   test('returns early when #menuContainer is missing', async () => {
+
     await loadStudentMenu();
+
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
   // ── error / empty states ────────────────────────────────────────────────────
 
   test('shows failure message when vendor fetch errors', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
-    mockVendorEq.mockResolvedValue({ data: null, error: { message: 'db error' } });
+
+    mockVendorEq.mockResolvedValue({
+      data: null,
+      error: { message: 'db error' }
+    });
 
     await loadStudentMenu();
 
@@ -75,8 +85,13 @@ describe('student/menu.js', () => {
   });
 
   test('shows failure message when vendors is null', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
-    mockVendorEq.mockResolvedValue({ data: null, error: null });
+
+    mockVendorEq.mockResolvedValue({
+      data: null,
+      error: null
+    });
 
     await loadStudentMenu();
 
@@ -85,8 +100,13 @@ describe('student/menu.js', () => {
   });
 
   test('shows empty message when no vendors exist', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
-    mockVendorEq.mockResolvedValue({ data: [], error: null });
+
+    mockVendorEq.mockResolvedValue({
+      data: [],
+      error: null
+    });
 
     await loadStudentMenu();
 
@@ -95,12 +115,18 @@ describe('student/menu.js', () => {
   });
 
   test('shows empty message when vendors have no available items', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
-    mockMenuStatusEq.mockResolvedValue({ data: [], error: null });
+
+    mockMenuStatusEq.mockResolvedValue({
+      data: [],
+      error: null
+    });
 
     await loadStudentMenu();
 
@@ -111,7 +137,9 @@ describe('student/menu.js', () => {
   // ── rendering ───────────────────────────────────────────────────────────────
 
   test('renders menu items from multiple vendors', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [
         { id: 'v1', username: 'ShopA' },
@@ -119,36 +147,73 @@ describe('student/menu.js', () => {
       ],
       error: null
     });
-    // First call → ShopA items, second call → ShopB items
+
     mockMenuStatusEq
       .mockResolvedValueOnce({
-        data: [{ id: 1, name: 'Burger', price: 50, description: 'Tasty', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+        data: [{
+          id: 1,
+          name: 'Burger',
+          price: 50,
+          description: 'Tasty',
+          image_url: '',
+          allergens: [],
+          dietary_labels: [],
+          vendor_id: 'v1',
+          status: 'available'
+        }],
         error: null
       })
+
       .mockResolvedValueOnce({
-        data: [{ id: 2, name: 'Pizza', price: 70, description: 'Cheesy', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v2', status: 'available' }],
+        data: [{
+          id: 2,
+          name: 'Pizza',
+          price: 70,
+          description: 'Cheesy',
+          image_url: '',
+          allergens: [],
+          dietary_labels: [],
+          vendor_id: 'v2',
+          status: 'available'
+        }],
         error: null
       });
 
     await loadStudentMenu();
 
-    const html = document.getElementById('menuContainer').innerHTML;
+    const html =
+      document.getElementById('menuContainer').innerHTML;
+
     expect(html).toContain('Burger');
     expect(html).toContain('ShopA');
     expect(html).toContain('R50');
+
     expect(html).toContain('Pizza');
     expect(html).toContain('ShopB');
     expect(html).toContain('R70');
   });
 
   test('renders Add to Cart button for each item', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
-      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      data: [{
+        id: 1,
+        name: 'Burger',
+        price: 50,
+        description: '',
+        image_url: '',
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
+      }],
       error: null
     });
 
@@ -159,13 +224,26 @@ describe('student/menu.js', () => {
   });
 
   test('renders item image when image_url is present', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
-      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: 'https://img.test/burger.jpg', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      data: [{
+        id: 1,
+        name: 'Burger',
+        price: 50,
+        description: '',
+        image_url: 'https://img.test/burger.jpg',
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
+      }],
       error: null
     });
 
@@ -176,13 +254,26 @@ describe('student/menu.js', () => {
   });
 
   test('skips image tag when image_url is empty', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
-      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      data: [{
+        id: 1,
+        name: 'Burger',
+        price: 50,
+        description: '',
+        image_url: '',
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
+      }],
       error: null
     });
 
@@ -195,15 +286,23 @@ describe('student/menu.js', () => {
   // ── allergen & dietary badges ───────────────────────────────────────────────
 
   test('renders allergen badges for items that have allergens', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
       data: [{
-        id: 1, name: 'Peanut Burger', price: 50, description: '',
-        image_url: '', vendor_id: 'v1', status: 'available',
+        id: 1,
+        name: 'Peanut Burger',
+        price: 50,
+        description: '',
+        image_url: '',
+        vendor_id: 'v1',
+        status: 'available',
         allergens: ['peanuts', 'dairy'],
         dietary_labels: []
       }],
@@ -212,21 +311,31 @@ describe('student/menu.js', () => {
 
     await loadStudentMenu();
 
-    const html = document.getElementById('menuContainer').innerHTML;
+    const html =
+      document.getElementById('menuContainer').innerHTML;
+
     expect(html).toContain('🥜 Peanuts');
     expect(html).toContain('🥛 Dairy');
   });
 
   test('renders dietary badges for items that have dietary labels', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
       data: [{
-        id: 1, name: 'Halal Wrap', price: 40, description: '',
-        image_url: '', vendor_id: 'v1', status: 'available',
+        id: 1,
+        name: 'Halal Wrap',
+        price: 40,
+        description: '',
+        image_url: '',
+        vendor_id: 'v1',
+        status: 'available',
         allergens: [],
         dietary_labels: ['halal', 'vegetarian']
       }],
@@ -235,62 +344,148 @@ describe('student/menu.js', () => {
 
     await loadStudentMenu();
 
-    const html = document.getElementById('menuContainer').innerHTML;
+    const html =
+      document.getElementById('menuContainer').innerHTML;
+
     expect(html).toContain('✓ Halal');
     expect(html).toContain('✓ Vegetarian');
   });
 
   test('renders no badges when allergens and dietary_labels are empty', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
       data: [{
-        id: 1, name: 'Plain Item', price: 30, description: '',
-        image_url: '', vendor_id: 'v1', status: 'available',
-        allergens: [], dietary_labels: []
+        id: 1,
+        name: 'Plain Item',
+        price: 30,
+        description: '',
+        image_url: '',
+        vendor_id: 'v1',
+        status: 'available',
+        allergens: [],
+        dietary_labels: []
       }],
       error: null
     });
 
     await loadStudentMenu();
 
-    const html = document.getElementById('menuContainer').innerHTML;
+    const html =
+      document.getElementById('menuContainer').innerHTML;
+
     expect(html).not.toContain('menu-badges');
+  });
+
+  // ── vegan filter test ───────────────────────────────────────────────────────
+
+  test('renders vegan badge correctly', async () => {
+
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{
+        id: 1,
+        name: 'Vegan Wrap',
+        price: 45,
+        description: '',
+        image_url: '',
+        vendor_id: 'v1',
+        status: 'available',
+        allergens: [],
+        dietary_labels: ['vegan']
+      }],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html =
+      document.getElementById('menuContainer').innerHTML;
+
+    expect(html).toContain('✓ Vegan');
+    expect(html).toContain('Vegan Wrap');
   });
 
   // ── cart restoration ────────────────────────────────────────────────────────
 
   test('restores cart from sessionStorage after rendering', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
-      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      data: [{
+        id: 1,
+        name: 'Burger',
+        price: 50,
+        description: '',
+        image_url: '',
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
+      }],
       error: null
     });
 
-    const savedCart = [{ id: '1', name: 'Burger', price: 50, vendor_id: 'v1' }];
-    sessionStorage.setItem('cart', JSON.stringify(savedCart));
+    const savedCart = [{
+      id: '1',
+      name: 'Burger',
+      price: 50,
+      vendor_id: 'v1'
+    }];
+
+    sessionStorage.setItem(
+      'cart',
+      JSON.stringify(savedCart)
+    );
 
     await loadStudentMenu();
 
-    expect(mockSetCart).toHaveBeenCalledWith(savedCart);
-    expect(mockUpdateCartDisplay).toHaveBeenCalled();
+    expect(mockSetCart)
+      .toHaveBeenCalledWith(savedCart);
+
+    expect(mockUpdateCartDisplay)
+      .toHaveBeenCalled();
   });
 
   test('does not call setCart when sessionStorage has no cart', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
-      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      data: [{
+        id: 1,
+        name: 'Burger',
+        price: 50,
+        description: '',
+        image_url: '',
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
+      }],
       error: null
     });
 
@@ -300,25 +495,43 @@ describe('student/menu.js', () => {
   });
 
   test('handles malformed cart JSON without crashing', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
-      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      data: [{
+        id: 1,
+        name: 'Burger',
+        price: 50,
+        description: '',
+        image_url: '',
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
+      }],
       error: null
     });
+
     sessionStorage.setItem('cart', 'INVALID_JSON{{{');
 
-    await expect(loadStudentMenu()).resolves.not.toThrow();
+    await expect(loadStudentMenu())
+      .resolves.not.toThrow();
+
     expect(mockSetCart).not.toHaveBeenCalled();
   });
 
   // ── menu error handling per vendor ──────────────────────────────────────────
 
   test('skips vendors whose menu fetch errors and still renders others', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [
         { id: 'v1', username: 'GoodShop' },
@@ -326,16 +539,33 @@ describe('student/menu.js', () => {
       ],
       error: null
     });
+
     mockMenuStatusEq
       .mockResolvedValueOnce({
-        data: [{ id: 1, name: 'Wrap', price: 35, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+        data: [{
+          id: 1,
+          name: 'Wrap',
+          price: 35,
+          description: '',
+          image_url: '',
+          allergens: [],
+          dietary_labels: [],
+          vendor_id: 'v1',
+          status: 'available'
+        }],
         error: null
       })
-      .mockResolvedValueOnce({ data: null, error: { message: 'timeout' } });
+
+      .mockResolvedValueOnce({
+        data: null,
+        error: { message: 'timeout' }
+      });
 
     await loadStudentMenu();
 
-    const html = document.getElementById('menuContainer').innerHTML;
+    const html =
+      document.getElementById('menuContainer').innerHTML;
+
     expect(html).toContain('Wrap');
     expect(html).not.toContain('BrokenShop');
   });
@@ -343,11 +573,14 @@ describe('student/menu.js', () => {
   // ── XSS / escaping ──────────────────────────────────────────────────────────
 
   test('escapes HTML in item name and description text content', async () => {
+
     document.body.innerHTML = `<div id="menuContainer"></div>`;
+
     mockVendorEq.mockResolvedValue({
       data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+
     mockMenuStatusEq.mockResolvedValue({
       data: [{
         id: 1,
@@ -365,15 +598,20 @@ describe('student/menu.js', () => {
 
     await loadStudentMenu();
 
-    // The rendered text nodes should show escaped versions, not live HTML tags
-    const container = document.getElementById('menuContainer');
-    const nameDiv = container.querySelector('div[style*="font-weight"]');
-    const descDiv = [...container.querySelectorAll('div')].find(d => d.textContent.includes('bad'));
+    const container =
+      document.getElementById('menuContainer');
 
-    // textContent gives the decoded string — the key check is that no <script> element
-    // was injected into the DOM
-    expect(container.querySelector('script')).toBeNull();
-    expect(container.innerHTML).toContain('&lt;script&gt;');
-    expect(nameDiv?.textContent).toContain('<script>alert(1)</script>');
+    const nameDiv =
+      container.querySelector('.menu-item-title');
+
+    expect(container.querySelector('script'))
+      .toBeNull();
+
+    expect(container.innerHTML)
+      .toContain('&lt;script&gt;');
+
+    expect(nameDiv?.textContent)
+      .toContain('<script>alert(1)</script>');
   });
+
 });
