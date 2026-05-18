@@ -7,7 +7,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function requireAdmin() {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { window.location.href = 'index.html'; return null; }
+  if (!session) { window.location.href = '/gigglegang/index.html'; return null; }
 
   const { data: admin, error } = await supabase
     .from('admins')
@@ -17,7 +17,7 @@ async function requireAdmin() {
 
   if (error || !admin) {
     showToast('Access denied — admin only', 'error');
-    window.location.href = 'index.html';
+    window.location.href = '/gigglegang/index.html';
     return null;
   }
 
