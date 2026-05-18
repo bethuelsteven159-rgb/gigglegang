@@ -13,7 +13,7 @@
     <span class="brand">Order Food</span>
     <div class="user-info">
       <a href="dashboard_student.html" class="btn btn-sm">← Dashboard</a>
-      <a href="student_profile.html" class="profile-chip" aria-label="Open student profile">👤 <strong id="studentName"></strong></a>
+      <span>👤 <span id="studentName"></span></span>
       <button onclick="logout()" type="button">Logout</button>
     </div>
   </nav>
@@ -64,7 +64,106 @@
               <option value="5">★★★★★ 5 stars only</option>
             </select>
           </div>
+ <!-- DIETARY FILTER -->
+          <div class="filter-group">
 
+            <label for="dietaryFilter">
+              Dietary
+            </label>
+
+            <select id="dietaryFilter">
+
+              <option value="">
+                All Items
+              </option>
+
+              <option value="halal">
+                Halal
+              </option>
+
+              <option value="vegan">
+                Vegan
+              </option>
+
+              <option value="vegetarian">
+                Vegetarian
+              </option>
+
+            </select>
+
+          </div>
+
+        </div>
+
+        <!-- ALLERGEN FILTERS -->
+        <div class="allergen-filter-section">
+
+          <p class="filter-title">
+            Avoid Allergens
+          </p>
+
+          <div class="allergen-filters">
+
+            <label>
+              <input
+                type="checkbox"
+                value="gluten"
+                class="allergenFilter"
+              />
+              🌾 Gluten
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="shellfish"
+                class="allergenFilter"
+              />
+              🦐 Shellfish
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="eggs"
+                class="allergenFilter"
+              />
+              🥚 Eggs
+            </label>
+
+   
+
+            <label>
+              <input
+                type="checkbox"
+                value="peanuts"
+                class="allergenFilter"
+              />
+              🥜 Peanuts
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="soy"
+                class="allergenFilter"
+              />
+              🌱 Soy
+            </label>
+
+            <label>
+              <input
+                type="checkbox"
+                value="dairy"
+                class="allergenFilter"
+              />
+              🥛 Dairy
+            </label>
+
+            
+          </div>
+
+        </div>
           <button id="mostOrderedBtn" class="btn btn-primary btn-sm" type="button">🔥 Most Ordered</button>
           <button id="resetFiltersBtn" class="btn btn-sm" type="button">Reset Filters</button>
         </div>
@@ -89,19 +188,3 @@
       </div>
     </section>
 
-    <section class="panel" id="cartPanel" style="margin-top:2rem; display:none;" aria-label="Cart">
-      <div class="section-title-row">
-        <h2>Your Cart</h2>
-        <strong>Total: <span id="cartTotal">R0</span></strong>
-      </div>
-      <div id="cartItems"></div>
-      <div class="actions" style="margin-top:1rem;">
-        <button class="btn btn-primary" onclick="placeOrder()" type="button">Place Order</button>
-      </div>
-    </section>
-  </main>
-
-  <div id="toast"></div>
-  <script type="module" src="js/main.js"></script>
-</body>
-</html>
