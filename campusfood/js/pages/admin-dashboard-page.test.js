@@ -38,7 +38,7 @@ describe('admin-dashboard-page.js', () => {
     expect(mockRequireRole).toHaveBeenCalledWith('admin');
     expect(mockRequireAdmin).not.toHaveBeenCalled();
     expect(mockRenderAdminName).not.toHaveBeenCalled();
-    expect(window.logout).toBeUndefined();
+    expect(window.logout).toBe(mockLogout); // logout wired before guard so button always works
   });
 
   test('stops when database-level admin check fails', async () => {
@@ -50,7 +50,7 @@ describe('admin-dashboard-page.js', () => {
     expect(mockRequireRole).toHaveBeenCalledWith('admin');
     expect(mockRequireAdmin).toHaveBeenCalled();
     expect(mockRenderAdminName).not.toHaveBeenCalled();
-    expect(window.logout).toBeUndefined();
+    expect(window.logout).toBe(mockLogout); // logout wired before guard so button always works
   });
 
   test('renders admin name and exposes logout when both checks pass', async () => {

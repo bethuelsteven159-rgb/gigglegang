@@ -114,7 +114,9 @@ function renderMenuItems(items) {
         R${escapeHtml(String(item.price))}
       </div>
 
-      <div class="menu-item-vendor">
+      <div class="menu-item-vendor"
+        title="${item.vendor_opening_hours ? '🕐 ' + escapeHtml(item.vendor_opening_hours) : ''}"
+      >
         ${escapeHtml(item.vendor_name)}
       </div>
 
@@ -138,17 +140,9 @@ function renderMenuItems(items) {
   `).join('');
 }
 
-function applyFilters() {
-  const dietaryFilter =
-    document.getElementById('dietaryFilter')?.value || '';
-
-  const allergenCheckboxes =
-    document.querySelectorAll('.allergenFilter:checked');
-
-  const excludedAllergens =
-    Array.from(allergenCheckboxes).map(cb => cb.value);
-
-  let filtered = [...allMenuItems];
+// Pure filter logic — exported for unit testing
+export function filterItems(items, { dietaryFilter = '', excludedAllergens = [] } = {}) {
+  let filtered = [...items];
 
   if (dietaryFilter) {
     filtered = filtered.filter(item =>
@@ -159,14 +153,24 @@ function applyFilters() {
   if (excludedAllergens.length > 0) {
     filtered = filtered.filter(item => {
       const allergens = normalizeArray(item.allergens);
-
-      return !excludedAllergens.some(allergen =>
-        allergens.includes(allergen)
-      );
+      return !excludedAllergens.some(a => allergens.includes(a));
     });
   }
 
-  renderMenuItems(filtered);
+  return filtered;
+}
+
+export function applyFilters() {
+  const dietaryFilter =
+    document.getElementById('dietaryFilter')?.value || '';
+
+  const allergenCheckboxes =
+    document.querySelectorAll('.allergenFilter:checked');
+
+  const excludedAllergens =
+    Array.from(allergenCheckboxes).map(cb => cb.value);
+
+  renderMenuItems(filterItems(allMenuItems, { dietaryFilter, excludedAllergens }));
 }
 
 function setupFilters() {
@@ -209,7 +213,7 @@ export async function loadStudentMenu() {
 
   const { data: vendors, error: vendorError } = await sb
     .from('vendors')
-    .select('id, username')
+    .select('id, username, shop_name, opening_hours')
     .eq('status', 'approved');
 
   if (vendorError || !vendors) {
@@ -232,7 +236,8 @@ export async function loadStudentMenu() {
         ...item,
         allergens: normalizeArray(item.allergens),
         dietary_labels: normalizeArray(item.dietary_labels),
-        vendor_name: vendor.username,
+        vendor_name: vendor.shop_name || vendor.username,
+        vendor_opening_hours: vendor.opening_hours || '',
         vendor_id: vendor.id
       })));
     }

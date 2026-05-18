@@ -1,63 +1,137 @@
-import { renderStudentName } from '../student/dashboard.js';
-import { requireRole } from '../shared/guards.js';
-import { loadStudentMenu } from '../student/menu.js';
-import { loadVendorsList, showVendorMenu, resetToAllMenu } from '../student/browse-vendors.js';
-import { addToCart, removeFromCart } from '../student/cart.js';
-import { placeOrder } from '../student/checkout.js';
-import { logout } from '../shared/session.js';
+import { jest } from '@jest/globals';
 
-export function initStudentOrdersPage() {
-  // Protect page
-  requireRole('student');
+const mockRenderStudentName = jest.fn();
+const mockRequireRole = jest.fn();
+const mockLoadStudentMenu = jest.fn();
+const mockLoadVendorsList = jest.fn();
+const mockShowVendorMenu = jest.fn();
+const mockResetToAllMenu = jest.fn();
+const mockShowVendorProfile = jest.fn();
+const mockCloseVendorProfile = jest.fn();
+const mockAddToCart = jest.fn();
+const mockRemoveFromCart = jest.fn();
+const mockPlaceOrder = jest.fn();
+const mockLogout = jest.fn();
 
-  // Show username
-  renderStudentName();
+jest.unstable_mockModule('../student/dashboard.js', () => ({
+  renderStudentName: mockRenderStudentName
+}));
 
-  // Load default menu
-  loadStudentMenu();
+jest.unstable_mockModule('../shared/guards.js', () => ({
+  requireRole: mockRequireRole
+}));
 
-  const menuView = document.getElementById('menuView');
-  const vendorsView = document.getElementById('vendorsView');
-  const browseByMenuBtn = document.getElementById('browseByMenuBtn');
-  const browseByVendorBtn = document.getElementById('browseByVendorBtn');
+jest.unstable_mockModule('../student/menu.js', () => ({
+  loadStudentMenu: mockLoadStudentMenu
+}));
 
-  if (browseByMenuBtn) {
-    browseByMenuBtn.addEventListener('click', () => {
-      if (menuView) menuView.style.display = 'block';
-      if (vendorsView) vendorsView.style.display = 'none';
+jest.unstable_mockModule('../student/browse-vendors.js', () => ({
+  loadVendorsList: mockLoadVendorsList,
+  showVendorMenu: mockShowVendorMenu,
+  resetToAllMenu: mockResetToAllMenu,
+  showVendorProfile: mockShowVendorProfile,
+  closeVendorProfile: mockCloseVendorProfile
+}));
 
-      browseByMenuBtn.className = 'btn btn-primary';
-      if (browseByVendorBtn) {
-        browseByVendorBtn.className = 'btn';
-        browseByVendorBtn.style.background = 'var(--surface-alt)';
-        browseByVendorBtn.style.color = 'var(--text)';
-      }
+jest.unstable_mockModule('../student/cart.js', () => ({
+  addToCart: mockAddToCart,
+  removeFromCart: mockRemoveFromCart
+}));
 
-      loadStudentMenu();
-    });
-  }
+jest.unstable_mockModule('../student/checkout.js', () => ({
+  placeOrder: mockPlaceOrder
+}));
 
-  if (browseByVendorBtn) {
-    browseByVendorBtn.addEventListener('click', () => {
-      if (menuView) menuView.style.display = 'none';
-      if (vendorsView) vendorsView.style.display = 'block';
+jest.unstable_mockModule('../shared/session.js', () => ({
+  logout: mockLogout
+}));
 
-      browseByVendorBtn.className = 'btn btn-primary';
-      if (browseByMenuBtn) {
-        browseByMenuBtn.className = 'btn';
-        browseByMenuBtn.style.background = 'var(--surface-alt)';
-        browseByMenuBtn.style.color = 'var(--text)';
-      }
+const { initStudentOrdersPage } = await import('./student-orders-page.js');
 
-      loadVendorsList();
-    });
-  }
+describe('student-orders-page.js', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    mockRenderStudentName.mockReset();
+    mockRequireRole.mockReset();
+    mockLoadStudentMenu.mockReset();
+    mockLoadVendorsList.mockReset();
+    delete window.addToCart;
+    delete window.removeFromCart;
+    delete window.placeOrder;
+    delete window.showVendorMenu;
+    delete window.resetToAllMenu;
+    delete window.showVendorProfile;
+    delete window.closeVendorProfile;
+    delete window.logout;
+  });
 
-  // Expose functions still used by inline onclick in HTML
-  window.addToCart = addToCart;
-  window.removeFromCart = removeFromCart;
-  window.placeOrder = placeOrder;
-  window.showVendorMenu = showVendorMenu;
-  window.resetToAllMenu = resetToAllMenu;
-  window.logout = logout;
-}
+  test('initializes page, loads menu, and exposes window handlers', () => {
+    mockRequireRole.mockReturnValue(true);
+
+    document.body.innerHTML = `
+      <div id="menuView"></div>
+      <div id="vendorsView"></div>
+      <button id="browseByMenuBtn"></button>
+      <button id="browseByVendorBtn"></button>
+    `;
+
+    initStudentOrdersPage();
+
+    expect(mockRequireRole).toHaveBeenCalledWith('student');
+    expect(mockRenderStudentName).toHaveBeenCalled();
+    expect(mockLoadStudentMenu).toHaveBeenCalledTimes(1);
+
+    expect(window.addToCart).toBe(mockAddToCart);
+    expect(window.removeFromCart).toBe(mockRemoveFromCart);
+    expect(window.placeOrder).toBe(mockPlaceOrder);
+    expect(window.showVendorMenu).toBe(mockShowVendorMenu);
+    expect(window.resetToAllMenu).toBe(mockResetToAllMenu);
+    expect(window.showVendorProfile).toBe(mockShowVendorProfile);
+    expect(window.closeVendorProfile).toBe(mockCloseVendorProfile);
+    expect(window.logout).toBe(mockLogout);
+  });
+
+  test('browse by menu button switches views and reloads student menu', () => {
+    mockRequireRole.mockReturnValue(true);
+
+    document.body.innerHTML = `
+      <div id="menuView" style="display:none"></div>
+      <div id="vendorsView" style="display:block"></div>
+      <button id="browseByMenuBtn" class="btn"></button>
+      <button id="browseByVendorBtn" class="btn btn-primary"></button>
+    `;
+
+    initStudentOrdersPage();
+
+    mockLoadStudentMenu.mockClear();
+
+    document.getElementById('browseByMenuBtn').click();
+
+    expect(document.getElementById('menuView').style.display).toBe('block');
+    expect(document.getElementById('vendorsView').style.display).toBe('none');
+    expect(document.getElementById('browseByMenuBtn').className).toBe('btn btn-primary');
+    expect(document.getElementById('browseByVendorBtn').className).toBe('btn');
+    expect(mockLoadStudentMenu).toHaveBeenCalledTimes(1);
+  });
+
+  test('browse by vendor button switches views and loads vendors list', () => {
+    mockRequireRole.mockReturnValue(true);
+
+    document.body.innerHTML = `
+      <div id="menuView" style="display:block"></div>
+      <div id="vendorsView" style="display:none"></div>
+      <button id="browseByMenuBtn" class="btn btn-primary"></button>
+      <button id="browseByVendorBtn" class="btn"></button>
+    `;
+
+    initStudentOrdersPage();
+
+    document.getElementById('browseByVendorBtn').click();
+
+    expect(document.getElementById('menuView').style.display).toBe('none');
+    expect(document.getElementById('vendorsView').style.display).toBe('block');
+    expect(document.getElementById('browseByVendorBtn').className).toBe('btn btn-primary');
+    expect(document.getElementById('browseByMenuBtn').className).toBe('btn');
+    expect(mockLoadVendorsList).toHaveBeenCalledTimes(1);
+  });
+});

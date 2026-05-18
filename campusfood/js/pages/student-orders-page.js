@@ -1,7 +1,7 @@
 import { renderStudentName } from '../student/dashboard.js';
 import { requireRole } from '../shared/guards.js';
 import { loadStudentMenu } from '../student/menu.js';
-import { loadVendorsList, showVendorMenu, resetToAllMenu } from '../student/browse-vendors.js';
+import { loadVendorsList, showVendorMenu, resetToAllMenu, showVendorProfile, closeVendorProfile } from '../student/browse-vendors.js';
 import { addToCart, removeFromCart } from '../student/cart.js';
 import { placeOrder } from '../student/checkout.js';
 import { logout } from '../shared/session.js';
@@ -59,5 +59,7 @@ export function initStudentOrdersPage() {
   window.placeOrder = placeOrder;
   window.showVendorMenu = showVendorMenu;
   window.resetToAllMenu = resetToAllMenu;
+  window.showVendorProfile = showVendorProfile;
+  window.closeVendorProfile = closeVendorProfile;
   window.logout = logout;
 }
