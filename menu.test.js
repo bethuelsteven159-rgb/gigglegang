@@ -1,526 +1,434 @@
 import { jest } from '@jest/globals';
 
-const mockToast = jest.fn();
-const mockGetVendorId = jest.fn();
+// ── Supabase mock ─────────────────────────────────────────────────────────────
 
-const mockOrder = jest.fn();
-const mockEq = jest.fn(() => ({
-  order: mockOrder
-}));
-const mockSelect = jest.fn(() => ({
-  eq: mockEq
-}));
+// vendor query chain: .from('vendors').select().eq()
+const mockVendorEq = jest.fn();
+const mockVendorSelect = jest.fn(() => ({ eq: mockVendorEq }));
 
-const mockInsert = jest.fn();
-const mockUpdateEq = jest.fn();
-const mockUpdate = jest.fn(() => ({
-  eq: mockUpdateEq
-}));
-
-const mockDeleteEq = jest.fn();
-const mockDelete = jest.fn(() => ({
-  eq: mockDeleteEq
-}));
-
-const mockUpload = jest.fn();
-const mockGetPublicUrl = jest.fn();
-
-const mockStorageFrom = jest.fn(() => ({
-  upload: mockUpload,
-  getPublicUrl: mockGetPublicUrl
-}));
+// menu query chain: .from('menu').select().eq('vendor_id',…).eq('status',…)
+const mockMenuStatusEq = jest.fn();
+const mockMenuVendorEq = jest.fn(() => ({ eq: mockMenuStatusEq }));
+const mockMenuSelect = jest.fn(() => ({ eq: mockMenuVendorEq }));
 
 const mockFrom = jest.fn((table) => {
-  if (table === 'menu') {
-    return {
-      select: mockSelect,
-      insert: mockInsert,
-      update: mockUpdate,
-      delete: mockDelete
-    };
-  }
-
+  if (table === 'vendors') return { select: mockVendorSelect };
+  if (table === 'menu')    return { select: mockMenuSelect };
   return {};
 });
 
 jest.unstable_mockModule('../config/supabase.js', () => ({
-  sb: {
-    from: mockFrom,
-    storage: {
-      from: mockStorageFrom
-    }
-  }
+  sb: { from: mockFrom }
 }));
 
-jest.unstable_mockModule('../shared/notifications.js', () => ({
-  toast: mockToast
+// ── Cart mock ─────────────────────────────────────────────────────────────────
+
+const mockSetCart = jest.fn();
+const mockUpdateCartDisplay = jest.fn();
+
+jest.unstable_mockModule('./cart.js', () => ({
+  setCart: mockSetCart,
+  updateCartDisplay: mockUpdateCartDisplay
 }));
 
-jest.unstable_mockModule('../shared/auth-helpers.js', () => ({
-  getVendorId: mockGetVendorId
-}));
+// ── Import SUT ────────────────────────────────────────────────────────────────
 
-const {
-  loadVendorMenu,
-  addMenuItem,
-  toggleSoldOut,
-  deleteMenuItem
-} = await import('./menu.js');
+const { loadStudentMenu } = await import('./menu.js');
 
-describe('vendor/menu.js', () => {
+// ── Test suite ────────────────────────────────────────────────────────────────
+
+describe('student/menu.js', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     sessionStorage.clear();
 
-    mockToast.mockReset();
-    mockGetVendorId.mockReset();
-
-    mockOrder.mockReset();
-    mockEq.mockClear();
-    mockSelect.mockClear();
-
-    mockInsert.mockReset();
-    mockUpdateEq.mockReset();
-    mockUpdate.mockClear();
-
-    mockDeleteEq.mockReset();
-    mockDelete.mockClear();
-
-    mockUpload.mockReset();
-    mockGetPublicUrl.mockReset();
-    mockStorageFrom.mockClear();
     mockFrom.mockClear();
+    mockVendorSelect.mockClear();
+    mockVendorEq.mockReset();
+    mockMenuSelect.mockClear();
+    mockMenuVendorEq.mockClear();
+    mockMenuStatusEq.mockReset();
+
+    mockSetCart.mockReset();
+    mockUpdateCartDisplay.mockReset();
 
     global.console.error = jest.fn();
-    global.confirm = jest.fn();
   });
 
-  test('loadVendorMenu returns early if container is missing', async () => {
-    await loadVendorMenu();
+  // ── early returns ───────────────────────────────────────────────────────────
 
-    expect(mockGetVendorId).not.toHaveBeenCalled();
+  test('returns early when #menuContainer is missing', async () => {
+    await loadStudentMenu();
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 
-  test('loadVendorMenu shows vendor not found when vendorId is missing', async () => {
-    document.body.innerHTML = `<div id="vendorMenu"></div>`;
-    sessionStorage.setItem('username', 'shop1');
+  // ── error / empty states ────────────────────────────────────────────────────
 
-    mockGetVendorId.mockResolvedValue(null);
+  test('shows failure message when vendor fetch errors', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({ data: null, error: { message: 'db error' } });
 
-    await loadVendorMenu();
+    await loadStudentMenu();
 
-    expect(document.getElementById('vendorMenu').innerHTML).toContain('Vendor not found');
+    expect(document.getElementById('menuContainer').innerHTML)
+      .toContain('Failed to load menu');
   });
 
-  test('loadVendorMenu shows failure message on query error', async () => {
-    document.body.innerHTML = `<div id="vendorMenu"></div>`;
-    sessionStorage.setItem('username', 'shop1');
+  test('shows failure message when vendors is null', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({ data: null, error: null });
 
-    mockGetVendorId.mockResolvedValue('v1');
-    mockOrder.mockResolvedValue({
-      data: null,
-      error: { message: 'failed' }
-    });
+    await loadStudentMenu();
 
-    await loadVendorMenu();
-
-    expect(document.getElementById('vendorMenu').innerHTML).toContain('Failed to load menu');
+    expect(document.getElementById('menuContainer').innerHTML)
+      .toContain('Failed to load menu');
   });
 
-  test('loadVendorMenu shows empty message when no items exist', async () => {
-    document.body.innerHTML = `<div id="vendorMenu"></div>`;
-    sessionStorage.setItem('username', 'shop1');
+  test('shows empty message when no vendors exist', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({ data: [], error: null });
 
-    mockGetVendorId.mockResolvedValue('v1');
-    mockOrder.mockResolvedValue({
-      data: [],
+    await loadStudentMenu();
+
+    expect(document.getElementById('menuContainer').innerHTML)
+      .toContain('No menu available yet');
+  });
+
+  test('shows empty message when vendors have no available items', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
       error: null
     });
+    mockMenuStatusEq.mockResolvedValue({ data: [], error: null });
 
-    await loadVendorMenu();
+    await loadStudentMenu();
 
-    expect(document.getElementById('vendorMenu').innerHTML).toContain('No items yet.');
+    expect(document.getElementById('menuContainer').innerHTML)
+      .toContain('No menu available yet');
   });
 
-  test('loadVendorMenu renders items with correct buttons', async () => {
-    document.body.innerHTML = `<div id="vendorMenu"></div>`;
-    sessionStorage.setItem('username', 'shop1');
+  // ── rendering ───────────────────────────────────────────────────────────────
 
-    mockGetVendorId.mockResolvedValue('v1');
-    mockOrder.mockResolvedValue({
+  test('renders menu items from multiple vendors', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
       data: [
-        {
-          id: 1,
-          name: 'Burger',
-          image_url: 'https://img.test/burger.jpg',
-          description: 'Tasty',
-          price: 50,
-          status: 'available'
-        },
-        {
-          id: 2,
-          name: 'Pizza',
-          image_url: '',
-          description: 'Cheesy',
-          price: 70,
-          status: 'sold_out'
-        }
+        { id: 'v1', username: 'ShopA' },
+        { id: 'v2', username: 'ShopB' }
       ],
       error: null
     });
+    // First call → ShopA items, second call → ShopB items
+    mockMenuStatusEq
+      .mockResolvedValueOnce({
+        data: [{ id: 1, name: 'Burger', price: 50, description: 'Tasty', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+        error: null
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: 2, name: 'Pizza', price: 70, description: 'Cheesy', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v2', status: 'available' }],
+        error: null
+      });
 
-    await loadVendorMenu();
+    await loadStudentMenu();
 
-    const html = document.getElementById('vendorMenu').innerHTML;
+    const html = document.getElementById('menuContainer').innerHTML;
     expect(html).toContain('Burger');
-    expect(html).toContain('Pizza');
-    expect(html).toContain('Tasty');
-    expect(html).toContain('Cheesy');
+    expect(html).toContain('ShopA');
     expect(html).toContain('R50');
+    expect(html).toContain('Pizza');
+    expect(html).toContain('ShopB');
     expect(html).toContain('R70');
-    expect(html).toContain('Mark Sold Out');
-    expect(html).toContain('Mark Available');
-    expect(html).toContain('Delete');
-    expect(html).toContain('burger.jpg');
   });
 
-  test('addMenuItem shows error when fields are incomplete', async () => {
-    document.body.innerHTML = `
-      <input id="itemName" value="">
-      <input id="itemPrice" value="50">
-      <textarea id="itemDescription">Nice</textarea>
-      <input id="itemImage">
-    `;
-
-    const imageInput = document.getElementById('itemImage');
-    Object.defineProperty(imageInput, 'files', {
-      value: [],
-      configurable: true
+  test('renders Add to Cart button for each item', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
     });
-
-    await addMenuItem();
-
-    expect(mockToast).toHaveBeenCalledWith('Fill in all fields', 'error');
-  });
-
-  test('addMenuItem shows error when vendor is not found', async () => {
-    document.body.innerHTML = `
-      <input id="itemName" value="Burger">
-      <input id="itemPrice" value="50">
-      <textarea id="itemDescription">Nice</textarea>
-      <input id="itemImage">
-    `;
-    sessionStorage.setItem('username', 'shop1');
-
-    const imageInput = document.getElementById('itemImage');
-    Object.defineProperty(imageInput, 'files', {
-      value: [],
-      configurable: true
-    });
-
-    mockGetVendorId.mockResolvedValue(null);
-
-    await addMenuItem();
-
-    expect(mockToast).toHaveBeenCalledWith('Vendor not found', 'error');
-  });
-
-  test('addMenuItem uploads image and inserts item successfully', async () => {
-    document.body.innerHTML = `
-      <input id="itemName" value="Burger">
-      <input id="itemPrice" value="50">
-      <textarea id="itemDescription">Nice</textarea>
-      <input id="itemImage">
-      <div id="vendorMenu"></div>
-    `;
-    sessionStorage.setItem('username', 'shop1');
-
-    const imageInput = document.getElementById('itemImage');
-    Object.defineProperty(imageInput, 'files', {
-      value: [{ name: 'burger.jpg' }],
-      configurable: true
-    });
-
-    mockGetVendorId.mockResolvedValue('v1');
-    mockUpload.mockResolvedValue({ error: null });
-    mockGetPublicUrl.mockReturnValue({
-      data: { publicUrl: 'https://img.test/burger.jpg' }
-    });
-    mockInsert.mockResolvedValue({ error: null });
-    mockOrder.mockResolvedValue({
-      data: [],
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
       error: null
     });
 
-    await addMenuItem();
+    await loadStudentMenu();
 
-    expect(mockStorageFrom).toHaveBeenCalledWith('menu_images');
-    expect(mockUpload).toHaveBeenCalled();
-    expect(mockInsert).toHaveBeenCalled();
-    expect(mockToast).toHaveBeenCalledWith('Item added successfully');
-    expect(document.getElementById('itemName').value).toBe('');
-    expect(document.getElementById('itemPrice').value).toBe('');
-    expect(document.getElementById('itemDescription').value).toBe('');
-    expect(document.getElementById('itemImage').value).toBe('');
+    expect(document.getElementById('menuContainer').innerHTML)
+      .toContain('Add to Cart');
   });
 
-  test('addMenuItem shows error when image upload fails', async () => {
-    document.body.innerHTML = `
-      <input id="itemName" value="Burger">
-      <input id="itemPrice" value="50">
-      <textarea id="itemDescription">Nice</textarea>
-      <input id="itemImage">
-    `;
-    sessionStorage.setItem('username', 'shop1');
-
-    const imageInput = document.getElementById('itemImage');
-    Object.defineProperty(imageInput, 'files', {
-      value: [{ name: 'burger.jpg' }],
-      configurable: true
+  test('renders item image when image_url is present', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: 'https://img.test/burger.jpg', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      error: null
     });
 
-    mockGetVendorId.mockResolvedValue('v1');
-    mockUpload.mockResolvedValue({ error: new Error('upload failed') });
+    await loadStudentMenu();
 
-    await addMenuItem();
-
-    expect(console.error).toHaveBeenCalled();
-    expect(mockToast).toHaveBeenCalledWith('Image upload failed', 'error');
+    expect(document.getElementById('menuContainer').innerHTML)
+      .toContain('burger.jpg');
   });
 
-  test('addMenuItem shows error when insert fails', async () => {
-    document.body.innerHTML = `
-      <input id="itemName" value="Burger">
-      <input id="itemPrice" value="50">
-      <textarea id="itemDescription">Nice</textarea>
-      <input id="itemImage">
-    `;
-    sessionStorage.setItem('username', 'shop1');
-
-    const imageInput = document.getElementById('itemImage');
-    Object.defineProperty(imageInput, 'files', {
-      value: [],
-      configurable: true
+  test('skips image tag when image_url is empty', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      error: null
     });
 
-    mockGetVendorId.mockResolvedValue('v1');
-    mockInsert.mockResolvedValue({ error: new Error('insert failed') });
+    await loadStudentMenu();
 
-    await addMenuItem();
-
-    expect(console.error).toHaveBeenCalled();
-    expect(mockToast).toHaveBeenCalledWith('Failed to add item', 'error');
+    expect(document.getElementById('menuContainer').innerHTML)
+      .not.toContain('<img');
   });
 
-  test('toggleSoldOut shows error toast on failure', async () => {
-    mockUpdateEq.mockResolvedValue({ error: { message: 'failed' } });
+  // ── allergen & dietary badges ───────────────────────────────────────────────
 
-    await toggleSoldOut(1, false);
+  test('renders allergen badges for items that have allergens', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{
+        id: 1, name: 'Peanut Burger', price: 50, description: '',
+        image_url: '', vendor_id: 'v1', status: 'available',
+        allergens: ['peanuts', 'dairy'],
+        dietary_labels: []
+      }],
+      error: null
+    });
 
-    expect(mockToast).toHaveBeenCalledWith('Update failed', 'error');
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('🥜 Peanuts');
+    expect(html).toContain('🥛 Dairy');
   });
 
-  test('toggleSoldOut updates item and reloads menu on success', async () => {
-    document.body.innerHTML = `<div id="vendorMenu"></div>`;
-    sessionStorage.setItem('username', 'shop1');
-
-    mockUpdateEq.mockResolvedValue({ error: null });
-    mockGetVendorId.mockResolvedValue('v1');
-    mockOrder.mockResolvedValue({ data: [], error: null });
-
-    await toggleSoldOut(1, false);
-
-    expect(mockToast).toHaveBeenCalledWith('Item updated');
-  });
-
-  test('deleteMenuItem stops when confirm is false', async () => {
-    global.confirm.mockReturnValue(false);
-
-    await deleteMenuItem(1);
-
-    expect(mockDeleteEq).not.toHaveBeenCalled();
-  });
-
-  test('deleteMenuItem shows error on failure', async () => {
-    global.confirm.mockReturnValue(true);
-    mockDeleteEq.mockResolvedValue({ error: { message: 'failed' } });
-
-    await deleteMenuItem(1);
-
-    expect(mockToast).toHaveBeenCalledWith('Delete failed', 'error');
-  });
-
-  test('deleteMenuItem shows success and reloads on success', async () => {
-    global.confirm.mockReturnValue(true);
-    document.body.innerHTML = `<div id="vendorMenu"></div>`;
-    sessionStorage.setItem('username', 'shop1');
-
-    mockDeleteEq.mockResolvedValue({ error: null });
-    mockGetVendorId.mockResolvedValue('v1');
-    mockOrder.mockResolvedValue({ data: [], error: null });
-
-    await deleteMenuItem(1);
-
-    expect(mockToast).toHaveBeenCalledWith('Item deleted');
-  });
-
-
-  test('addMenuItem saves selected allergens and dietary options', async () => {
-  document.body.innerHTML = `
-    <input id="itemName" value="Burger">
-    <input id="itemPrice" value="50">
-    <textarea id="itemDescription">Nice</textarea>
-    <input id="itemImage">
-
-    <input type="checkbox" class="allergen-checkbox" value="gluten" checked>
-    <input type="checkbox" class="allergen-checkbox" value="milk" checked>
-
-    <input type="checkbox" class="dietary-checkbox" value="halaal" checked>
-    <input type="checkbox" class="dietary-checkbox" value="vegetarian">
-
-    <div id="vendorMenu"></div>
-  `;
-
-  sessionStorage.setItem('username', 'shop1');
-
-  const imageInput = document.getElementById('itemImage');
-
-  Object.defineProperty(imageInput, 'files', {
-    value: [],
-    configurable: true
-  });
-
-  mockGetVendorId.mockResolvedValue('v1');
-
-  mockInsert.mockResolvedValue({
-    error: null
-  });
-
-  mockOrder.mockResolvedValue({
-    data: [],
-    error: null
-  });
-
-  await addMenuItem();
-
-  expect(mockInsert).toHaveBeenCalledWith([
-    expect.objectContaining({
-      allergens: ['gluten', 'milk'],
-      dietary: ['halaal']
-    })
-  ]);
-});
-
-test('addMenuItem clears allergen and dietary checkboxes after success', async () => {
-  document.body.innerHTML = `
-    <input id="itemName" value="Burger">
-    <input id="itemPrice" value="50">
-    <textarea id="itemDescription">Nice</textarea>
-    <input id="itemImage">
-
-    <input type="checkbox" class="allergen-checkbox" value="gluten" checked>
-    <input type="checkbox" class="allergen-checkbox" value="milk" checked>
-
-    <input type="checkbox" class="dietary-checkbox" value="vegan" checked>
-
-    <div id="vendorMenu"></div>
-  `;
-
-  sessionStorage.setItem('username', 'shop1');
-
-  const imageInput = document.getElementById('itemImage');
-
-  Object.defineProperty(imageInput, 'files', {
-    value: [],
-    configurable: true
-  });
-
-  mockGetVendorId.mockResolvedValue('v1');
-
-  mockInsert.mockResolvedValue({
-    error: null
-  });
-
-  mockOrder.mockResolvedValue({
-    data: [],
-    error: null
-  });
-
-  await addMenuItem();
-
-  const allergenCheckboxes = document.querySelectorAll('.allergen-checkbox');
-  const dietaryCheckboxes = document.querySelectorAll('.dietary-checkbox');
-
-  allergenCheckboxes.forEach(cb => {
-    expect(cb.checked).toBe(false);
-  });
-
-  dietaryCheckboxes.forEach(cb => {
-    expect(cb.checked).toBe(false);
-  });
-});
-
-test('loadVendorMenu renders allergens and dietary information', async () => {
-  document.body.innerHTML = `<div id="vendorMenu"></div>`;
-
-  sessionStorage.setItem('username', 'shop1');
-
-  mockGetVendorId.mockResolvedValue('v1');
-
-  mockOrder.mockResolvedValue({
-    data: [
-      {
-        id: 1,
-        name: 'Burger',
-        image_url: 'https://img.test/burger.jpg',
-        description: 'Tasty',
-        price: 50,
-        status: 'available',
-        allergens: ['gluten', 'milk'],
-        dietary: ['halaal']
-      }
-    ],
-    error: null
-  });
-
-  await loadVendorMenu();
-
-  const html = document.getElementById('vendorMenu').innerHTML;
-
-  expect(html).toContain('gluten');
-  expect(html).toContain('milk');
-  expect(html).toContain('halaal');
-  expect(html).toContain('Allergens');
-  expect(html).toContain('Dietary');
-});
-
-test('loadVendorMenu shows None when allergens and dietary are empty', async () => {
-  document.body.innerHTML = `<div id="vendorMenu"></div>`;
-
-  sessionStorage.setItem('username', 'shop1');
-
-  mockGetVendorId.mockResolvedValue('v1');
-
-  mockOrder.mockResolvedValue({
-    data: [
-      {
-        id: 1,
-        name: 'Salad',
-        image_url: '',
-        description: 'Fresh',
-        price: 40,
-        status: 'available',
+  test('renders dietary badges for items that have dietary labels', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{
+        id: 1, name: 'Halal Wrap', price: 40, description: '',
+        image_url: '', vendor_id: 'v1', status: 'available',
         allergens: [],
-        dietary: []
+        dietary_labels: ['halal', 'vegetarian']
+      }],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('✓ Halal');
+    expect(html).toContain('✓ Vegetarian');
+  });
+
+  test('renders no badges when allergens and dietary_labels are empty', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{
+        id: 1, name: 'Plain Item', price: 30, description: '',
+        image_url: '', vendor_id: 'v1', status: 'available',
+        allergens: [], dietary_labels: []
+      }],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).not.toContain('menu-badges');
+  });
+
+  // ── cart restoration ────────────────────────────────────────────────────────
+
+  test('restores cart from sessionStorage after rendering', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      error: null
+    });
+
+    const savedCart = [{ id: '1', name: 'Burger', price: 50, vendor_id: 'v1' }];
+    sessionStorage.setItem('cart', JSON.stringify(savedCart));
+
+    await loadStudentMenu();
+
+    expect(mockSetCart).toHaveBeenCalledWith(savedCart);
+    expect(mockUpdateCartDisplay).toHaveBeenCalled();
+  });
+
+  test('does not call setCart when sessionStorage has no cart', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    expect(mockSetCart).not.toHaveBeenCalled();
+  });
+
+  test('handles malformed cart JSON without crashing', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{ id: 1, name: 'Burger', price: 50, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+      error: null
+    });
+    sessionStorage.setItem('cart', 'INVALID_JSON{{{');
+
+    await expect(loadStudentMenu()).resolves.not.toThrow();
+    expect(mockSetCart).not.toHaveBeenCalled();
+  });
+
+  // ── menu error handling per vendor ──────────────────────────────────────────
+
+  test('skips vendors whose menu fetch errors and still renders others', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [
+        { id: 'v1', username: 'GoodShop' },
+        { id: 'v2', username: 'BrokenShop' }
+      ],
+      error: null
+    });
+    mockMenuStatusEq
+      .mockResolvedValueOnce({
+        data: [{ id: 1, name: 'Wrap', price: 35, description: '', image_url: '', allergens: [], dietary_labels: [], vendor_id: 'v1', status: 'available' }],
+        error: null
+      })
+      .mockResolvedValueOnce({ data: null, error: { message: 'timeout' } });
+
+    await loadStudentMenu();
+
+    const html = document.getElementById('menuContainer').innerHTML;
+    expect(html).toContain('Wrap');
+    expect(html).not.toContain('BrokenShop');
+  });
+
+test('filters vegan items correctly', async () => {
+
+  document.body.innerHTML = `
+    <select id="dietaryFilter">
+      <option value=""></option>
+      <option value="vegan">Vegan</option>
+    </select>
+
+    <div id="menuContainer"></div>
+  `;
+
+  mockVendorEq.mockResolvedValue({
+    data: [{ id: 'v1', username: 'ShopA' }],
+    error: null
+  });
+
+  mockMenuStatusEq.mockResolvedValue({
+    data: [
+      {
+        id: 1,
+        name: 'Vegan Wrap',
+        price: 45,
+        allergens: [],
+        dietary_labels: ['vegan'],
+        vendor_id: 'v1',
+        status: 'available'
+      },
+      {
+        id: 2,
+        name: 'Chicken Burger',
+        price: 60,
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
       }
     ],
     error: null
   });
 
-  await loadVendorMenu();
+  await loadStudentMenu();
 
-  const html = document.getElementById('vendorMenu').innerHTML;
+  document.getElementById('dietaryFilter').value = 'vegan';
 
-  expect(html).toContain('None');
+  document
+    .getElementById('dietaryFilter')
+    .dispatchEvent(new Event('change'));
+
+  const html =
+    document.getElementById('menuContainer').innerHTML;
+
+  expect(html).toContain('Vegan Wrap');
+
+  expect(html).not.toContain('Chicken Burger');
 });
+  // ── XSS / escaping ──────────────────────────────────────────────────────────
+
+  test('escapes HTML in item name and description text content', async () => {
+    document.body.innerHTML = `<div id="menuContainer"></div>`;
+    mockVendorEq.mockResolvedValue({
+      data: [{ id: 'v1', username: 'ShopA' }],
+      error: null
+    });
+    mockMenuStatusEq.mockResolvedValue({
+      data: [{
+        id: 1,
+        name: '<script>alert(1)</script>',
+        price: 50,
+        description: '<b>bad</b>',
+        image_url: '',
+        allergens: [],
+        dietary_labels: [],
+        vendor_id: 'v1',
+        status: 'available'
+      }],
+      error: null
+    });
+
+    await loadStudentMenu();
+
+    // The rendered text nodes should show escaped versions, not live HTML tags
+    const container = document.getElementById('menuContainer');
+    const nameDiv = container.querySelector('div[style*="font-weight"]');
+    const descDiv = [...container.querySelectorAll('div')].find(d => d.textContent.includes('bad'));
+
+    // textContent gives the decoded string — the key check is that no <script> element
+    // was injected into the DOM
+    expect(container.querySelector('script')).toBeNull();
+    expect(container.innerHTML).toContain('&lt;script&gt;');
+    expect(nameDiv?.textContent).toContain('<script>alert(1)</script>');
+  });
 });
