@@ -63,6 +63,14 @@ function getSessionUsername(user) {
   );
 }
 
+function getOrderAmount(order) {
+  return Number(order?.total_price ?? order?.total ?? order?.amount ?? 0);
+}
+
+function getOrderCreatedAt(order) {
+  return order?.created_at || order?.createdAt || order?.inserted_at || null;
+}
+
 function renderProfileShell({ username, email, studentId, joinedAt }) {
   const displayName = username || 'Student';
 
@@ -89,7 +97,7 @@ function renderOrderStats(orders = []) {
   }).length;
 
   const totalSpent = orders.reduce((sum, order) => {
-    return sum + Number(order.total_price || order.total || 0);
+    return sum + getOrderAmount(order);
   }, 0);
 
   setText('profileOrders', String(totalOrders));
@@ -124,8 +132,8 @@ function renderLatestOrder(order) {
       <span class="status status-${String(order.status || '').toLowerCase().replaceAll(' ', '-')}">
         ${order.status || 'Order Placed'}
       </span>
-      <strong>${formatMoney(order.total_price || order.total)}</strong>
-      <small>${formatDate(order.created_at)}</small>
+      <strong>${formatMoney(getOrderAmount(order))}</strong>
+      <small>${formatDate(getOrderCreatedAt(order))}</small>
     </div>
   `;
 }
@@ -140,6 +148,10 @@ async function findStudentProfile(user, username) {
       .eq('id', user.id)
       .maybeSingle();
 
+    if (error) {
+      console.warn('Student profile lookup by id failed:', error.message);
+    }
+
     if (!error && data) {
       student = data;
     }
@@ -152,6 +164,10 @@ async function findStudentProfile(user, username) {
       .eq('username', username)
       .maybeSingle();
 
+    if (error) {
+      console.warn('Student profile lookup by username failed:', error.message);
+    }
+
     if (!error && data) {
       student = data;
     }
@@ -160,28 +176,35 @@ async function findStudentProfile(user, username) {
   return student;
 }
 
-async function loadStudentOrders(studentId, username) {
-  if (studentId) {
-    const { data, error } = await sb
-      .from('orders')
-      .select('id, order_number, items, total_price, total, status, created_at')
-      .eq('student_id', studentId)
-      .order('created_at', { ascending: false });
+async function queryOrdersByColumn(column, value) {
+  if (!value) return null;
 
-    if (!error && Array.isArray(data)) {
-      return data;
-    }
+  const { data, error } = await sb
+    .from('orders')
+    .select('*')
+    .eq(column, value)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.warn(`Profile orders lookup by ${column} failed:`, error.message);
+    return null;
   }
 
-  if (username) {
-    const { data, error } = await sb
-      .from('orders')
-      .select('id, order_number, items, total_price, total, status, created_at')
-      .eq('student_username', username)
-      .order('created_at', { ascending: false });
+  return Array.isArray(data) ? data : [];
+}
 
-    if (!error && Array.isArray(data)) {
-      return data;
+async function loadStudentOrders(studentId, username, userId) {
+  const lookups = [
+    ['student_id', studentId],
+    ['student_id', userId],
+    ['student_username', username]
+  ];
+
+  for (const [column, value] of lookups) {
+    const orders = await queryOrdersByColumn(column, value);
+
+    if (orders && orders.length > 0) {
+      return orders;
     }
   }
 
@@ -189,7 +212,7 @@ async function loadStudentOrders(studentId, username) {
 }
 
 export async function initStudentProfilePage() {
-  requireRole('student');
+  if (!requireRole('student')) return;
 
   window.logout = logout;
 
@@ -199,6 +222,7 @@ export async function initStudentProfilePage() {
     setText('profileGreeting', 'Please login again');
     setText('profileName', 'No active session');
     setText('profileEmail', 'We could not find your signed-in account.');
+    renderOrderStats([]);
     return;
   }
 
@@ -221,6 +245,6 @@ export async function initStudentProfilePage() {
     joinedAt
   });
 
-  const orders = await loadStudentOrders(studentId, student?.username || username);
+  const orders = await loadStudentOrders(studentId, student?.username || username, user.id);
   renderOrderStats(orders);
 }

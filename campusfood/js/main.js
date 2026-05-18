@@ -18,6 +18,16 @@ import { initStudentProfilePage } from './pages/student-profile-page.js';
 import { initPaymentSuccessPage } from './pages/payment-success-page.js';
 import { initPaymentCancelledPage } from './pages/payment-cancelled-page.js';
 
+async function runPageInit(init) {
+  if (typeof init !== 'function') return;
+
+  try {
+    await init();
+  } catch (error) {
+    console.error('Page failed to initialize:', error);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
 
@@ -41,11 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'payment_cancelled.html': initPaymentCancelledPage
   };
 
-  const init = routes[currentPage];
-
-  if (typeof init === 'function') {
-    await init();
-  }
+  await runPageInit(routes[currentPage]);
 
   const currentPageLower = currentPage.toLowerCase();
 
