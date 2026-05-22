@@ -52,12 +52,11 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.__clientidsecretname__ }}
-          tenant-id: ${{ secrets.__tenantidsecretname__ }}
-          subscription-id: ${{ secrets.__subscriptionidsecretname__ }}
+         client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DDF1F9FCA8374A14BA3BDA226A267D7A }}
+         tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_D7CCCD1AE32E405E8D0D9D24A5826B8F }}
+         subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_73C2064028B64C4EB1D564C21AB96351 }}
 
       - name: Deploy backend to Azure Web App
-        id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'campusfood-backend-bethuel'
