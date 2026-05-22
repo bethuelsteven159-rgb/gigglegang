@@ -20,12 +20,12 @@ jobs:
           node-version: 20
 
       - name: Install frontend dependencies
-  	run: |
-    	   cd campusfood
-    	   npm install
+        run: |
+          cd campusfood
+          npm install
 
       - name: Install backend dependencies
-  	run: |
+        run: |
           cd backend
           npm install
 
