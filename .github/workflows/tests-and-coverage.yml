@@ -25,13 +25,18 @@ jobs:
       - name: Clean old coverage reports
         run: |
           rm -rf coverage
-          rm -rf Backend/coverage
+          rm -rf backend/coverage
           rm -rf campusfood/coverage
 
-      - name: Install dependencies
-        run: |
-          cd campusfood
-          npm install
+      - name: Install frontend dependencies
+  	run: |
+    	  cd campusfood
+    	  npm install
+
+      - name: Install backend dependencies
+  	run: |
+    	  cd backend
+    	  npm install
 
       - name: Run tests with coverage
         run: |
