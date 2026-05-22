@@ -31,24 +31,24 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
 
-  projects: [
-    {
-      displayName: 'backend',
-      testEnvironment: 'node',
-      testMatch: [
-        '<rootDir>/backend/**/*.test.js',
-        '<rootDir>/backend/**/*.spec.js',
-        '<rootDir>/server.test.js',
-        '<rootDir>/**/*.server.test.js'
-      ]
-    },
-    {
-      displayName: 'frontend',
-      testEnvironment: 'jsdom',
-      testMatch: [
-        '<rootDir>/js/**/*.test.js',
-        '<rootDir>/js/**/*.spec.js'
-      ]
-    }
-  ]
+ projects: [
+  {
+    displayName: 'backend',
+    testEnvironment: 'node',
+    testMatch: [
+      '<rootDir>/../backend/**/*.test.js',
+      '<rootDir>/../backend/**/*.spec.js',
+      '<rootDir>/../backend/server.test.js',
+      '<rootDir>/../backend/**/*.server.test.js'
+    ]
+  },
+  {
+    displayName: 'frontend',
+    testEnvironment: 'jsdom',
+    testMatch: [
+      '<rootDir>/js/**/*.test.js',
+      '<rootDir>/js/**/*.spec.js'
+    ]
+  }
+]
 };
