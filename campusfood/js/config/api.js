@@ -1,5 +1,6 @@
 const LOCAL_API_URL = "http://localhost:5000";
-const LIVE_API_URL = "https://gigglegang-yi6v.onrender.com";
+
+const LIVE_API_URL = "https://campusfood-backend-bethuel-b3b9cmgydya5fhcd.southafricanorth-01.azurewebsites.net";
 
 export const API_BASE_URL =
   window.location.hostname === "localhost" ||
