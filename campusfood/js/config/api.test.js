@@ -67,7 +67,7 @@ describe('api.js', () => {
   test('uses the live API URL when hostname is not local', async () => {
     const { API_BASE_URL } = await loadApiForHostname('bethuelsteven159-rgb.github.io');
 
-    expect(API_BASE_URL).toBe('https://gigglegang-yi6v.onrender.com');
+   expect(API_BASE_URL).toBe('https://campusfood-backend-bethuel-b3b9cmgydya5fhcd.southafricanorth-01.azurewebsites.net');
   });
 
   test('logs the hostname and chosen API base URL', async () => {
