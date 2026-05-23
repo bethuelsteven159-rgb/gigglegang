@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  frontend-tests:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,15 +29,20 @@ jobs:
           cd backend
           npm install
 
-      - name: Run tests with coverage
+      - name: Run frontend tests with coverage
         run: |
           cd campusfood
+          npm run test:coverage
+
+      - name: Run backend tests with coverage
+        run: |
+          cd backend
           npm run test:coverage
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: campusfood/coverage/lcov.info
+          files: campusfood/coverage/lcov.info,backend/coverage/lcov.info
           fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

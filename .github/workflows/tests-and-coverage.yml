@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  frontend-tests:
+  tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -38,20 +38,26 @@ jobs:
           cd backend
           npm install
 
-      - name: Run tests with coverage
+      - name: Run frontend tests with coverage
         run: |
           cd campusfood
           npm run test:coverage
 
-      - name: Check coverage file exists
+      - name: Run backend tests with coverage
+        run: |
+          cd backend
+          npm run test:coverage
+
+      - name: Check coverage files exist
         run: |
           test -f campusfood/coverage/lcov.info
+          test -f backend/coverage/lcov.info
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: campusfood/coverage/lcov.info
+          files: campusfood/coverage/lcov.info,backend/coverage/lcov.info
           disable_search: true
           fail_ci_if_error: true
           verbose: true
